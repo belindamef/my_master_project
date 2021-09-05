@@ -175,4 +175,4 @@ for key, value in ax.items():
 
 # Print subject level descriptive figure
 fig.tight_layout()
-fig.savefig(fig_fn, dpi=300, format='png')
+fig.savefig(fig_fn, dpi=100, format='png')
