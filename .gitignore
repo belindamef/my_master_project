@@ -1,0 +1,15 @@
+*data*
+*results/*
+#*figures/*
+*manuscript/*
+*ethics/*
+*doc*
+.my-master-project
+.DS_Store
+.idea/
+*code/utilities/lklh_dim-5_h6.npy  # very large file
+*code/utilities/lklh_dim-5_h6.npy*
+__pycache__/
+**__pycache__/
+
+**.pptx
