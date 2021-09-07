@@ -3,27 +3,37 @@ import more_itertools
 import os
 import time
 import pickle
-import gzip
 
 
-class ModelComp:
+class ModelComps:
+    """A Class to create task configurations given a set of task parameters.
+    Sampled task configuration npy files are written to output_dir
 
-    def __init__(self, task_params):
-        """
-        This function is the instantiation operation of the model component class.
+    ...
 
-        Input
-            val        : TODO
+    Attributes
+    ----------
+    working_dir : str
+        Current working directory
+    dim : int
+        Dimensionality of the gridworld
+    n_hides : int
+        Number of hiding spots
+    TODO
 
-        Output
+    Methods
+    -------
+    TODO
+    """
 
-        """
+    def __init__(self, working_dir, dim, n_hides):
+        """This function is the instantiation operation of the model component class"""
 
-        # Unpack task parameters
-        self.dim = task_params.dim
-        self.n_nodes = task_params.n_nodes
-        self.n_hides = task_params.n_hides
-        self.working_dir = task_params.working_dir
+        self.working_dir = working_dir
+        self.dim = dim
+        self.n_nodes = dim ** 2
+        self.n_hides = n_hides
+
 
         # Initialize and evaluate s_4 permutations
         start = time.time()
@@ -33,16 +43,16 @@ class ModelComp:
             with open(s4_perms_fn_pkl, 'rb') as file:
                 self.s4_perms = pickle.load(file)
             end = time.time()
-            print(f'ModelComp loading s4_perms: {end - start}')
+            print(f'ModelComps loading s4_perms: {end - start}')
         else:
             self.s4_perms = []
             self.eval_s4_perms()
             end = time.time()
-            print(f'ModelComp computing s4_perms: {end - start}')
+            print(f'ModelComps computing s4_perms: {end - start}')
             with open(s4_perms_fn_pkl, 'wb') as file:
                 pickle.dump(self.s4_perms, file)
             end = time.time()
-            print(f'ModelComp saving s4_perms as pickle: {end - start}')
+            print(f'ModelComps saving s4_perms as pickle: {end - start}')
 
         # Create list with indices of all probs for each hide
         start = time.time()
@@ -51,7 +61,7 @@ class ModelComp:
             self.s4_perm_node_indices[node] = [index for index, s4_perm in enumerate(self.s4_perms) if s4_perm[node] == 1]
             # --> 25 X 42504 indices per hide ( if 25 nodes and 6 hides)
         end = time.time()
-        print(f'ModelComp computing s4_marg_indices: {end - start}')
+        print(f'ModelComps computing s4_marg_indices: {end - start}')
 
         # Evaluate number of s4 permutations
         self.n_s4_perms = len(self.s4_perms)
@@ -62,14 +72,14 @@ class ModelComp:
         if os.path.exists(prior_fn):
             self.prior_c0 = np.load(prior_fn)
             end = time.time()
-            print(f'ModelComp loading prior: {end - start}')
+            print(f'ModelComps loading prior: {end - start}')
             sum_p_c0 = np.sum(self.prior_c0)
         else:
             self.prior_c0 = np.full((self.n_nodes, self.n_s4_perms), 0.)
             self.eval_prior()
             np.save(prior_fn, self.prior_c0)
             end = time.time()
-            print(f'ModelComp computing prior: {end - start}')
+            print(f'ModelComps computing prior: {end - start}')
 
         # Load or evaluate action-dependent state-conditional observation distribution ---(Likelihood)---
         start = time.time()
@@ -77,13 +87,13 @@ class ModelComp:
         if os.path.exists(lklh_fn):
             self.lklh = np.load(lklh_fn)
             end = time.time()
-            print(f'ModelComp loading likhl: {end - start}')
+            print(f'ModelComps loading likhl: {end - start}')
         else:
             self.lklh = np.full((2, self.n_nodes, 3, 4, self.n_nodes, self.n_s4_perms), 0.)
             self.eval_likelihood()
             np.save(lklh_fn, self.lklh)
             end = time.time()
-            print(f'ModelComp computing likhl: {end - start}')
+            print(f'ModelComps computing likhl: {end - start}')
         start = time.time()
 
     def eval_s4_perms(self):

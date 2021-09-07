@@ -3,37 +3,23 @@ import copy as cp
 
 
 class Model:
-    """
-    TODO
-    """
-    def __init__(self, m_init):
-        """
-        This function is the instantiation operation of the model class.
+    """A class used to represent the behavioral model
 
-        Input
-            m_init        : model object
-                  .agent  : agent object
-                  .task   : task object
+    Attributes
+    ----------
+    agent : object
+        Object of class agent
+    a_t : array_like
+        Action value in trial t
+    """
+    def __init__(self):
 
-        Output
-            m_init        : input object with additional attributes
-                  .a      : action after evaluating action noise
-        """
-        # Define structural component
+        # Initialize empty attribute to embed agent object of class Agent
         self.agent = None
 
-        # Define dynamic model components
-        self.a = np.full(1, np.nan)  # agent action
+        # Initialize action attribute
+        self.a_t = np.full(1, np.nan)  # agent action
 
-    # Model functions
-    # ------------------------------------------------------------------------
     def return_action(self):
-        """
-        This function returns the agent's action given agent's decision.
-
-        Input
-            self         : model object
-                .a       : action
-                .agent.dim : agent object decision
-        """
-        self.a = cp.deepcopy(self.agent.d)  # probability action given decision with prob of 1
+        """This function returns the action value given agent's decision."""
+        self.a_t = cp.deepcopy(self.agent.d)  # probability action given decision of 1

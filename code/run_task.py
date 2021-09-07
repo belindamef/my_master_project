@@ -1,7 +1,20 @@
 """
 This script implements the treasure hunt task.
 
-author: Belinda Fleischmann
+file creations
+--------------
+bids-compatible tabular file with behavioral data:
+    /<raw_beh_data_dir>/<exp_label>/sub-<ID>/beh/sub-<ID>_task-th_beh.tsv
+
+bids-compatible json file with meta data:
+    /<raw_beh_data_dir>/<exp_label>/participants.json
+    /<raw_beh_data_dir>/<exp_label>/task-th.json
+
+files with additional data:
+    /<raw_beh_data_dir>/<exp_label>_ext/sub-<ID>/all_data.pkl
+    /<raw_beh_data_dir>/<exp_label>_ext/sub-<ID>/practice_events.tsv
+
+Author: Belinda Fleischmann
 """
 
 import numpy as np
@@ -11,7 +24,6 @@ import os.path
 import pandas as pd
 import json
 
-from utilities.abm_structure import AbmStructure
 from utilities.create_task_config import TaskConfigurator
 from utilities.create_stimuli import StimulusCreation
 from utilities.rowcol_to_xy import rowcol_to_xy
@@ -27,10 +39,10 @@ np.set_printoptions(linewidth=500)
 working_dir = os.getcwd()
 project_dir = os.sep.join(working_dir.split(os.sep)[:4])  # Should be Users/$USER/my_master_project
 stimuli_dir = os.path.join(working_dir, 'stimuli')
-raw_beh_dir = os.path.join(project_dir, 'data', 'rawdata', 'beh')  # raw behavioral data output directory
+raw_exp_data_dir = os.path.join(project_dir, 'data', 'rawdata', 'exp')  # raw experimental data output directory
 
-if not os.path.exists(raw_beh_dir):  # create if non existent
-    os.makedirs(raw_beh_dir)
+if not os.path.exists(raw_exp_data_dir):  # create if non existent
+    os.makedirs(raw_exp_data_dir)
 
 # Specify experimental parameter
 exp_blocks = 3  # No. of task blocks (each block has different tr location, but same hiding spots
@@ -62,8 +74,8 @@ my_mac.saveMon()
 # Get experiment name and create main data directory
 exp_label = input("What kind of test is this? \n"
                   "(Entered name will be used as directory name): ")
-exp_data_dir = os.path.join(raw_beh_dir, f'{exp_label}')  # main data directory
-exp_data_ext_dir = os.path.join(raw_beh_dir, f'{exp_label}_ext')  # extended data
+exp_data_dir = os.path.join(raw_exp_data_dir, f'{exp_label}')  # main data directory
+exp_data_ext_dir = os.path.join(raw_exp_data_dir, f'{exp_label}_ext')  # extended data
 if not os.path.exists(exp_data_dir):  # create if non existent
     os.makedirs(exp_data_dir)
     print(f'Creating new data folder {exp_data_dir}')
@@ -368,31 +380,26 @@ else:
                         monitor="my_mac", units="cm")
 
 # ------Create or load task configuration-------------------------------------
-config_params = AbmStructure()
-config_params.task_config_type = task_configuration_type
-config_params.config_file_path = os.path.join(working_dir, 'task_config',
-                                              f'b-{exp_blocks}_r-{exp_rounds}_'
-                                              f't-{exp_trials}', f'{exp_label}')
-if os.path.exists(config_params.config_file_path):
+config_files_dir = os.path.join(working_dir, 'task_config',
+                                f'b-{exp_blocks}_r-{exp_rounds}_'
+                                f't-{exp_trials}', f'{exp_label}')
+if os.path.exists(config_files_dir):
     print(f'loading task configuration for {exp_data_dir}')
-    # load task configuration if existent
-    task_configuration_type = 'load'
-config_params.blocks = exp_blocks
-config_params.rounds = exp_rounds
-config_params.n_nodes = n_nodes
-config_params.n_hides = n_hides
-task_configuration = TaskConfigurator(config_params)
 
-config_pr_params = AbmStructure()
-config_pr_params.task_config_type = task_configuration_type
-config_pr_params.config_file_path = os.path.join(working_dir, 'task_config',
-                                                 f'b-{pract_blocks}_r-{pract_rounds}_t-{pract_trials}',
-                                                 f'{exp_label}')
-config_pr_params.blocks = pract_blocks
-config_pr_params.rounds = pract_rounds
-config_pr_params.n_nodes = n_nodes
-config_pr_params.n_hides = n_hides
-pr_task_configuration = TaskConfigurator(config_pr_params)
+# Create task config (object will load config if existing for task_params and sim_name)
+task_configurator = TaskConfigurator(task_config_dir=config_files_dir,
+                                     n_blocks=exp_blocks, n_rounds=exp_rounds,
+                                     dim=dim, n_hides=n_hides)
+task_configs = task_configurator.return_task_configuration()
+
+config_pr_file_dir = os.path.join(working_dir, 'task_config',
+                                  f'b-{pract_blocks}_r-{pract_rounds}_t-{pract_trials}',
+                                  f'{exp_label}')
+
+pr_task_configurator = TaskConfigurator(task_config_dir=config_pr_file_dir,
+                                        n_blocks=exp_blocks, n_rounds=exp_rounds,
+                                        dim=dim, n_hides=n_hides)
+pr_task_configs = pr_task_configurator.return_task_configuration()
 
 # ------Initialize global task variables--------------------------------------
 s1_node = np.nan  # Current position
@@ -409,7 +416,7 @@ n_grey = 0  # number of grey nodes in current trial
 n_blue = 0  # number of blue nodes in current trial
 score = 0  # Score count (number of treasures)
 this_resp = None  # Initialize this_resp variable for quit ("escape") option
-key_list = ["left", "right",   # possible key responses during task routine
+key_list = ["left", "right",  # possible key responses during task routine
             "up", "down",
             "space", "escape"]
 rawdata = pd.DataFrame()  # Dataframe for data recording
@@ -435,9 +442,11 @@ stim_params = {
 stimuli = StimulusCreation(stim_params)
 stimuli.create_stimuli()
 
+
 # -----------------------------------------------------------------------------
 # -----Define methods for task presentation------------------------------------
 # -----------------------------------------------------------------------------
+
 
 def prompt_welcome():
     """Prompt welcome text at beginning of task"""
@@ -556,7 +565,6 @@ def show_instructions():
     win.flip()
     core.wait(0.5)
     stimuli.instr_top.text = "...the treasure will be revealed."
-    # hide_stims_demo[int(pos_demo)].draw()
     pos_demo += 5  # Reset position
     stimuli.treasure.pos = pos_xy_demo
     stimuli.treasure.size = cube_size
@@ -1051,7 +1059,7 @@ for this_block in range(blocks):
         # Specify round and trial numbers for first two (practice) blocks
         if this_block < pract_blocks:
             block_type = "practice"
-            rounds = cp.deepcopy(pract_rounds)
+            n_rounds = cp.deepcopy(pract_rounds)
             trials = cp.deepcopy(pract_trials)
             if this_block == 0:
                 # Inform participant about first practice block
@@ -1102,7 +1110,7 @@ for this_block in range(blocks):
     if not run_practice:
         block_type = "experiment"
         this_resp = None  # Initialize this_resp variable for quit ("escape") option
-        rounds = cp.deepcopy(exp_rounds)
+        n_rounds = cp.deepcopy(exp_rounds)
         trials = cp.deepcopy(exp_trials)
 
     # ------Prepare Routine "block"-----------------------------------------------
@@ -1111,11 +1119,11 @@ for this_block in range(blocks):
 
     # Sample and record hiding spots
     if run_practice:
-        hides_loc = pr_task_configuration.hides_loc[this_block]
+        hides_loc = pr_task_configs['hides_loc'][this_block]
 
     else:
         check = this_block - (blocks - exp_blocks)
-        hides_loc = task_configuration.hides_loc[this_block - (blocks - exp_blocks)]
+        hides_loc = task_configs['hides_loc'][this_block - (blocks - exp_blocks)]
 
     s4_hide_node = return_s4_values()
     hides_loc_t = hides_loc  # Record hiding spots
@@ -1127,7 +1135,7 @@ for this_block in range(blocks):
     hides_stims = stimuli.hides
 
     # ------Start Routine "block"-------------------------------------------------
-    for this_round in range(rounds):
+    for this_round in range(n_rounds):
         # Check for quit; break hunt round
         if this_resp == 'escape':
             break
@@ -1162,11 +1170,11 @@ for this_block in range(blocks):
 
         # Fetch starting position and tr location from task configuration
         if run_practice:
-            start_node = pr_task_configuration.s_1[this_block, this_round]
-            s3_tr_loc = pr_task_configuration.s_3_tr_loc[this_block, this_round]
+            start_node = pr_task_configs['s_1'][this_block, this_round]
+            s3_tr_loc = pr_task_configs['s_3_tr_loc'][this_block, this_round]
         else:
-            start_node = task_configuration.s_1[this_block - (blocks - exp_blocks), this_round]
-            s3_tr_loc = task_configuration.s_3_tr_loc[this_block - (blocks - exp_blocks), this_round]
+            start_node = task_configs['s_1'][this_block - (blocks - exp_blocks), this_round]
+            s3_tr_loc = task_configs['s_3_tr_loc'][this_block - (blocks - exp_blocks), this_round]
 
         # Initialize current position (s1) to equal start node
         s1_node = cp.deepcopy(start_node)
@@ -1193,7 +1201,7 @@ for this_block in range(blocks):
 
             # Update text for move and round counter stimuli
             stimuli.move_count.text = f"Moves left: {moves} / {trials}"
-            stimuli.round_count.text = f"Round: {this_round + 1} / {rounds}"
+            stimuli.round_count.text = f"Round: {this_round + 1} / {n_rounds}"
 
             # Turn on autoDraws for move, round and counter stimuli
             stimuli.move_count.autoDraw = True
@@ -1326,18 +1334,18 @@ for this_block in range(blocks):
             break  # Break this round
 
         # If 'this_round' is NOT forelast or last round, inform participant about new round and score
-        if this_round < (rounds - 2):
-            stimuli.instr_center.text = (f"You finished round {this_round + 1} of {rounds}. \n\n"
-                                         f"There are {rounds - (this_round + 1)} rounds left in this game.\n\n"
+        if this_round < (n_rounds - 2):
+            stimuli.instr_center.text = (f"You finished round {this_round + 1} of {n_rounds}. \n\n"
+                                         f"There are {n_rounds - (this_round + 1)} rounds left in this game.\n\n"
                                          f"Press any key to continue.")
             stimuli.instr_center.draw()
             win.flip()
             event.waitKeys()
 
         # If 'this_round' is forelast round, inform participant about new round and score
-        elif this_round == (rounds - 2):
-            stimuli.instr_center.text = (f"You finished round {this_round + 1} of {rounds}. \n\n"
-                                         f"There is {rounds - (this_round + 1)} round left in this game.\n\n"
+        elif this_round == (n_rounds - 2):
+            stimuli.instr_center.text = (f"You finished round {this_round + 1} of {n_rounds}. \n\n"
+                                         f"There is {n_rounds - (this_round + 1)} round left in this game.\n\n"
                                          f"Press any key to continue.")
             stimuli.instr_center.draw()
             win.flip()

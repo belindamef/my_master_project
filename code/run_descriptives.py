@@ -23,8 +23,8 @@ File creation
     todo: update png that are created
 
 """
-# Specify dataset, 'sim' or 'beh' and exp_label (e.g. 'pretest_4')
-dataset = 'beh'
+# Specify dataset and experiment name
+dataset = 'beh'  # 'exp' or 'sim'
 exp_label = 'main'
 dim = 5
 
@@ -34,7 +34,7 @@ project_dir = os.sep.join(working_dir.split(os.sep)[:4])  # Should be Users/<{$U
 data_dir = os.path.join(project_dir, 'data')
 results_dir = os.path.join(project_dir, 'results')
 figures_dir = os.path.join(project_dir, 'figures')
-input_data_dir = os.path.join(data_dir, f'{dataset}', f'{exp_label}')
+input_data_dir = os.path.join(data_dir, 'rawdata', f'{dataset}', f'{exp_label}')
 out_proc_data_dir = os.path.join(results_dir, f'{dataset}', f'{exp_label}', 'processed_data')
 out_descr_stats_dir = os.path.join(results_dir, f'{dataset}', f'{exp_label}')
 out_fig_dir = os.path.join(figures_dir, f'{dataset}', f'{exp_label}')

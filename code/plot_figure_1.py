@@ -20,6 +20,7 @@ from utilities.abm_figure_template import abm_figures
 
 # Specify task configuration
 exp_label = 'main'
+sim_label = 'main'
 dim = 5
 
 # Specify directories and filenames
@@ -29,10 +30,10 @@ data_dir = os.path.join(project_dir, 'data')
 results_dir = os.path.join(project_dir, 'results')
 figures_dir = os.path.join(project_dir, 'figures')
 
-beh_data_dir = os.path.join(data_dir, 'beh', f'{exp_label}')
-sim_data_dir = os.path.join(data_dir, 'sim', f'{exp_label}')
+exp_data_dir = os.path.join(data_dir, 'rawdata', 'exp', f'{exp_label}')
+sim_data_dir = os.path.join(data_dir, 'rawdata', 'sim', f'{sim_label}')
 beh_results_dir = os.path.join(results_dir, 'beh', f'{exp_label}')
-sim_results_dir = os.path.join(results_dir, 'sim', f'{exp_label}')
+sim_results_dir = os.path.join(results_dir, 'sim', f'{sim_label}')
 beh_proc_data_dir = os.path.join(beh_results_dir, 'processed_data')
 sim_proc_data_dir = os.path.join(sim_results_dir, 'processed_data')
 beh_events_all_subs_fn = os.path.join(beh_results_dir, 'events_all_subs')
@@ -51,7 +52,7 @@ beh_grp_stats_df = pd.read_pickle(f'{beh_grp_stats_fn}.pkl')
 sim_grp_stats_df = pd.read_pickle(f'{sim_grp_stats_fn}.pkl')
 
 # Create general figure components
-sub_label_beh = [s_dir[(s_dir.find('sub-') + 4):] for s_dir in glob.glob(beh_data_dir + '/sub-*')]
+sub_label_beh = [s_dir[(s_dir.find('sub-') + 4):] for s_dir in glob.glob(exp_data_dir + '/sub-*')]
 sub_label_sim = [s_dir[(s_dir.find('sub-') + 4):] for s_dir in glob.glob(sim_data_dir + '/sub-*')]
 sub_label_beh.sort()
 sub_label_sim.sort()
