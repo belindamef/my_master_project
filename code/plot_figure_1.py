@@ -28,27 +28,27 @@ working_dir = os.getcwd()
 project_dir = os.sep.join(working_dir.split(os.sep)[:4])  # Should be Users/<{$USER}>/<{$PROJECTFOLDER}>
 data_dir = os.path.join(project_dir, 'data')
 results_dir = os.path.join(project_dir, 'results')
+descr_stats_dir = os.path.join(results_dir, 'descr_stats')
 figures_dir = os.path.join(project_dir, 'figures')
 
 exp_data_dir = os.path.join(data_dir, 'rawdata', 'exp', f'{exp_label}')
 sim_data_dir = os.path.join(data_dir, 'rawdata', 'sim', f'{sim_label}')
-beh_results_dir = os.path.join(results_dir, 'beh', f'{exp_label}')
-sim_results_dir = os.path.join(results_dir, 'sim', f'{sim_label}')
-beh_proc_data_dir = os.path.join(beh_results_dir, 'processed_data')
-sim_proc_data_dir = os.path.join(sim_results_dir, 'processed_data')
-beh_events_all_subs_fn = os.path.join(beh_results_dir, 'events_all_subs')
-sim_events_all_subs_fn = os.path.join(sim_results_dir, 'events_all_subs')
-beh_descr_stats_fn = os.path.join(beh_results_dir, 'descr_stats')
-sim_descr_stats_fn = os.path.join(sim_results_dir, 'descr_stats')
-beh_grp_stats_fn = os.path.join(beh_results_dir, 'grp_lvl_stats')
-sim_grp_stats_fn = os.path.join(sim_results_dir, 'grp_lvl_stats')
+exp_proc_data_dir = os.path.join(data_dir, 'processed_data', 'exp', f'{exp_label}')
+sim_proc_data_dir = os.path.join(data_dir, 'processed_data', 'sim', f'{exp_label}')
+exp_events_all_subs_fn = os.path.join(exp_proc_data_dir, 'events_all_subs')
+sim_events_all_subs_fn = os.path.join(sim_proc_data_dir, 'events_all_subs')
+
+exp_descr_stats_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}', 'descr_stats')
+sim_descr_stats_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}', 'descr_stats')
+exp_grp_stats_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}', 'grp_lvl_stats')
+sim_grp_stats_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}', 'grp_lvl_stats')
 
 # Load data
-beh_ev_all_subs_df = pd.read_pickle(f'{beh_events_all_subs_fn}.pkl')
+exp_ev_all_subs_df = pd.read_pickle(f'{exp_events_all_subs_fn}.pkl')
 sim_ev_all_subs_df = pd.read_pickle(f'{sim_events_all_subs_fn}.pkl')
-descr_stats_beh_df = pd.read_pickle(f'{beh_descr_stats_fn}.pkl')
+descr_stats_beh_df = pd.read_pickle(f'{exp_descr_stats_fn}.pkl')
 descr_stats_sim_df = pd.read_pickle(f'{sim_descr_stats_fn}.pkl')
-beh_grp_stats_df = pd.read_pickle(f'{beh_grp_stats_fn}.pkl')
+exp_grp_stats_df = pd.read_pickle(f'{exp_grp_stats_fn}.pkl')
 sim_grp_stats_df = pd.read_pickle(f'{sim_grp_stats_fn}.pkl')
 
 # Create general figure components
@@ -58,14 +58,14 @@ sub_label_beh.sort()
 sub_label_sim.sort()
 
 # Select single subject data only
-ds_os_beh_df = descr_stats_beh_df[descr_stats_beh_df['subject'].isin(sub_label_beh)]  # descr stats only subs
-ds_oa_sim_df = descr_stats_sim_df[descr_stats_sim_df['subject'].isin(sub_label_sim)]  # descr stats only agents
-ds_A_sim_df = descr_stats_sim_df[descr_stats_sim_df['subject'].isin(['A1', 'A2', 'A3'])]
-ds_C_sim_df = descr_stats_sim_df[descr_stats_sim_df['subject'].isin(['C1', 'C2', 'C3'])]
+ds_os_beh_df = descr_stats_beh_df[descr_stats_beh_df['sub_id'].isin(sub_label_beh)]  # descr stats only subs
+ds_oa_sim_df = descr_stats_sim_df[descr_stats_sim_df['sub_id'].isin(sub_label_sim)]  # descr stats only agents
+ds_A_sim_df = descr_stats_sim_df[descr_stats_sim_df['sub_id'].isin(['A1', 'A2', 'A3'])]
+ds_C_sim_df = descr_stats_sim_df[descr_stats_sim_df['sub_id'].isin(['C1', 'C2', 'C3'])]
 # Extract task config specific model components
-n_blocks = np.max(beh_ev_all_subs_df['block'])
-n_rounds = np.max(beh_ev_all_subs_df['round'])
-n_trials = np.max(beh_ev_all_subs_df['trial']) - 1
+n_blocks = np.max(exp_ev_all_subs_df['block'])
+n_rounds = np.max(exp_ev_all_subs_df['round'])
+n_trials = np.max(exp_ev_all_subs_df['trial']) - 1
 n_tr_max = n_blocks * n_rounds
 
 plot_set = {

@@ -52,7 +52,7 @@ def start_agent_task_interaction(working_dir, output_dir, n_blocks, n_rounds, n_
         sub_dir = os.path.join(output_dir, f'sub-{sub_id}')
         if not os.path.exists(sub_dir):
             os.makedirs(sub_dir)
-        fn_stem = os.path.join(sub_dir, f'sub-{sub_id}')
+        fn_stem = os.path.join(sub_dir, 'beh', f'sub-{sub_id}')
 
         start = time.time()
 
@@ -219,7 +219,6 @@ def start_agent_task_interaction(working_dir, output_dir, n_blocks, n_rounds, n_
 
                 # ------Ending Routine "round"------
                 sim_dat_c = pd.DataFrame(index=range(0, n_trials + 1))  # Create dataframe
-                sim_dat_c['sub_id'] = agent_model
                 sim_dat_c['agent'] = f'Agent {agent_model}'
                 sim_dat_c['block'] = this_block + 1
                 sim_dat_c['round'] = this_round + 1

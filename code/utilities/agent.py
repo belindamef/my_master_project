@@ -460,7 +460,7 @@ class Agent:
                             self.p_o_giv_o[a, 3] * self.kl_giv_a_o[a, 3]
 
             # Let agent stop drilling, if node is not black or if it's last round
-            if self.c == (self.task.rounds - 1):  # or self.task.s_2_node_color[self.task.s_1] != 0:
+            if self.c == (self.task.n_rounds - 1):  # or self.task.s_2_node_color[self.task.s_1] != 0:
                 self.v[np.where(self.a_s1 == 0)] = -1
 
         # 'A3' belief state based explorer-exploit agent ---LOOK-AHEAD---
@@ -493,7 +493,7 @@ class Agent:
                              self.p_o_giv_o[a][3] * self.kl_giv_a_o[a][3]
 
             # Let agent stop drilling, if node is not black or if it's last round
-            if self.c == (self.task.rounds - 1):  # or self.task.s_2_node_color[self.task.s_1] != 0:
+            if self.c == (self.task.n_rounds - 1):  # or self.task.s_2_node_color[self.task.s_1] != 0:
                 self.v[np.where(self.a_s1 == 0)] = -1
 
     def evaluate_delta(self):

@@ -24,7 +24,7 @@ File creation
 
 """
 # Specify dataset and experiment name
-dataset = 'beh'  # 'exp' or 'sim'
+dataset = 'exp'  # 'exp' or 'sim'
 exp_label = 'main'
 dim = 5
 
@@ -35,8 +35,8 @@ data_dir = os.path.join(project_dir, 'data')
 results_dir = os.path.join(project_dir, 'results')
 figures_dir = os.path.join(project_dir, 'figures')
 input_data_dir = os.path.join(data_dir, 'rawdata', f'{dataset}', f'{exp_label}')
-out_proc_data_dir = os.path.join(results_dir, f'{dataset}', f'{exp_label}', 'processed_data')
-out_descr_stats_dir = os.path.join(results_dir, f'{dataset}', f'{exp_label}')
+out_proc_data_dir = os.path.join(data_dir, 'processed_data', f'{dataset}', f'{exp_label}')
+out_descr_stats_dir = os.path.join(results_dir, 'descr_stats', f'{dataset}', f'{exp_label}')
 out_fig_dir = os.path.join(figures_dir, f'{dataset}', f'{exp_label}')
 if not os.path.exists(out_proc_data_dir):
     os.makedirs(out_proc_data_dir)
@@ -46,7 +46,7 @@ if not os.path.exists(out_fig_dir):
     os.makedirs(out_fig_dir)
 
 # Define file names
-events_all_subs_fn = os.path.join(out_descr_stats_dir, f'events_all_subs')
+events_all_subs_fn = os.path.join(out_proc_data_dir, f'events_all_subs')
 descr_stats_fn = os.path.join(out_descr_stats_dir, 'descr_stats')
 grp_lvl_stats_fn = os.path.join(out_descr_stats_dir, 'grp_lvl_stats')
 t_wise_stats_fn = os.path.join(out_descr_stats_dir, 't_wise_stats')
@@ -61,8 +61,11 @@ edited_t_wise_stats = False
 edited_r_wise_stats = False
 
 # Initialize dataframe for events_all_subs
-events_all_subs_df = pd.DataFrame()
-
+if os.path.exists(f'{events_all_subs_fn}.pkl'):
+    events_all_subs_df = pd.read_pickle(f'{events_all_subs_fn}.pkl')
+else:
+    events_all_subs_df = pd.DataFrame()
+    edited_events_all_subs = True
 if os.path.exists(f'{descr_stats_fn}.pkl'):
     descr_stats_df = pd.read_pickle(f'{descr_stats_fn}.pkl')
 else:
@@ -105,7 +108,8 @@ for index, events_fn in enumerate(ev_file_list):
 
     # -------Process data------------------
     # Check if subject in descr_stats_df
-    if descr_stats_df.empty or (sub_id not in descr_stats_df.subject.values):
+    if events_all_subs_df.empty or (sub_id not in events_all_subs_df.sub_id.values) or \
+            descr_stats_df.empty or (sub_id not in descr_stats_df.sub_id.values):
 
         # Check if processed data existent
         proc_data_fn = os.path.join(out_proc_data_dir, f'events_sub-{sub_id}_proc')
@@ -154,7 +158,7 @@ for index, events_fn in enumerate(ev_file_list):
     #         fig_row_cm.savefig(fig_row_cm_fn)
 
 # ------Evaluate group-level stats-------------------------
-if grp_lvl_stats_df.empty:
+if grp_lvl_stats_df.empty or ('whole_sample' not in grp_lvl_stats_df.sub_id.values):
     print("Computing 'whole sample' descr stats")
     descr_stats_whole_sample = DescrStats(events_all_subs_df, dataset, subject='whole_sample')
     if dataset == 'sim':
@@ -168,20 +172,20 @@ grp_stats = GroupStats(events_all_subs_df, dataset, descr_stats_df)
 if dataset == 'sim':
     agent_group_descr_stats_incomplete = False
     for agent in list(events_all_subs_df['agent'].unique()):
-        if agent not in descr_stats_df.subject.values:
+        if agent not in grp_lvl_stats_df.sub_id.values:
             agent_group_descr_stats_incomplete = True
             break
     if agent_group_descr_stats_incomplete:
-        descr_stats_agents_df = grp_stats.perform_group_descr_stats(group_by='agent')
-        grp_lvl_stats_df = descr_stats_df.append(descr_stats_agents_df, ignore_index=True)
+        grp_lvl_stats_df = grp_lvl_stats_df.append(grp_stats.perform_group_descr_stats(group_by='agent'))
+        #grp_lvl_stats_df = descr_stats_df.append(descr_stats_agents_df, ignore_index=True)
         edited_grp_lvl_stats = True
 
-if dataset == 'sim' and edited_grp_lvl_stats:
-    print('Computing group-level stats')
-    agent_list = list(events_all_subs_df.agent.unique())
-    descr_stats_all_subs_df = descr_stats_df[descr_stats_df['subject'].isin(sub_id_list)]
-    grp_stats.descr_df = descr_stats_all_subs_df
-    grp_lvl_stats_df = grp_lvl_stats_df.append(grp_stats.perform_grp_lvl_stats(group_by='agent'), ignore_index=True)
+# if dataset == 'sim' and edited_grp_lvl_stats:
+#     print('Computing group-level stats')
+#     agent_list = list(events_all_subs_df.agent.unique())
+#     descr_stats_all_subs_df = descr_stats_df[descr_stats_df['sub_id'].isin(sub_id_list)]
+#     grp_stats.descr_df = descr_stats_all_subs_df
+#     grp_lvl_stats_df = grp_lvl_stats_df.append(grp_stats.perform_grp_lvl_stats(group_by='agent'), ignore_index=True)
 
 if edited_t_wise_stats:  # Change check for 'output_incomplete' to output-specific check
     print('Computing trialwise stats')
@@ -189,7 +193,7 @@ if edited_t_wise_stats:  # Change check for 'output_incomplete' to output-specif
 
 if edited_r_wise_stats:
     print('Computing roundwise stats')
-    descr_stats_all_subs_df = descr_stats_df[descr_stats_df['subject'].isin(sub_id_list)]
+    descr_stats_all_subs_df = descr_stats_df[descr_stats_df['sub_id'].isin(sub_id_list)]
     grp_stats.descr_df = descr_stats_all_subs_df
     r_wise_stats_df = grp_stats.eval_r_wise_stats()
 
@@ -221,10 +225,10 @@ if edited_r_wise_stats:
 # ------Create subject level figures-----------------------
 # ---------------------------------------------------------------------------------------------
 # Extract descr stats of subjects only
-descr_stats_all_subs_df = descr_stats_df[descr_stats_df['subject'].isin(sub_id_list)]
+descr_stats_all_subs_df = descr_stats_df[descr_stats_df['sub_id'].isin(sub_id_list)]
 
 # Create general figure components:
-subject_label = list(descr_stats_all_subs_df.subject.unique())
+subject_label = list(descr_stats_all_subs_df.sub_id.unique())
 
 # figure initialization
 fig_1_fn = os.path.join(out_fig_dir, 'sub_level_stats.pdf')
@@ -342,9 +346,9 @@ fig.savefig(fig_1_fn, dpi=300, format='pdf')
 # ------Create group level figures-------------
 # ---------------------------------------------------------------------------------------------
 if dataset == 'sim':
-    subject_label = list(events_all_subs_df.agent.unique())
+    subject_label = list(events_all_subs_df.sub_id.unique())
 
-    descr_stats_all_agents_df = descr_stats_df[descr_stats_df['subject'].isin(subject_label)]
+    descr_stats_all_agents_df = descr_stats_df[descr_stats_df['sub_id'].isin(subject_label)]
 
     # figure initialization
     fig_3_fn = os.path.join(out_fig_dir, 'descr_stats_agents.pdf')
@@ -359,20 +363,20 @@ if dataset == 'sim':
     cm_subsection = np.linspace(.2, .8, 6)  # color map sampling indices
     colors = [cm(x) for x in cm_subsection]  # colors of interest list
 
-    # Plot group mean treasures discovery
-    x = np.arange(len(subject_label))
-    y = grp_lvl_stats_df.n_tr_mean.values
-    yerr = grp_lvl_stats_df.n_tr_std.values
-    ax[0] = plt.subplot(gs[0, 0])
-    ax[0].errorbar(x, y, yerr,
-                   marker='o', ls='', capsize=2, lw=1, ms=4)
-    ax[0].set_xlabel('Group')
-    ax[0].set_xticks(x)
-    ax[0].set_xticklabels(subject_label)
-    ax[0].set_ylabel('Mean number of treasure', fontsize=12)
-    ax[0].set_ylim(0, 20)
-    ax[0].set_yticks([5, 10, 15, 20])
-    ax[0].grid(True, axis='y', linewidth=.5, color=[.9, .9, .9])
+    # # Plot group mean treasures discovery
+    # x = np.arange(len(subject_label))
+    # y = grp_lvl_stats_df.n_tr_mean.values
+    # yerr = grp_lvl_stats_df.n_tr_std.values
+    # ax[0] = plt.subplot(gs[0, 0])
+    # ax[0].errorbar(x, y, yerr,
+    #                marker='o', ls='', capsize=2, lw=1, ms=4)
+    # ax[0].set_xlabel('Group')
+    # ax[0].set_xticks(x)
+    # ax[0].set_xticklabels(subject_label)
+    # ax[0].set_ylabel('Mean number of treasure', fontsize=12)
+    # ax[0].set_ylim(0, 20)
+    # ax[0].set_yticks([5, 10, 15, 20])
+    # ax[0].grid(True, axis='y', linewidth=.5, color=[.9, .9, .9])
 
     # Plot subject level drill-versus-step (stacked bar plot)
     drills = descr_stats_all_agents_df['n_drills'].values
@@ -527,16 +531,16 @@ fig.savefig(fig_2_fn, dpi=300, format='pdf')
 # scatter number of drills over rounds
 x = []
 y = []
-for sub in descr_stats_all_subs_df.index:
-    roundwise_drill_counts_column_names = [col for col in descr_stats_all_subs_df.columns if 'n_drills_r' in col]
-    roundnumbers = [int(col[-1]) for col in descr_stats_all_subs_df.columns if 'n_drills_r' in col]
-    x.extend(roundnumbers)
-    y.extend(descr_stats_all_subs_df.loc[sub, roundwise_drill_counts_column_names])
-fig_drill_r_scatter_fn = os.path.join(out_fig_dir, 'drills_roundwise.png')
-fig_drill_r_scatter, ax_drill_r_scatter = plt.subplots()
-ax_drill_r_scatter.scatter(x, y)
-ax_drill_r_scatter.set_ylim([0, max(y) + 5])
-ax_drill_r_scatter.set_xlabel('round')
-ax_drill_r_scatter.set_ylabel('number of drills')
-ax_drill_r_scatter.set_title('number of drills in each round')
-fig_drill_r_scatter.savefig(fig_drill_r_scatter_fn)
+# for sub in descr_stats_all_subs_df.index:
+#     roundwise_drill_counts_column_names = [col for col in descr_stats_all_subs_df.columns if 'n_drills_r' in col]
+#     roundnumbers = [int(col[-1]) for col in descr_stats_all_subs_df.columns if 'n_drills_r' in col]
+#     x.extend(roundnumbers)
+#     y.extend(descr_stats_all_subs_df.loc[sub, roundwise_drill_counts_column_names])
+# fig_drill_r_scatter_fn = os.path.join(out_fig_dir, 'drills_roundwise.png')
+# fig_drill_r_scatter, ax_drill_r_scatter = plt.subplots()
+# ax_drill_r_scatter.scatter(x, y)
+# ax_drill_r_scatter.set_ylim([0, max(y) + 5])
+# ax_drill_r_scatter.set_xlabel('round')
+# ax_drill_r_scatter.set_ylabel('number of drills')
+# ax_drill_r_scatter.set_title('number of drills in each round')
+# fig_drill_r_scatter.savefig(fig_drill_r_scatter_fn)
