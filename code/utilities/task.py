@@ -88,10 +88,10 @@ class Task:
         Evaluates the action in trial t
     """
 
-    def __init__(self, working_dir, n_rounds, dim, n_hides):
+    def __init__(self, working_dir, n_rounds, n_trials, dim, n_hides):
         self.working_dir = working_dir
         self.n_rounds = n_rounds
-        self.n_trials = n_rounds
+        self.n_trials = n_trials
         self.dim = dim
         self.n_nodes = self.dim ** 2  # Number of fields
         self.n_hides = n_hides

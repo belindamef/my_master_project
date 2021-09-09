@@ -1,4 +1,3 @@
-from .abm_structure import AbmStructure
 
 
 def define_agent_model(agent_model):

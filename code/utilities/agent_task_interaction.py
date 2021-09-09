@@ -69,7 +69,7 @@ def start_agent_task_interaction(working_dir, output_dir, n_blocks, n_rounds, n_
             sim_dat_b = pd.DataFrame()
 
             # Instantiate task object
-            task = Task(working_dir=working_dir, n_rounds=n_rounds,
+            task = Task(working_dir=working_dir, n_rounds=n_rounds, n_trials=n_trials,
                         dim=dim, n_hides=n_hides)
 
             # Get task configuration and set s_4 accordingly
