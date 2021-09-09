@@ -35,33 +35,43 @@ exp_data_dir = os.path.join(data_dir, 'rawdata', 'exp', f'{exp_label}')
 sim_data_dir = os.path.join(data_dir, 'rawdata', 'sim', f'{sim_label}')
 exp_proc_data_dir = os.path.join(data_dir, 'processed_data', 'exp', f'{exp_label}')
 sim_proc_data_dir = os.path.join(data_dir, 'processed_data', 'sim', f'{exp_label}')
-exp_events_all_subs_fn = os.path.join(exp_proc_data_dir, 'sub-all_task-th_run-all_beh')
-sim_events_all_subs_fn = os.path.join(sim_proc_data_dir, 'sub-all_task-th_run-all_beh')
-exp_run_ev_all_subs_fn = os.path.join(exp_proc_data_dir, 'sub-all_task-th_run-')
-sim_run_ev_all_subs_fn = os.path.join(sim_proc_data_dir, 'sub-all_task-th_run-')
 
-exp_descr_stats_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}', 'descr_stats')
-sim_descr_stats_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}', 'descr_stats')
-exp_grp_stats_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}', 'grp_lvl_stats')
-sim_grp_stats_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}', 'grp_lvl_stats')
+ev_exp_fn = os.path.join(exp_proc_data_dir, 'sub-all_task-th_run-all_beh')
+ev_sim_fn = os.path.join(sim_proc_data_dir, 'sub-all_task-th_run-all_beh')
+ev_exp_run_fn = os.path.join(exp_proc_data_dir, 'sub-all_task-th_run-')
+ev_sim_run_fn = os.path.join(sim_proc_data_dir, 'sub-all_task-th_run-')
+
+ds_exp_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}', 'descr_stats')
+ds_sim_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}', 'descr_stats')
+grp_stats_exp_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}', 'grp_lvl_stats')
+grp_stats_sim_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}', 'grp_lvl_stats')
+tw_exp_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}', 't_wise_stats')
+tw_sim_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}', 't_wise_stats')
 
 # Load data
-exp_ev_all_subs_df = pd.read_pickle(f'{exp_events_all_subs_fn}.pkl')
-sim_ev_all_subs_df = pd.read_pickle(f'{sim_events_all_subs_fn}.pkl')
-descr_stats_exp_df = pd.read_pickle(f'{exp_descr_stats_fn}.pkl')
-descr_stats_sim_df = pd.read_pickle(f'{sim_descr_stats_fn}.pkl')
-exp_grp_stats_df = pd.read_pickle(f'{exp_grp_stats_fn}.pkl')
-sim_grp_stats_df = pd.read_pickle(f'{sim_grp_stats_fn}.pkl')
-exp_run_ev = {}
-sim_run_ev = {}
-exp_ds_run = {}
-sim_ds_run = {}
+exp_ev_all_subs_df = pd.read_pickle(f'{ev_exp_fn}.pkl')
+sim_ev_all_subs_df = pd.read_pickle(f'{ev_sim_fn}.pkl')
+descr_stats_exp_df = pd.read_pickle(f'{ds_exp_fn}.pkl')
+descr_stats_sim_df = pd.read_pickle(f'{ds_sim_fn}.pkl')
+exp_grp_stats_df = pd.read_pickle(f'{grp_stats_exp_fn}.pkl')
+sim_grp_stats_df = pd.read_pickle(f'{grp_stats_sim_fn}.pkl')
+
+ev_exp_run = {}
+ev_sim_run = {}
+ds_exp_run = {}
+ds_sim_run = {}
+ds_sim_A_run = {}
+ds_sim_C_run = {}
+tw_exp_run = {}
 for block_ in range(n_blocks):
     this_block = block_ + 1
-    exp_run_ev[this_block] = pd.read_pickle(f'{exp_run_ev_all_subs_fn}{this_block:02d}_beh.pkl')
-    sim_run_ev[this_block] = pd.read_pickle(f'{sim_run_ev_all_subs_fn}{this_block:02d}_beh.pkl')
-    exp_ds_run[this_block] = pd.read_pickle(f'{exp_descr_stats_fn}_run-{this_block:02d}.pkl')
-    sim_ds_run[this_block] = pd.read_pickle(f'{sim_descr_stats_fn}_run-{this_block:02d}.pkl')
+    ev_exp_run[this_block] = pd.read_pickle(f'{ev_exp_run_fn}{this_block:02d}_beh.pkl')
+    ev_sim_run[this_block] = pd.read_pickle(f'{ev_sim_run_fn}{this_block:02d}_beh.pkl')
+    ds_exp_run[this_block] = pd.read_pickle(f'{ds_exp_fn}_run-{this_block:02d}.pkl')
+    ds_sim_run[this_block] = pd.read_pickle(f'{ds_sim_fn}_run-{this_block:02d}.pkl')
+    ds_sim_A_run[this_block] = ds_sim_run[this_block][ds_sim_run[this_block]['sub_id'].isin(['A1', 'A2', 'A3'])]
+    ds_sim_C_run[this_block] = ds_sim_run[this_block][ds_sim_run[this_block]['sub_id'].isin(['C1', 'C2', 'C3'])]
+    tw_exp_run[this_block] = pd.read_pickle(f'{tw_exp_fn}_run-{this_block:02d}.pkl')
 
 # Create general figure components
 sub_label_beh = [s_dir[(s_dir.find('sub-') + 4):] for s_dir in glob.glob(exp_data_dir + '/sub-*')]
@@ -79,38 +89,55 @@ n_blocks = np.max(exp_ev_all_subs_df['block'])
 n_rounds = np.max(exp_ev_all_subs_df['round'])
 n_trials = np.max(exp_ev_all_subs_df['trial']) - 1
 n_tr_max = int(n_blocks * n_rounds)
+n_tr_b = n_rounds
 
 # Initialize figure
 fig_fn = os.path.join(figures_dir, 'figure_1.png')
 plt, greens, blues, yellows = very_plotter.get_fig_template(plt)
 ax = {}
 fig = plt.figure(figsize=(16, 10))
-gs = gridspec.GridSpec(4, 7)
+gs = gridspec.GridSpec(4, 8)
 bar_width = 0.6
-half_bar_width = bar_width / 2
+half_bar_width = bar_width / 3
 
 # ------Plot subject level treasures discovery--------------------------------
-ax[0] = plt.subplot(gs[0, 0:2])
-this_ax = ax[0]
-very_plotter.plot_bar(ax=this_ax, x=0, height=np.mean(exp_ds_run[1]['n_tr'].div(n_tr_max)),
-                      yerr=np.std(ds_os_beh_df['n_tr'].div(n_tr_max)),
-                      colors=greens[0])
-very_plotter.plot_bar(ax=this_ax, x=[1, 1.5, 2], height=ds_A_sim_df['n_tr'].div(n_tr_max).values,
-                      colors=blues, bar_width=half_bar_width)
-very_plotter.plot_bar(ax=this_ax, x=[2.5, 3, 3.5], height=ds_C_sim_df['n_tr'].div(n_tr_max).values,
-                      colors=yellows, bar_width=half_bar_width)
+for block in range(n_blocks):
+    ax[block] = plt.subplot(gs[block, 0:3])
+    this_ax = ax[block]
+    block += 1
+    very_plotter.plot_bar(ax=this_ax, x=0, height=np.mean(ds_exp_run[block]['n_tr'].div(n_tr_b)),
+                          yerr=np.std(ds_exp_run[1]['n_tr'].div(n_tr_b)),
+                          colors=greens[0])
+    very_plotter.plot_bar(ax=this_ax, x=[1, 1.5, 2], height=ds_sim_A_run[block]['n_tr'].div(n_tr_b).values,
+                          colors=blues, bar_width=half_bar_width)
+    very_plotter.plot_bar(ax=this_ax, x=[2.5, 3, 3.5], height=ds_sim_C_run[block]['n_tr'].div(n_tr_b).values,
+                          colors=yellows, bar_width=half_bar_width)
 
-very_plotter.plot_bar_scatter(this_ax, ds_os_beh_df['n_tr'].div(n_tr_max), color=greens[1], bar_width=bar_width)
+    very_plotter.plot_bar_scatter(this_ax, ds_exp_run[block]['n_tr'].div(n_tr_b), color=greens[1], bar_width=bar_width)
 
-very_plotter.config_axes(this_ax, title=f"Participant and Agent's task performance",
-                         y_label="\% Treasures", y_lim=[0, 1],
-                         xticks=[0, 1, 1.5, 2, 2.5, 3, 3.5],
-                         xticklabels=['Participants', 'A1', 'A2', 'A3', 'C1', 'C2', 'C3'])
-
+    very_plotter.config_axes(this_ax, title=f"Task performance",
+                             y_label="\% Treasures", y_lim=[0, 1],
+                             xticks=[0, 1, 1.5, 2, 2.5, 3, 3.5],
+                             xticklabels=['Participants', 'A1', 'A2', 'A3', 'C1', 'C2', 'C3'])
 
 # ------Plot trialwise tr_disc--------------------------------------------
-ax[2] = plt.subplot(gs[0, 2:6])
-#ax[2].scatter()
+for block in range(n_blocks):
+    block += 1
+    ax[block] = plt.subplot(gs[block - 1, 3:8])
+    this_ax = ax[block]
+    tw_exp_df = ev_exp_run[block].groupby('trial_cont')
+    x = tw_exp_run[block].trial.values
+    y = tw_exp_run[block].p_drills.values
+    this_ax.scatter(x, y, alpha=0.6, s=6, color=greens[1])
+    for i, agent in enumerate(['A1', 'A2', 'A3']):
+        action_types = list(np.nan_to_num(ev_sim_run[1][ev_sim_run[1]['sub_id'] == agent].action_type.values))
+        y_new = [(1 + i * 0.05) if action == 'drill' else np.nan for action in action_types]
+        this_ax.scatter(x, y_new, marker="v", facecolors='none', s=6, edgecolors=blues[i])
+    for i, agent in enumerate(['C1', 'C3']):
+        yellows_ = [yellows[0], yellows[2]]
+        action_types = list(np.nan_to_num(ev_sim_run[1][ev_sim_run[1]['sub_id'] == agent].action_type.values))
+        y_new = [(1.15 + i * 0.05) if action == 'drill' else np.nan for action in action_types]
+        this_ax.scatter(x, y_new, marker="o", facecolors='none', s=6, edgecolors=yellows_[i])
 
 # ------Plot subject level %drills--------------------------------------------
 ax[4] = plt.subplot(gs[3, 0:2])
@@ -123,8 +150,8 @@ very_plotter.plot_bar(ax=this_ax, x=[2.5, 3, 3.5], height=ds_C_sim_df['p_drills'
                       colors=yellows, bar_width=half_bar_width)
 
 very_plotter.plot_bar_scatter(this_ax, np.around(ds_os_beh_df['p_drills'], 2), color=greens[1], bar_width=bar_width)
-very_plotter.config_axes(this_ax, title=f"Participant and Agent's action choices",
-                         y_label='\% Informative actions', y_lim=[0, 1],
+very_plotter.config_axes(this_ax, title=f"Action choices",
+                         y_label='\% Informative actions', y_lim=[0, 1.3],
                          xticks=[0, 1, 1.5, 2, 2.5, 3, 3.5],
                          xticklabels=['Participants', 'A1', 'A2', 'A3', 'C1', 'C2', 'C3'])
 
@@ -135,3 +162,21 @@ very_plotter.add_letters(ax)
 # Print subject level descriptive figure
 fig.tight_layout()
 fig.savefig(fig_fn, dpi=100, format='png')
+#
+#
+# ax[0] = plt.subplot(gs[0, 0:2])
+# this_ax = ax[0]
+# very_plotter.plot_bar(ax=this_ax, x=0, height=np.mean(ds_os_beh_df['n_tr'].div(n_tr_max)),
+#                       yerr=np.std(ds_os_beh_df['n_tr'].div(n_tr_max)),
+#                       colors=greens[0])
+# very_plotter.plot_bar(ax=this_ax, x=[1, 1.5, 2], height=ds_A_sim_df['n_tr'].div(n_tr_max).values,
+#                       colors=blues, bar_width=half_bar_width)
+# very_plotter.plot_bar(ax=this_ax, x=[2.5, 3, 3.5], height=ds_C_sim_df['n_tr'].div(n_tr_max).values,
+#                       colors=yellows, bar_width=half_bar_width)
+#
+# very_plotter.plot_bar_scatter(this_ax, ds_os_beh_df['n_tr'].div(n_tr_max), color=greens[1], bar_width=bar_width)
+#
+# very_plotter.config_axes(this_ax, title=f"Participant and Agent's task performance",
+#                          y_label="\% Treasures", y_lim=[0, 1],
+#                          xticks=[0, 1, 1.5, 2, 2.5, 3, 3.5],
+#                          xticklabels=['Participants', 'A1', 'A2', 'A3', 'C1', 'C2', 'C3'])
