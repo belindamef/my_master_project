@@ -555,24 +555,31 @@ def show_instructions():
     stimuli.grid.draw()
     stimuli.cube.draw()
     stimuli.current_pos.draw()
+    event.waitKeys(keyList='up')
     win.flip()
     event.waitKeys(keyList='up')
     pos_demo -= 5  # Present movement to new field
     pos_xy_demo = rowcol_to_xy(node_to_rowcol(pos_demo, dim), dim, gridsize)
     stimuli.cube.pos = pos_xy_demo
     stimuli.cube.draw()
+    stimuli.current_pos.pos = pos_xy_demo
+    stimuli.current_pos.draw()
     stimuli.grid.draw()
+    event.waitKeys(keyList='up')
     win.flip()
+    event.waitKeys(keyList='up')
     core.wait(0.5)
     stimuli.instr_top.text = "...the treasure will be revealed."
+    stimuli.instr_top.draw()
     pos_demo += 5  # Reset position
     stimuli.treasure.pos = pos_xy_demo
     stimuli.treasure.size = cube_size
+    stimuli.cube.draw()
     stimuli.treasure.draw()
     stimuli.instr_low.autoDraw = True
     stimuli.grid.draw()
     win.flip()
-    event.waitKeys()
+    event.waitKeys(keyList='up')
 
     # Explain the purpose hiding spots
     pos_xy_demo = rowcol_to_xy(node_to_rowcol(pos_demo, dim), dim, gridsize)
@@ -581,20 +588,23 @@ def show_instructions():
     stimuli.instr_center.draw()
     stimuli.instr_top.autoDraw = False
     win.flip()
+    event.waitKeys(keyList='up')
     stimuli.grid.draw()
     stimuli.instr_top.text = f'Only {n_hides} of the {n_nodes} fields are hiding spots. \n'
     stimuli.instr_top.autoDraw = True
     event.waitKeys()
     win.flip()
     event.waitKeys()
+    event.waitKeys(keyList='up')
 
     # Show hiding spot examples
-    pages = [f'Hiding spots remain the same throughout all 10 rounds of one game',
+    pages = [f"Only {n_hides} of the {n_nodes} fields are hiding spots. \n",
              "The hiding spots you see here are examples. Each game has new hiding spots. ",
+             f'Hiding spots remain the same throughout all 10 rounds of one game.',
              "At the beginning of each round the treasure "
              "will be hidden in one of these hiding spots.",
              "It could for example be here",
-             "or here",
+             "or here",  # TODO: This is starting position! Change
              "or here"]
     for index, example in enumerate(pages):
         stimuli.instr_top.text = example
@@ -606,6 +616,7 @@ def show_instructions():
         stimuli.grid.draw()
         win.flip()
         event.waitKeys()
+        event.waitKeys(keyList='up')
 
     # Show not hiding spot examples
     not_hides_examples = ["but note here",
@@ -638,7 +649,9 @@ def show_instructions():
             stimuli.pos_cross.draw()
 
         win.flip()
+        event.waitKeys(keyList='up')
         event.waitKeys()
+        event.waitKeys(keyList='up')
     stimuli.treasure.opacity = 1.0  # Reset treasure opacity
     stimuli.treasure.size = cube_size  # Reset treasure size
     stimuli.instr_top.autoDraw = False
@@ -677,8 +690,10 @@ def show_instructions():
         else:
             stimuli.instr_center.text = page
             stimuli.instr_center.draw()
+        event.waitKeys(keyList='up')
         win.flip()
         event.waitKeys()
+        event.waitKeys(keyList='up')
     stimuli.instr_low.autoDraw = False
 
     # Demonstrate "drilling" action
@@ -692,7 +707,9 @@ def show_instructions():
     stimuli.score_count.autoDraw = True
     stimuli.score_tr.autoDraw = True
     stimuli.grid.draw()
+    event.waitKeys(keyList='up')
     win.flip()
+    event.waitKeys(keyList='up')
     event.waitKeys()
     moves -= 1  # Update move count
     stimuli.move_count.text = f"Moves left: {moves} / {exp_trials}"
@@ -708,7 +725,9 @@ def show_instructions():
     hide_stims_demo[hides_demo[3]].draw()
     stimuli.score_tr.draw()
     stimuli.grid.draw()
+    event.waitKeys(keyList='up')
     win.flip()
+    event.waitKeys(keyList='up')
     core.wait(2.0)
 
     # Continue to explain the purpose of hiding spots

@@ -3,7 +3,6 @@ import os
 import pandas as pd
 from PIL import Image
 from psychopy import monitors, visual
-from utilities.abm_structure import AbmStructure
 from utilities.create_stimuli import StimulusCreation
 
 # Specify dataset, 'sim' or 'beh' and run (e.g. 'pretest_4')

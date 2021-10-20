@@ -24,7 +24,7 @@ File creation
 
 """
 # Specify dataset and experiment name
-dataset = 'sim'  # 'exp' or 'sim'
+dataset = 'exp'  # 'exp' or 'sim'
 exp_label = 'main'
 dim = 5
 
@@ -46,6 +46,7 @@ if not os.path.exists(out_fig_dir):
     os.makedirs(out_fig_dir)
 
 # Define file names
+part_fn = os.path.join(input_data_dir, 'participants.tsv')
 events_all_subs_fn = os.path.join(out_proc_data_dir, f'sub-all_task-th_run-all_beh')
 descr_stats_fn = os.path.join(out_descr_stats_dir, 'descr_stats')
 grp_lvl_stats_fn = os.path.join(out_descr_stats_dir, 'grp_lvl_stats')
@@ -95,9 +96,6 @@ if os.path.exists(f'{r_wise_stats_fn}.pkl'):
 else:
     r_wise_stats_df = pd.DataFrame()
     edited_r_wise_stats = True
-
-# Initialize components for belief state colormaps
-# viridis = cm.get_cmap('viridis', 256)
 
 # Create file list for all subjects
 ev_file_list = glob.glob(input_data_dir + '/*/*/sub-*_task-th_beh.tsv')
@@ -178,7 +176,8 @@ for index, events_fn in enumerate(ev_file_list):
 # ------Evaluate group-level stats-------------------------
 if grp_lvl_stats_df.empty or ('whole_sample' not in grp_lvl_stats_df.sub_id.values):
     print("Computing 'whole sample' descr stats")
-    descr_stats_whole_sample = DescrStats(events_all_subs_df, dataset, subject='whole_sample')
+    descr_stats_whole_sample = DescrStats(events_all_subs_df, dataset, subject='whole_sample',
+                                          part_fn=part_fn)
     if dataset == 'sim':
         descr_stats_whole_sample.agent = np.nan
     descr_stats_whole_sample_df = descr_stats_whole_sample.perform_descr_stats()
@@ -210,10 +209,11 @@ if edited_t_wise_stats:  # Change check for 'output_incomplete' to output-specif
     t_wise_stats_df = grp_stats.eval_t_wise_stats(groupby='trial_contin')
 
 # TODO: not yet robust!
-t_wise_bw = {}
-for block_, block_df in events_bw.items():
-    grp_stats = GroupStats(block_df, dataset, descr_stats_bw[block_])
-    t_wise_bw[block_] = grp_stats.eval_t_wise_stats(groupby='trial_cont')
+if dataset == 'exp':
+    t_wise_bw = {}
+    for block_, block_df in events_bw.items():
+        grp_stats = GroupStats(block_df, dataset, descr_stats_bw[block_])
+        t_wise_bw[block_] = grp_stats.eval_t_wise_stats(groupby='trial_cont')
 
 if edited_r_wise_stats:
     print('Computing roundwise stats')

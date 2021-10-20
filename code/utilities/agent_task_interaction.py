@@ -49,10 +49,10 @@ def start_agent_task_interaction(working_dir, output_dir, n_blocks, n_rounds, n_
         # Create output dir and fn
         sim_data = pd.DataFrame()
         sub_id = agent_model
-        sub_dir = os.path.join(output_dir, f'sub-{sub_id}')
+        sub_dir = os.path.join(output_dir, f'sub-{sub_id}', 'beh')
         if not os.path.exists(sub_dir):
             os.makedirs(sub_dir)
-        fn_stem = os.path.join(sub_dir, 'beh', f'sub-{sub_id}')
+        fn_stem = os.path.join(sub_dir, f'sub-{sub_id}_task-th_beh')
 
         start = time.time()
 
@@ -328,5 +328,5 @@ def start_agent_task_interaction(working_dir, output_dir, n_blocks, n_rounds, n_
             print(f'Agent {agent_model} finished block {this_block} in {end-start} sec')
 
         # Save data
-        with open(f'{fn_stem}_task-th_beh.tsv', 'w') as tsv_file:
+        with open(f'{fn_stem}.tsv', 'w') as tsv_file:
             tsv_file.write(sim_data.to_csv(sep='\t', na_rep=np.NaN, index=False))
