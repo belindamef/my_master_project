@@ -4,6 +4,7 @@
 *manuscript/*
 *ethics/*
 *doc*
+*archive*
 .my-master-project
 .DS_Store
 .idea/
