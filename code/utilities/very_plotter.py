@@ -73,7 +73,7 @@ def get_fig_template(plt):
     col_A = [[value / 255 for value in list_] for list_ in [curl20[2], curl20[8], curl20[6]]]
 
     col_exp = [[value / 255 for value in list_] for list_ in [viridis_20[4], viridis_20[1]]]
-    col_A = [[value / 255 for value in list_] for list_ in [viridis_20[10], viridis_20[15], viridis_20[19]]]
+    col_A = [[value / 255 for value in list_] for list_ in [viridis_20[15], viridis_20[18], viridis_20[9]]]
     return plt, col_exp, col_A, col_C  # , col_A, reds
 
 
@@ -101,11 +101,12 @@ def config_axes(ax, y_label=None, y_lim=None, title=None, x_label=None, x_lim=No
         ax.set_yticklabels(ytickslabels)
 
 
-def plot_bar(ax, x, height, colors, bar_width=0.6, yerr=None):
+def plot_bar(ax, x, height, colors, bar_width=0.6, errorbar_size=10, yerr=None):
     """Plot bars with error bar if given"""
     ax.bar(x=x, height=height, yerr=yerr,
-                 width=bar_width, capsize=10,
-                 color=colors, zorder=0)
+                 width=bar_width, capsize=errorbar_size,
+                 color=colors, zorder=0,
+                 clip_on=False)
 
 
 def plot_bar_scatter(ax, data, color, bar_width):
@@ -127,12 +128,12 @@ def plot_bar_scatter(ax, data, color, bar_width):
         y_x_pos.extend(positions)
         y_values.extend(y_count * [y_value])
 
-    ax.scatter(y_x_pos, y_values, alpha=0.6, s=6, color=color, zorder=1)
+    ax.scatter(y_x_pos, y_values, alpha=0.4, s=6, color=color, zorder=1, clip_on=False)
 
 
 def add_letters(ax):
     """Add letters to subplots"""
     for key, value in ax.items():
-        value.text(-0.05, 1.1, string.ascii_lowercase[key],
+        value.text(-0.05, 1.1, string.ascii_uppercase[key],
                    transform=value.transAxes,
                    size=20, weight='bold')

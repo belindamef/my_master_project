@@ -565,9 +565,7 @@ def show_instructions():
     stimuli.current_pos.pos = pos_xy_demo
     stimuli.current_pos.draw()
     stimuli.grid.draw()
-    event.waitKeys(keyList='up')
     win.flip()
-    event.waitKeys(keyList='up')
     core.wait(0.5)
     stimuli.instr_top.text = "...the treasure will be revealed."
     stimuli.instr_top.draw()

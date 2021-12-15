@@ -61,6 +61,7 @@ descr_stats_sim_df = pd.read_pickle(f'{ds_sim_fn}.pkl')
 exp_grp_stats_df = pd.read_pickle(f'{grp_stats_exp_fn}.pkl')
 sim_grp_stats_df = pd.read_pickle(f'{grp_stats_sim_fn}.pkl')
 
+# Load blockwise data
 ev_exp_run = {}
 ev_sim_run = {}
 ds_exp_run = {}
@@ -160,7 +161,7 @@ fig_fn = os.path.join(figures_dir, 'figure_1.png')
 plt, col_exp, col_A, col_C = very_plotter.get_fig_template(plt)
 ax = {}
 fig = plt.figure(figsize=(16, 10))
-gs = gridspec.GridSpec(4, 8)
+gs = gridspec.GridSpec(4, 10)
 bar_width = 0.6
 half_bar_width = bar_width / 3
 
@@ -169,100 +170,201 @@ for block in range(n_blocks):
     ax[block] = plt.subplot(gs[block, 0:2])
     this_ax = ax[block]
     block += 1
-    very_plotter.plot_bar(ax=this_ax, x=0,  height=np.mean(ds_exp_run[block]['n_tr'].div(n_tr_b)),
-                          yerr=np.std(ds_exp_run[1]['n_tr'].div(n_tr_b)),
+    very_plotter.plot_bar(ax=this_ax, x=0,  height=grp_lvl_stats_bw_exp[block]['mean_tr_over_subs'],
+                          yerr=grp_lvl_stats_bw_exp[block]['std_tr_over_subs'],
                           colors=col_exp[0])
-    very_plotter.plot_bar(ax=this_ax, x=[1, 1.5, 2], height=ds_sim_A_run[block]['n_tr'].div(n_tr_b).values,
+    print(f"parti mean n_tr: {np.mean(ds_exp_run[block]['n_tr'])}")
+    print(f"part std n_tr: {np.std(ds_exp_run[block]['n_tr'])}")
+    very_plotter.plot_bar(ax=this_ax, x=[1, 1.5, 2], height=grp_lvl_stats_bw_sim_A[block]['mean_tr_over_subs'].values,
                           colors=col_A, bar_width=half_bar_width)
-    very_plotter.plot_bar(ax=this_ax, x=[2.5, 3, 3.5], height=ds_sim_C_run[block]['n_tr'].div(n_tr_b).values,
-                          colors=col_C, bar_width=half_bar_width)
+    very_plotter.plot_bar(ax=this_ax, x=[2.5, 3, 3.5], height=grp_lvl_stats_bw_sim_C[block]['mean_tr_over_subs'].values,
+                          yerr=grp_lvl_stats_bw_sim_C[block]['std_tr_over_subs'], colors=col_C, bar_width=half_bar_width,
+                          errorbar_size=3)
 
-    very_plotter.plot_bar_scatter(this_ax, ds_exp_run[block]['n_tr'].div(n_tr_b), color=col_exp[1], bar_width=bar_width)
+    very_plotter.plot_bar_scatter(this_ax, ds_exp_run[block]['n_tr'], color=col_exp[1], bar_width=bar_width)
 
-    very_plotter.config_axes(this_ax, title=f"Task performance",
-                             y_label="Number of Treasures", y_lim=[0, 1],
+    very_plotter.config_axes(this_ax,
+                             y_label="Number of Treasures", y_lim=[0, n_tr_b],
+                             xticks=[0, 1, 1.5, 2, 2.5, 3, 3.5],
+                             xticklabels=['Participants', 'A1', 'A2', 'A3', 'C1', 'C2', 'C3'],
+                             yticks=np.linspace(0, n_tr_b, 6),
+                             ytickslabels=np.around(np.linspace(0, n_tr_b, 6), 2))
+
+very_plotter.config_axes(ax[0], title="Task performance")
+
+# Add letter
+very_plotter.add_letters({0: ax[0]})
+
+# ------Plot subject level %drills--------------------------------------------
+for block in range(n_blocks):
+    ax[block] = plt.subplot(gs[block, 2:4])
+    this_ax = ax[block]
+    block += 1
+    very_plotter.plot_bar(ax=this_ax, x=0,  height=grp_lvl_stats_bw_exp[block]['mean_drills'],
+                          colors=col_exp[0])
+                           #yerr = grp_lvl_stats_bw_exp[block]['std_drills'])
+    very_plotter.plot_bar(ax=this_ax, x=[1, 1.5, 2], height=grp_lvl_stats_bw_sim_A[block]['mean_drills'].values,
+                          colors=col_A, bar_width=half_bar_width)
+    very_plotter.plot_bar(ax=this_ax, x=[2.5, 3, 3.5], height=grp_lvl_stats_bw_sim_C[block]['mean_drills'].values,
+                         colors=col_C, bar_width=half_bar_width)
+                         #yerr=grp_lvl_stats_bw_sim_C[block]['std_drills'].values, errorbar_size=3)
+
+    very_plotter.plot_bar_scatter(this_ax, descr_stats_all_subs_bw_exp[block]['mean_drills'], color=col_exp[1],
+                                  bar_width=bar_width)
+
+    very_plotter.config_axes(this_ax,
+                             y_label="\% Informative actions", y_lim=[0, 1],
                              xticks=[0, 1, 1.5, 2, 2.5, 3, 3.5],
                              xticklabels=['Participants', 'A1', 'A2', 'A3', 'C1', 'C2', 'C3'],
                              yticks=np.linspace(0, 1.0, 6),
                              ytickslabels=np.around(np.linspace(0, 1.0, 6), 2))
 
-# ------Plot trialwise tr_disc--------------------------------------------
+very_plotter.config_axes(ax[0], title="Action choice rates")
+
+# Add letter
+very_plotter.add_letters({1: ax[0]})
+
+# ------Plot trialwise action choices--------------------------------------------
 s = 14
 for block in range(n_blocks):
     block += 1
-    ax[block] = plt.subplot(gs[block - 1, 2:8])
+    ax[block] = plt.subplot(gs[block - 1, 4:10])
     this_ax = ax[block]
-    tw_exp_df = ev_exp_run[block].groupby('trial_cont')
     x = tw_exp_run[block].trial.values
-    y = tw_exp_run[block].p_drills.values
-    this_ax.scatter(x, y, alpha=0.6, s=s, color=col_exp[1], label="Participant's \n average") #facecolors='none', edgecolors=col_exp[1])
-    for i, agent in enumerate(['A1', 'A2', 'A3']):
-        action_types = list(np.nan_to_num(ev_sim_run[block][ev_sim_run[block]['sub_id'] == agent].action_type.values))
-        y_drills = [(1.2 + i * 0.2) if action == 'drill' else np.nan for action in action_types]
-        y_steps = [(1.1 + i * 0.2) if action == 'step' else np.nan for action in action_types]
-        #this_ax.scatter(x, y_steps, marker="v", s=s, edgecolors=col_A[i + 1], label=f'{agent} step', facecolors='black') #, facecolors='none', edgecolors=col_A[i])
-        #this_ax.scatter(x, y_drills, marker="v", s=s, color=col_A[i + 1], label=f'{agent} drill')
-        this_ax.scatter(x, y_steps, marker="o", s=s, edgecolors=col_A[i], label=f'{agent} step', facecolors='none') #, facecolors='none', edgecolors=col_A[i])
-        this_ax.scatter(x, y_drills, marker="o", s=s, color=col_A[i], label=f'{agent} drill')
-    for i, agent in enumerate(['C1', 'C2', 'C3']):
-        #yellows_ = [col_C[0], col_C[2]]
-        yellows_ = col_C
-        action_types = list(np.nan_to_num(ev_sim_run[block][ev_sim_run[block]['sub_id'] == agent].action_type.values))
-        y_drills = [(1.8 + i * 0.2) if action == 'drill' else np.nan for action in action_types]
-        y_steps = [(1.7 + i * 0.2) if action == 'step' else np.nan for action in action_types]
-        #this_ax.scatter(x, y_steps, marker="o", s=s, edgecolors=yellows_[i], label=f'{agent} step', facecolors='black')
-        #this_ax.scatter(x, y_drills, marker="o", s=s, facecolors='none', edgecolors=yellows_[i], label=f'{agent} drill')
-        this_ax.scatter(x, y_steps, marker="v", s=s, edgecolors=yellows_[i], label=f'{agent} step', facecolors='none')
-        this_ax.scatter(x, y_drills, marker="v", s=s, color=yellows_[i], label=f'{agent} drill')
+    y = tw_exp_run[block].mean_drill.values
+    this_ax.scatter(x, y, alpha=0.2, s=s, color=col_exp[1], clip_on=False,
+                    label="Participant's \n group average") #facecolors='none', edgecolors=col_exp[1])
 
+    # for i, agent in enumerate(['A1', 'A2', 'A3']):
+    #     action_types = list(np.nan_to_num(ev_sim_run[block][ev_sim_run[block]['sub_id'] == agent].action_type.values))
+    #     y_drills = [(1.2 + i * 0.2) if action == 'drill' else np.nan for action in action_types]
+    #     y_steps = [(1.1 + i * 0.2) if action == 'step' else np.nan for action in action_types]
+    #     #this_ax.scatter(x, y_steps, marker="v", s=s, edgecolors=col_A[i + 1], label=f'{agent} step', facecolors='black') #, facecolors='none', edgecolors=col_A[i])
+    #     #this_ax.scatter(x, y_drills, marker="v", s=s, color=col_A[i + 1], label=f'{agent} drill')
+    #     this_ax.scatter(x, y_steps, marker="o", s=s, edgecolors=col_A[i], label=f'{agent} step', facecolors='none') #, facecolors='none', edgecolors=col_A[i])
+    #     this_ax.scatter(x, y_drills, marker="o", s=s, color=col_A[i], label=f'{agent} drill')
+    # for i, agent in enumerate(['C1', 'C2', 'C3']):
+    #     #yellows_ = [col_C[0], col_C[2]]
+    #     yellows_ = col_C
+    #     action_types = list(np.nan_to_num(ev_sim_run[block][ev_sim_run[block]['sub_id'] == agent].action_type.values))
+    #     y_drills = [(1.8 + i * 0.2) if action == 'drill' else np.nan for action in action_types]
+    #     y_steps = [(1.7 + i * 0.2) if action == 'step' else np.nan for action in action_types]
+    #     #this_ax.scatter(x, y_steps, marker="o", s=s, edgecolors=yellows_[i], label=f'{agent} step', facecolors='black')
+    #     #this_ax.scatter(x, y_drills, marker="o", s=s, facecolors='none', edgecolors=yellows_[i], label=f'{agent} drill')
+    #     this_ax.scatter(x, y_steps, marker="v", s=s, edgecolors=yellows_[i], label=f'{agent} step', facecolors='none')
+    #     this_ax.scatter(x, y_drills, marker="v", s=s, color=yellows_[i], label=f'{agent} drill')
+
+    # ------Plot round-wise  averages----------------------------
+    # Experimental data
+    tw_exp_run_grpby_round = tw_exp_run[block].groupby('round')
+    x = [((round_ * 12) - 5.5) for round_, tw_exp_run_thisround in tw_exp_run_grpby_round]
+    y = [np.mean(tw_exp_run_thisround['mean_drill']) for round_, tw_exp_run_thisround in tw_exp_run_grpby_round]
+    e = [np.std(tw_exp_run_thisround['mean_drill']) for round_, tw_exp_run_thisround in tw_exp_run_grpby_round]
+    this_ax.errorbar(x, y, alpha=0.7, markersize=4, yerr=e, color=col_exp[1], fmt='o', linestyle='-', linewidth=0.8,
+                     label="Participant's \n group average over round", clip_on=False)
+
+    # Specify agent colors
+    agent_colors = col_A + col_C
+    i = 0
+    ev_sim_run_grpby_agent = ev_sim_run[block].groupby('sub_id')
+    for agent, agent_df in ev_sim_run_grpby_agent:
+        if 'C' in agent:
+            continue
+        agent_df_grpbyround = agent_df.groupby('round')
+        vlines = [(round_ * 12 - 11) for round_, ev_this_agent_thisround in agent_df_grpbyround]
+        x = [((round_ * 12) - 5.5) for round_, ev_this_agent_thisround in agent_df_grpbyround]
+        y = [np.mean(ev_this_agent_thisround['action_type_num']) for round_, ev_this_agent_thisround in agent_df_grpbyround]
+        e = [np.std(ev_this_agent_thisround['action_type_num']) for round_, ev_this_agent_thisround in agent_df_grpbyround]
+        this_ax.errorbar(x, y, alpha=0.7, markersize=4, color=agent_colors[i], fmt='o', linestyle='-',
+                         linewidth=0.8, clip_on=False, label=f"{agent}'s average over round")
+        this_ax.vlines(vlines, colors=[.9, .9, .9], linewidth=.4, ymin=0, ymax=1)
+        i += 1
+
+    vlines.append(120)
     very_plotter.config_axes(this_ax,
-                             x_lim=[0, 140], x_label='Trial', xticks=(np.linspace(1, 120, 11)),
+                             x_lim=[0, 150], x_label='Trial', xticks=vlines,
                              xticklabels=np.around((np.linspace(1, 120, 11))).astype(int),
-                             y_label="\% Informative", y_lim=[0, 2],
+                             y_label="\% Informative actions", y_lim=[0, 1],
                              yticks=np.linspace(0, 1.0, 6),
                              ytickslabels=np.around(np.linspace(0, 1.0, 6), 2))
+
 ax[1].legend(loc='center right')
-    # y_labels = [item.get_text() for item in this_ax.get_yticklabels()]
-    # y_labels[-1] = ''
-    # this_ax.set_yticklabels(y_labels)
-very_plotter.config_axes(ax[1], title="Action choices")
 
-# ------Plot subject level %drills--------------------------------------------
+very_plotter.config_axes(ax[1], title="Trial- and roundwise action choice rates")
+# Add letter
+very_plotter.add_letters({2: ax[1]})
+
+# ------Plot simulation 100 results--------------------------------
+# Treasure discovery
 ax[4] = plt.subplot(gs[3, 0:2])
 this_ax = ax[4]
-very_plotter.plot_bar(ax=this_ax, x=0, height=np.mean(ds_os_beh_df['p_drills']), yerr=np.std(ds_os_beh_df['p_drills']),
-                      colors=col_exp[0])
-very_plotter.plot_bar(ax=this_ax, x=[1, 1.5, 2], height=ds_A_sim_df['p_drills'].values,
+block += 1
+very_plotter.plot_bar(ax=this_ax, x=[1, 1.5, 2], height=grp_lvl_stats_sim_100_A['mean_tr_over_b'].values,
+                      yerr=grp_lvl_stats_sim_100_A['std_tr_over_b'], errorbar_size=3,
                       colors=col_A, bar_width=half_bar_width)
-very_plotter.plot_bar(ax=this_ax, x=[2.5, 3, 3.5], height=ds_C_sim_df['p_drills'].values,
-                      colors=col_C, bar_width=half_bar_width)
+very_plotter.plot_bar(ax=this_ax, x=[2.5, 3, 3.5], height=grp_lvl_stats_sim_100_C['mean_tr_over_b'].values,
+                      yerr=grp_lvl_stats_sim_100_C['std_tr_over_b'], colors=col_C, bar_width=half_bar_width,
+                      errorbar_size=3)
 
-very_plotter.plot_bar_scatter(this_ax, np.around(ds_os_beh_df['p_drills'], 2), color=col_exp[1], bar_width=bar_width)
-very_plotter.config_axes(this_ax, title=f"Average choice rates",
-                         y_label='\% Informative actions', y_lim=[0, 1.4],
-                         xticks=[0, 1, 1.5, 2, 2.5, 3, 3.5],
-                         xticklabels=['Participants', 'A1', 'A2', 'A3', 'C1', 'C2', 'C3'])
+very_plotter.config_axes(this_ax,
+                         title="Task performance",
+                         y_label="Average Number of Treasures", y_lim=[0, n_tr_b],
+                         xticks=[1, 1.5, 2, 2.5, 3, 3.5],
+                         xticklabels=['A1', 'A2', 'A3', 'C1', 'C2', 'C3'],
+                         yticks=np.linspace(0, n_tr_b, 6),
+                         ytickslabels=np.around(np.linspace(0, n_tr_b, 6), 2))
 
-# ------Plot subject level %drills--------------------------------------------
-ax[4] = plt.subplot(gs[3, 0:2])
-this_ax = ax[4]
-very_plotter.plot_bar(ax=this_ax, x=0, height=np.mean(ds_os_beh_df['p_drills']), yerr=np.std(ds_os_beh_df['p_drills']),
-                      colors=col_exp[0])
-very_plotter.plot_bar(ax=this_ax, x=[1, 1.5, 2], height=ds_A_sim_df['p_drills'].values,
+# Add letter
+very_plotter.add_letters({3: ax[4]})
+
+# Overall Action choice rates
+ax[5] = plt.subplot(gs[3, 2:4])
+this_ax = ax[5]
+very_plotter.plot_bar(ax=this_ax, x=[1, 1.5, 2], height=grp_lvl_stats_sim_100_A['mean_drills'].values,
                       colors=col_A, bar_width=half_bar_width)
-very_plotter.plot_bar(ax=this_ax, x=[2.5, 3, 3.5], height=ds_C_sim_df['p_drills'].values,
-                      colors=col_C, bar_width=half_bar_width)
+                      #yerr=grp_lvl_stats_bw_sim_100_A['std_drills'], errorbar_size=3)
+very_plotter.plot_bar(ax=this_ax, x=[2.5, 3, 3.5], height=grp_lvl_stats_sim_100_C['mean_drills'].values,
+                     colors=col_C, bar_width=half_bar_width)
+                     #yerr=grp_lvl_stats_bw_sim_C[block]['std_drills'].values, errorbar_size=3)
 
-very_plotter.plot_bar_scatter(this_ax, np.around(ds_os_beh_df['p_drills'], 2), color=col_exp[1], bar_width=bar_width)
-very_plotter.config_axes(this_ax, title=f"Average choice rates",
-                         y_label='\% Informative actions', y_lim=[0, 1.4],
-                         xticks=[0, 1, 1.5, 2, 2.5, 3, 3.5],
-                         xticklabels=['Participants', 'A1', 'A2', 'A3', 'C1', 'C2', 'C3'])
+very_plotter.config_axes(this_ax,
+                         title="Action choice rates",
+                         y_label="\% Informative actions", y_lim=[0, 1],
+                         xticks=[1, 1.5, 2, 2.5, 3, 3.5],
+                         xticklabels=['A1', 'A2', 'A3', 'C1', 'C2', 'C3'],
+                         yticks=np.linspace(0, 1.0, 6),
+                         ytickslabels=np.around(np.linspace(0, 1.0, 6), 2))
 
+# Roundwise action choices
+s = 14
+ax[6] = plt.subplot(gs[3, 4:10])
+this_ax = ax[6]
+x = tw_exp_run[1].trial.values
 
+# ------Plot round-wise  averages----------------------------
+# Specify agent colors
+agent_colors = col_A + col_C
+i = 0
+for agent, agent_tw_df in tw_sim_100_aw.items():
 
-# Add letter to sub_id-figures
-very_plotter.add_letters(ax)
+    agent_df_grpbyround = agent_tw_df.groupby('round')
+    vlines = [(round_ * 12 - 11) for round_, tw_this_agent_thisround in agent_df_grpbyround]
+    x = [((round_ * 12) - 5.5) for round_, tw_this_agent_thisround in agent_df_grpbyround]
+    y = [np.nanmean(ev_this_agent_thisround['p_drills']) for round_, ev_this_agent_thisround in agent_df_grpbyround]
+    e = [np.nanstd(ev_this_agent_thisround['p_drills']) for round_, ev_this_agent_thisround in agent_df_grpbyround]
+    this_ax.errorbar(x, y, alpha=0.7, markersize=4, color=agent_colors[i], fmt='o', linestyle='-',
+                     linewidth=0.8, clip_on=False, label=f"{agent}'s average over round", yerr=e)
+    this_ax.vlines(vlines, colors=[.9, .9, .9], linewidth=.4, ymin=0, ymax=1)
+    i += 1
+
+vlines.append(120)
+very_plotter.config_axes(this_ax,
+                         title="Roundwise action choice rates",
+                         x_lim=[0, 150], x_label='Trial', xticks=vlines,
+                         xticklabels=np.around((np.linspace(1, 120, 11))).astype(int),
+                         y_label="\% Informative actions", y_lim=[0, 1],
+                         yticks=np.linspace(0, 1.0, 6),
+                         ytickslabels=np.around(np.linspace(0, 1.0, 6), 2))
 
 # Print subject level descriptive figure
 fig.tight_layout()
