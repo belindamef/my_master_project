@@ -446,7 +446,7 @@ class Agent:
                         self.v[index] += self.marg_s3_b[close_max_s3_node]
 
             # Set drill action to minus value ( --> to always have lower value than zero)
-            self.v[np.where(self.a_s1 == 0)] = -1  # Needed, otherwise A1 will drill in last trials
+            #self.v[np.where(self.a_s1 == 0)] = -1  # Needed, otherwise A1 will drill in last trials
 
         # 'A2' pure explorer agent
         # --------------------------------------------------------------------------
