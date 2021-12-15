@@ -275,14 +275,14 @@ class Agent:
                 self.o_s2 = [2]
         elif action == 1:
             if self.task.s2_t[node] == 0:
-                if np.around(self.marg_s3_b[node]) == 0:
+                if np.around(self.marg_s3_b[node], 10) == 0:
                     self.o_s2 = [0]
                 else:
                     self.o_s2 = [0, 3]
             elif self.task.s2_t[node] == 1:
                 self.o_s2 = [1]
             elif self.task.s2_t[node] == 2:
-                if np.around(self.marg_s3_b[node]) == 0:
+                if np.around(self.marg_s3_b[node], 10) == 0:
                     self.o_s2 = [2]
                 else:
                     self.o_s2 = [2, 3]
