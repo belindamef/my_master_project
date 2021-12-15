@@ -32,10 +32,9 @@ descr_stats_dir = os.path.join(results_dir, 'descr_stats')
 figures_dir = os.path.join(project_dir, 'figures')
 
 exp_data_dir = os.path.join(data_dir, 'rawdata', 'exp', f'{exp_label}')
-sim_data_dir = os.path.join(data_dir, 'rawdata', 'sim', f'{exp_label}')
+sim_data_dir = os.path.join(data_dir, 'rawdata', 'sim', f'{sim_label}')
 exp_proc_data_dir = os.path.join(data_dir, 'processed_data', 'exp', f'{exp_label}')
 sim_proc_data_dir = os.path.join(data_dir, 'processed_data', 'sim', f'{exp_label}')
-sim_100_proc_data_dir = os.path.join(data_dir, 'processed_data', 'sim', f'{exp_label}_sim_100')
 
 ev_exp_fn = os.path.join(exp_proc_data_dir, 'sub-all_task-th_run-all_beh')
 ev_sim_fn = os.path.join(sim_proc_data_dir, 'sub-all_task-th_run-all_beh')
@@ -44,16 +43,12 @@ ev_sim_run_fn = os.path.join(sim_proc_data_dir, 'sub-all_task-th_run-')
 
 ds_exp_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}', 'descr_stats')
 ds_sim_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}', 'descr_stats')
-ds_sim_100_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}_sim_100', 'descr_stats')
 grp_stats_exp_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}', 'grp_lvl_stats')
 grp_stats_sim_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}', 'grp_lvl_stats')
-grp_stats_sim_100_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}_sim_100', 'grp_lvl_stats')
 tw_exp_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}', 't_wise_stats')
 tw_sim_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}', 't_wise_stats')
-tw_sim_100_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}_sim_100', 't_wise_stats')
 
-# ----Load data---------------------------------------------
-# Load overall data
+# Load data
 exp_ev_all_subs_df = pd.read_pickle(f'{ev_exp_fn}.pkl')
 sim_ev_all_subs_df = pd.read_pickle(f'{ev_sim_fn}.pkl')
 descr_stats_exp_df = pd.read_pickle(f'{ds_exp_fn}.pkl')
@@ -78,65 +73,6 @@ for block_ in range(n_blocks):
     ds_sim_C_run[this_block] = ds_sim_run[this_block][ds_sim_run[this_block]['sub_id'].isin(['C1', 'C2', 'C3'])]
     tw_exp_run[this_block] = pd.read_pickle(f'{tw_exp_fn}_run-{this_block:02d}.pkl')
 
-# -----Load experimental data
-events_all_subs_bw_exp = {1: pd.DataFrame(), 2: pd.DataFrame(), 3: pd.DataFrame()}
-descr_stats_all_subs_bw_exp = {1: pd.DataFrame(), 2: pd.DataFrame(), 3: pd.DataFrame()}
-grp_lvl_stats_bw_exp = {1: pd.DataFrame(), 2: pd.DataFrame(), 3: pd.DataFrame()}
-trialwise_bw_exp = {1: pd.DataFrame(), 2: pd.DataFrame(), 3: pd.DataFrame()}
-for block_ in range(3):
-    block_ += 1
-    events_all_subs_bw_exp[block_] = pd.read_pickle(
-        os.path.join(exp_proc_data_dir, f'sub-all_task-th_run-{block_:02d}_beh.pkl'))
-    descr_stats_all_subs_bw_exp[block_] = pd.read_pickle(f'{ds_exp_fn}_run-{block_:02d}.pkl')
-    grp_lvl_stats_bw_exp_both_rows = pd.read_pickle(f'{grp_stats_exp_fn}_run-{block_:02d}.pkl')
-    grp_lvl_stats_bw_exp[block_] = grp_lvl_stats_bw_exp_both_rows[grp_lvl_stats_bw_exp_both_rows['sub_id'].isin(['experiment'])]
-    trialwise_bw_exp[block_] = pd.read_pickle(f'{tw_exp_fn}_run-{this_block:02d}.pkl')
-
-# -----Load simulation data
-events_all_subs_bw_sim = {1: pd.DataFrame(), 2: pd.DataFrame(), 3: pd.DataFrame()}
-descr_stats_all_subs_bw_sim = {1: pd.DataFrame(), 2: pd.DataFrame(), 3: pd.DataFrame()}
-grp_lvl_stats_bw_sim = {1: pd.DataFrame(), 2: pd.DataFrame(), 3: pd.DataFrame()}
-trialwise_bw_sim = {1: pd.DataFrame(), 2: pd.DataFrame(), 3: pd.DataFrame()}
-grp_lvl_stats_bw_sim_A = {1: pd.DataFrame(), 2: pd.DataFrame(), 3: pd.DataFrame()}
-grp_lvl_stats_bw_sim_C = {1: pd.DataFrame(), 2: pd.DataFrame(), 3: pd.DataFrame()}
-for block_ in range(3):
-    block_ += 1
-    events_all_subs_bw_sim[block_] = pd.read_pickle(
-        os.path.join(sim_proc_data_dir, f'sub-all_task-th_run-{block_:02d}_beh.pkl'))
-    descr_stats_all_subs_bw_sim[block_] = pd.read_pickle(f'{ds_sim_fn}_run-{block_:02d}.pkl')
-    grp_lvl_stats_bw_sim[block_] = pd.read_pickle(f'{grp_stats_sim_fn}_run-{block_:02d}.pkl')
-    grp_lvl_stats_bw_sim_A[block_] = grp_lvl_stats_bw_sim[block_][
-        grp_lvl_stats_bw_sim[block_]['sub_id'].isin(['Agent A1', 'Agent A2', 'Agent A3'])]
-    grp_lvl_stats_bw_sim_C[block_] = grp_lvl_stats_bw_sim[block_][
-        grp_lvl_stats_bw_sim[block_]['sub_id'].isin(['Agent C1', 'Agent C2', 'Agent C3'])]
-    trialwise_bw_sim[block_] = pd.read_pickle(f'{tw_sim_fn}_run-{this_block:02d}.pkl')
-
-# -----Load simulation 100 data---------------
-events_all_subs_bw_sim_100 = {(run + 1): pd.DataFrame() for run in range(100)}
-descr_stats_all_subs_bw_sim_100 = {(run + 1): pd.DataFrame() for run in range(100)}
-grp_lvl_stats_bw_sim_100 = {(run + 1): pd.DataFrame() for run in range(100)}
-trialwise_bw_sim_100 = {(run + 1): pd.DataFrame() for run in range(100)}
-grp_lvl_stats_bw_sim_100_A = {(run + 1): pd.DataFrame() for run in range(100)}
-grp_lvl_stats_bw_sim_100_C = {(run + 1): pd.DataFrame() for run in range(100)}
-for block_ in range(100):
-    block_ += 1
-    events_all_subs_bw_sim_100[block_] = pd.read_pickle(
-        os.path.join(sim_100_proc_data_dir, f'sub-all_task-th_run-{block_:02d}_beh.pkl'))
-    descr_stats_all_subs_bw_sim_100[block_] = pd.read_pickle(f'{ds_sim_100_fn}_run-{block_:02d}.pkl')
-    grp_lvl_stats_bw_sim_100[block_] = pd.read_pickle(f'{grp_stats_sim_100_fn}_run-{block_:02d}.pkl')
-    grp_lvl_stats_bw_sim_100_A[block_] = grp_lvl_stats_bw_sim_100[block_][
-        grp_lvl_stats_bw_sim_100[block_]['sub_id'].isin(['Agent A1', 'Agent A2', 'Agent A3'])]
-    grp_lvl_stats_bw_sim_100_C[block_] = grp_lvl_stats_bw_sim_100[block_][
-        grp_lvl_stats_bw_sim_100[block_]['sub_id'].isin(['Agent C1', 'Agent C2', 'Agent C3'])]
-    trialwise_bw_sim_100[block_] = pd.read_pickle(f'{tw_sim_fn}_run-{this_block:02d}.pkl')
-grp_lvl_stats_sim_100 = pd.read_pickle(f'{grp_stats_sim_100_fn}.pkl')
-grp_lvl_stats_sim_100_A = grp_lvl_stats_sim_100[grp_lvl_stats_sim_100['sub_id'].isin(['Agent A1', 'Agent A2', 'Agent A3'])]
-grp_lvl_stats_sim_100_C = grp_lvl_stats_sim_100[grp_lvl_stats_sim_100['sub_id'].isin(['Agent C1', 'Agent C2', 'Agent C3'])]
-# trialwise stats each agent over all blocks
-tw_sim_100_aw = {}
-for agent in ['A1', 'A2', 'A3']:
-    tw_sim_100_aw[agent] = pd.read_pickle(f'{tw_sim_100_fn}_agent-Agent {agent}.pkl')
-
 # Create general figure components
 sub_label_beh = [s_dir[(s_dir.find('sub-') + 4):] for s_dir in glob.glob(exp_data_dir + '/sub-*')]
 sub_label_sim = [s_dir[(s_dir.find('sub-') + 4):] for s_dir in glob.glob(sim_data_dir + '/sub-*')]
@@ -148,7 +84,7 @@ ds_os_beh_df = descr_stats_exp_df[descr_stats_exp_df['sub_id'].isin(sub_label_be
 ds_oa_sim_df = descr_stats_sim_df[descr_stats_sim_df['sub_id'].isin(sub_label_sim)]  # descr stats only agents
 ds_A_sim_df = descr_stats_sim_df[descr_stats_sim_df['sub_id'].isin(['A1', 'A2', 'A3'])]
 ds_C_sim_df = descr_stats_sim_df[descr_stats_sim_df['sub_id'].isin(['C1', 'C2', 'C3'])]
-# Extract task configuration-specific model components
+# Extract task config specific model components
 n_blocks = np.max(exp_ev_all_subs_df['block'])
 n_rounds = np.max(exp_ev_all_subs_df['round'])
 n_trials = np.max(exp_ev_all_subs_df['trial']) - 1

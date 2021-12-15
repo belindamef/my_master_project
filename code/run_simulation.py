@@ -34,7 +34,8 @@ if not os.path.exists(raw_sim_data_dir):
     os.makedirs(raw_sim_data_dir)
 
 # Specify experimental parameter
-n_blocks = 100  # No. of task blocks (each block has different tr location, but same hiding spots
+n_blocks = int(input("Enter number of blocks: "))  # No. of task blocks (each block has different tr location, but same hiding spots
+#n_blocks = 3  # No. of task blocks (each block has different tr location, but same hiding spots
 n_rounds = 10  # No. of hunting rounds per task block
 n_trials = 12
 dim = 5  # dimension: No. of rows and columns of gridworld

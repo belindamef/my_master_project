@@ -579,7 +579,6 @@ def show_instructions():
     stimuli.instr_low.autoDraw = True
     stimuli.grid.draw()
     win.flip()
-    event.waitKeys(keyList='up')
 
     # Explain the purpose hiding spots
     pos_xy_demo = rowcol_to_xy(node_to_rowcol(pos_demo, dim), dim, gridsize)
@@ -588,14 +587,12 @@ def show_instructions():
     stimuli.instr_center.draw()
     stimuli.instr_top.autoDraw = False
     win.flip()
-    event.waitKeys(keyList='up')
     stimuli.grid.draw()
     stimuli.instr_top.text = f'Only {n_hides} of the {n_nodes} fields are hiding spots. \n'
     stimuli.instr_top.autoDraw = True
     event.waitKeys()
     win.flip()
     event.waitKeys()
-    event.waitKeys(keyList='up')
 
     # Show hiding spot examples
     pages = [f"Only {n_hides} of the {n_nodes} fields are hiding spots. \n",
@@ -616,7 +613,6 @@ def show_instructions():
         stimuli.grid.draw()
         win.flip()
         event.waitKeys()
-        event.waitKeys(keyList='up')
 
     # Show not hiding spot examples
     not_hides_examples = ["but note here",
@@ -649,9 +645,7 @@ def show_instructions():
             stimuli.pos_cross.draw()
 
         win.flip()
-        event.waitKeys(keyList='up')
         event.waitKeys()
-        event.waitKeys(keyList='up')
     stimuli.treasure.opacity = 1.0  # Reset treasure opacity
     stimuli.treasure.size = cube_size  # Reset treasure size
     stimuli.instr_top.autoDraw = False
@@ -690,10 +684,8 @@ def show_instructions():
         else:
             stimuli.instr_center.text = page
             stimuli.instr_center.draw()
-        event.waitKeys(keyList='up')
         win.flip()
         event.waitKeys()
-        event.waitKeys(keyList='up')
     stimuli.instr_low.autoDraw = False
 
     # Demonstrate "drilling" action
@@ -707,9 +699,7 @@ def show_instructions():
     stimuli.score_count.autoDraw = True
     stimuli.score_tr.autoDraw = True
     stimuli.grid.draw()
-    event.waitKeys(keyList='up')
     win.flip()
-    event.waitKeys(keyList='up')
     event.waitKeys()
     moves -= 1  # Update move count
     stimuli.move_count.text = f"Moves left: {moves} / {exp_trials}"
@@ -725,9 +715,7 @@ def show_instructions():
     hide_stims_demo[hides_demo[3]].draw()
     stimuli.score_tr.draw()
     stimuli.grid.draw()
-    event.waitKeys(keyList='up')
     win.flip()
-    event.waitKeys(keyList='up')
     core.wait(2.0)
 
     # Continue to explain the purpose of hiding spots

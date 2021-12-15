@@ -24,9 +24,12 @@ File creation
 
 """
 # Specify dataset and experiment name
-dataset = 'exp'  # 'exp' or 'sim'
-exp_label = 'main'
+dataset = 'sim'  # 'exp' or 'sim'
+#exp_label = 'main'
+exp_label = 'main_sim_100'
 dim = 5
+n_block_this_label = {'main': 3, 'main_sim_100': 100}
+n_blocks = n_block_this_label[exp_label]
 
 # Specify directories and create if not existent
 working_dir = os.getcwd()
@@ -54,29 +57,34 @@ t_wise_stats_fn = os.path.join(out_descr_stats_dir, 't_wise_stats')
 r_wise_stats_fn = os.path.join(out_descr_stats_dir, 'r_wise_stats')
 
 # Initialize or Load dataframes for event and descr stats
-
 edited_events_all_subs = False
 edited_descr_stats = False
 edited_grp_lvl_stats = False
 edited_t_wise_stats = False
 edited_r_wise_stats = False
 
-# Initialize dataframe for events_all_subs
+events_all_subs_bw = {(run + 1): pd.DataFrame() for run in range(n_blocks)}
+descr_stats_all_subs_bw = {(run + 1): pd.DataFrame() for run in range(n_blocks)}
+grp_lvl_stats_bw = {(run + 1): pd.DataFrame() for run in range(n_blocks)}
+trialwise_bw = {(run + 1): pd.DataFrame() for run in range(n_blocks)}
+
+# Initialize or load dataframe for events_all_subs
 if os.path.exists(f'{events_all_subs_fn}.pkl'):
+    # Load events all subs
     events_all_subs_df = pd.read_pickle(f'{events_all_subs_fn}.pkl')
+    # Load events block (run) wise all subs
+    for block_, block_df in events_all_subs_bw.items():
+        events_all_subs_bw[block_] = pd.read_pickle(os.path.join(out_proc_data_dir, f'sub-all_task-th_run-{block_:02d}_beh.pkl'))
 else:
     events_all_subs_df = pd.DataFrame()
     edited_events_all_subs = True
 
-# TODO: blockwise event files NOT robust!
-events_bw = {1: pd.DataFrame(), 2: pd.DataFrame(), 3: pd.DataFrame()}
-descr_stats_bw = {1: pd.DataFrame(), 2: pd.DataFrame(), 3: pd.DataFrame()}
-trialwise_bw = {1: pd.DataFrame(), 2: pd.DataFrame(), 3: pd.DataFrame()}
-
 if os.path.exists(f'{descr_stats_fn}.pkl'):
-    descr_stats_df = pd.read_pickle(f'{descr_stats_fn}.pkl')
+    descr_stats_all_subs_df = pd.read_pickle(f'{descr_stats_fn}.pkl')
+    for block_, block_df in descr_stats_all_subs_bw.items():
+        descr_stats_all_subs_bw[block_] = pd.read_pickle(f'{descr_stats_fn}_run-{block_:02d}.pkl')
 else:
-    descr_stats_df = pd.DataFrame()  # (one row per subject)
+    descr_stats_all_subs_df = pd.DataFrame()  # (one row per subject)
     edited_descr_stats = True
 
 if os.path.exists(f'{grp_lvl_stats_fn}.pkl'):
@@ -255,331 +263,8 @@ if edited_t_wise_stats:
         block_df.to_pickle(f'{t_wise_stats_fn}_run-{block_:02d}.pkl')
         with open(f'{t_wise_stats_fn}_run-{block_:02d}.tsv', 'w') as f:
             f.write(block_df.to_csv(sep='\t', na_rep='n/a'))
+
 if edited_r_wise_stats:
     with open(f'{r_wise_stats_fn}.tsv', 'w') as tsv_file:
         tsv_file.write(r_wise_stats_df.to_csv(sep='\t', na_rep='n/a'))
     r_wise_stats_df.to_pickle(f'{r_wise_stats_fn}.pkl')
-
-# ---------------------------------------------------------------------------------------------
-# ------Create subject level figures-----------------------
-# ---------------------------------------------------------------------------------------------
-# Extract descr stats of subjects only
-descr_stats_all_subs_df = descr_stats_df[descr_stats_df['sub_id'].isin(sub_id_list)]
-
-# Create general figure components:
-subject_label = list(descr_stats_all_subs_df.sub_id.unique())
-
-# figure initialization
-fig_1_fn = os.path.join(out_fig_dir, 'sub_level_stats.pdf')
-plt, greens, blues, yellows = get_fig_template(plt)
-frm = mticker.ScalarFormatter(useMathText=True)
-fig = plt.figure(figsize=(15, 13))
-gs = gridspec.GridSpec(6, 2)
-ax = {}
-
-# Continuous color space
-cm = plt.get_cmap('Blues')  # color map of interest
-cm_subsection = np.linspace(.2, .8, 6)  # color map sampling indices
-colors = [cm(x) for x in cm_subsection]  # colors of interest list
-
-# # Plot subject level treasures discovery
-# unveils = descr_stats_all_subs_df['n_tr'].values
-# ax[0] = plt.subplot(gs[0, :])
-# ax[0].bar(subject_label, unveils)
-# # ax['tr_disc'].set_title('Treasure discovery / solved tasks', fontsize=14)
-# # ax['tr_disc'].set_xlabel('Participants', fontsize=12)
-# ax[0].grid(True, axis='y', linewidth=.5, color=[.9, .9, .9])
-# ax[0].set_ylabel('Number of treasures', fontsize=12)
-# ax[0].set_ylim(0, 20)
-# ax[0].set_yticks([5, 10, 15, 20])
-
-# # Plot subject level drill-versus-step (stacked bar plot)
-# drills = descr_stats_all_subs_df['n_drills'].values
-# steps = descr_stats_all_subs_df['n_steps'].values
-# ax[1] = plt.subplot(gs[1, :])
-# ax[1].bar(subject_label, drills, label='drill')
-# # ax['drill_vs_step'].set_title('Action choices', fontsize=14)
-# ax[1].bar(subject_label, steps, bottom=drills, label='steps')
-# # ax['drill_vs_step'].set_xlabel('Participants', fontsize=12)
-# ax[1].grid(True, axis='y', linewidth=.5, color=[.9, .9, .9])
-# ax[1].set_ylabel('Number of actions', fontsize=12)
-# ax[1].set_ylim(0, 450)
-# ax[1].set_yticks([50, 150, 250, 350, 450])
-# ax[1].legend()
-
-# # Plot subject level %drills
-# drills = descr_stats_all_subs_df['p_drills'].values
-# ax[2] = plt.subplot(gs[2, :])
-# ax[2].bar(subject_label, drills, label='drill')
-# # ax['drill_vs_step'].set_title('Action choices', fontsize=14)
-# # ax['drill_vs_step'].set_xlabel('Participants', fontsize=12)
-# ax[2].grid(True, axis='y', linewidth=.5, color=[.9, .9, .9])
-# ax[2].set_ylabel('\% Informative actions', fontsize=12)
-# ax[2].set_ylim(0, 1)
-# ax[2].set_yticks([.25, .5, .75, 1])
-
-# Plot subject level percentage of action in which drilling led to unveiling ("Drilling success")
-# unveils = descr_stats_all_subs_df['p_unv_if_drill'].replace(np.nan, 0).values
-# ax[3] = plt.subplot(gs[3, :])
-# ax[3].bar(subject_label, unveils)
-# # ax['drill_success'].set_title('% Successful drills')
-# # ax['drill_success'].set_xlabel('Participants', fontsize=12)
-# ax[3].grid(True, axis='y', linewidth=.5, color=[.9, .9, .9])
-# ax[3].set_ylabel('\% Successful drills', fontsize=12)
-# ax[3].set_ylim([0, 1])
-# ax[3].set_yticks([.25, .5, .75, 1])
-
-# Plot subject level percentage of treasures discovered on visible hides vs. other
-# were_hides = descr_stats_all_subs_df['p_visible_hide_giv_1.0_tr_disc']
-# ax[4] = plt.subplot(gs[4, :])
-#
-# ax[4].bar(subject_label, were_hides)
-# ax[4].set_ylim([0, 1])
-# ax[4].set_ylabel('P(visible hide|treasure discovered)')
-# # ax['found_on_hide'].set_title('% treasures found on visible hiding spots')
-# ax[4].set_ylim([0, 1])
-# ax[4].set_yticks([.25, .5, .75, 1])
-# ax[4].set_ylabel('\% Found on visible hides', fontsize=12)
-# ax[4].grid(True, axis='y', linewidth=.5, color=[.9, .9, .9])
-# ax[4].set_xlabel('Participants', fontsize=12)
-
-# Plot treasure discovery as a function of number of unveiled hiding spots
-# ax[5] = plt.subplot(gs[5, 0])
-# x = []
-# y = []
-#
-# column_names_p_giv_hides = [col for col in descr_stats_all_subs_df.columns if 'p_tr_giv_hides_' in col]
-#
-# for column in column_names_p_giv_hides:
-#     for sub in descr_stats_all_subs_df.index:
-#         x.append(column[column.find('hides_') + 6:])
-#         y.append(descr_stats_all_subs_df.loc[sub, column])
-#
-# ax[5].scatter(x, y)
-# ax[5].set_xlabel('Number of visible hiding spots')
-# ax[5].set_ylabel('P(tr disc giv N hides)')
-
-# n_hides_categories = [col for col in summary_stats_all_subs.columns if 'p_tr_giv_hides_' in col]
-# p_tr_giv_hides_df = summary_stats_all_subs[n_hides_categories]
-# labels_n_hides = []
-# for number_hides in n_hides_categories:
-#     labels_n_hides.append(number_hides[-1])
-#
-# for index, sub_id in enumerate(subject_label):
-#     ax_p_tr_giv_n_hides[index].set_ylim([0, 0.5])
-#     p_tr_giv_n_hides = p_tr_giv_hides_df.loc[f'{sub_id}'].values
-#     ax_p_tr_giv_n_hides[index].bar(labels_n_hides, p_tr_giv_n_hides)
-#     ax_p_tr_giv_n_hides[index].set_ylabel(f'{sub_id}')
-
-# Add letter to sub_id-figures
-for key, value in ax.items():
-    value.text(-0.06, 1.1, string.ascii_uppercase[key],
-               transform=value.transAxes,
-               size=20, weight='bold')
-
-# Print subject level descriptive figure
-fig.tight_layout()
-fig.savefig(fig_1_fn, dpi=300, format='pdf')
-
-# ---------------------------------------------------------------------------------------------
-# ------Create group level figures-------------
-# ---------------------------------------------------------------------------------------------
-if dataset == 'sim':
-    subject_label = list(events_all_subs_df.sub_id.unique())
-
-    descr_stats_all_agents_df = descr_stats_df[descr_stats_df['sub_id'].isin(subject_label)]
-
-    # figure initialization
-    fig_3_fn = os.path.join(out_fig_dir, 'descr_stats_agents.pdf')
-    plt, blue, red, yellows = get_fig_template(plt)
-    frm = mticker.ScalarFormatter(useMathText=True)
-    fig = plt.figure(figsize=(15, 13))
-    gs = gridspec.GridSpec(6, 2)
-    ax = {}
-
-    # Continuous color space
-    cm = plt.get_cmap('Blues')  # color map of interest
-    cm_subsection = np.linspace(.2, .8, 6)  # color map sampling indices
-    colors = [cm(x) for x in cm_subsection]  # colors of interest list
-
-    # # Plot group mean treasures discovery
-    # x = np.arange(len(subject_label))
-    # y = grp_lvl_stats_df.n_tr_mean.values
-    # yerr = grp_lvl_stats_df.n_tr_std.values
-    # ax[0] = plt.subplot(gs[0, 0])
-    # ax[0].errorbar(x, y, yerr,
-    #                marker='o', ls='', capsize=2, lw=1, ms=4)
-    # ax[0].set_xlabel('Group')
-    # ax[0].set_xticks(x)
-    # ax[0].set_xticklabels(subject_label)
-    # ax[0].set_ylabel('Mean number of treasure', fontsize=12)
-    # ax[0].set_ylim(0, 20)
-    # ax[0].set_yticks([5, 10, 15, 20])
-    # ax[0].grid(True, axis='y', linewidth=.5, color=[.9, .9, .9])
-
-    # # Plot subject level drill-versus-step (stacked bar plot)
-    # drills = descr_stats_all_agents_df['n_drills'].values
-    # steps = descr_stats_all_agents_df['n_steps'].values
-    # ax[1] = plt.subplot(gs[1, :])
-    # ax[1].bar(subject_label, drills, label='drill')
-    # # ax['drill_vs_step'].set_title('Action choices', fontsize=14)
-    # ax[1].bar(subject_label, steps, bottom=drills, label='steps')
-    # # ax['drill_vs_step'].set_xlabel('Participants', fontsize=12)
-    # ax[1].grid(True, axis='y', linewidth=.5, color=[.9, .9, .9])
-    # ax[1].set_ylabel('Number of actions', fontsize=12)
-    # ax[1].set_ylim(0, 450)
-    # ax[1].set_yticks([50, 150, 250, 350, 450])
-    # ax[1].legend()
-
-    # # Plot subject level %drills
-    # drills = descr_stats_all_agents_df['p_drills'].values
-    # ax[2] = plt.subplot(gs[2, :])
-    # ax[2].bar(subject_label, drills, label='drill')
-    # # ax['drill_vs_step'].set_title('Action choices', fontsize=14)
-    # # ax['drill_vs_step'].set_xlabel('Participants', fontsize=12)
-    # ax[2].grid(True, axis='y', linewidth=.5, color=[.9, .9, .9])
-    # ax[2].set_ylabel('\% Informative actions', fontsize=12)
-    # ax[2].set_ylim(0, 1)
-    # ax[2].set_yticks([.25, .5, .75, 1])
-
-    # # Plot subject level percentage of action in which drilling led to unveiling ("Drilling success")
-    # unveils = descr_stats_all_agents_df['p_unv_if_drill'].replace(np.nan, 0).values
-    # ax[3] = plt.subplot(gs[3, :])
-    # ax[3].bar(subject_label, unveils)
-    # # ax['drill_success'].set_title('% Successful drills')
-    # # ax['drill_success'].set_xlabel('Participants', fontsize=12)
-    # ax[3].grid(True, axis='y', linewidth=.5, color=[.9, .9, .9])
-    # ax[3].set_ylabel('\% Successful drills', fontsize=12)
-    # ax[3].set_ylim([0, 1])
-    # ax[3].set_yticks([.25, .5, .75, 1])
-
-    # # Plot subject level percentage of treasures discovered on visible hides vs. other
-    # were_hides = descr_stats_all_agents_df['p_visible_hide_giv_1.0_tr_disc']
-    # ax[4] = plt.subplot(gs[4, :])
-    #
-    # ax[4].bar(subject_label, were_hides)
-    # ax[4].set_ylim([0, 1])
-    # ax[4].set_ylabel('P(visible hide|treasure discovered)')
-    # # ax['found_on_hide'].set_title('% treasures found on visible hiding spots')
-    # ax[4].set_ylim([0, 1])
-    # ax[4].set_yticks([.25, .5, .75, 1])
-    # ax[4].set_ylabel('\% Found on visible hides', fontsize=12)
-    # ax[4].grid(True, axis='y', linewidth=.5, color=[.9, .9, .9])
-    # ax[4].set_xlabel('Participants', fontsize=12)
-
-    # Plot treasure discovery as a function of number of unveiled hiding spots
-    ax[5] = plt.subplot(gs[5, 0])
-    x = []
-    y = []
-
-    column_names_p_giv_hides = [col for col in descr_stats_all_agents_df.columns if 'p_tr_giv_hides_' in col]
-
-    for column in column_names_p_giv_hides:
-        for sub in descr_stats_all_agents_df.index:
-            x.append(column[column.find('hides_') + 6:])
-            y.append(descr_stats_all_agents_df.loc[sub, column])
-
-    ax[5].scatter(x, y)
-    ax[5].set_xlabel('Number of visible hiding spots')
-    ax[5].set_ylabel('P(tr disc giv N hides)')
-
-    # Add letter to sub_id-figures
-    for key, value in ax.items():
-        value.text(-0.06, 1.1, string.ascii_uppercase[key],
-                   transform=value.transAxes,
-                   size=20, weight='bold')
-
-    # Print subject level descriptive figure
-    fig.tight_layout()
-    fig.savefig(fig_3_fn, dpi=300, format='pdf')
-
-
-# figure initialization
-fig_2_fn = os.path.join(out_fig_dir, 'group_descr_stats_beh.pdf')
-plt, blue, red, yellow = get_fig_template(plt)
-frm = mticker.ScalarFormatter(useMathText=True)
-fig = plt.figure(figsize=(15, 10))
-gs = gridspec.GridSpec(4, 2)
-ax = {}
-
-# Plot trial-by-trial choice rate
-trial_label = t_wise_stats_df.index
-steps = t_wise_stats_df['n_steps'].values
-drills = t_wise_stats_df['n_drills'].values
-ax[0] = plt.subplot(gs[0, :])
-ax[0].bar(trial_label, drills, label='drill')
-# ax['drill_vs_step'].set_title('Action choices', fontsize=14)
-ax[0].bar(trial_label, steps, bottom=drills, label='steps')
-# ax['drill_vs_step'].set_xlabel('Participants', fontsize=12)
-ax[0].grid(True, axis='y', linewidth=.5, color=[.9, .9, .9])
-ax[0].set_ylabel('Number of actions', fontsize=12)
-# ax[0].set_ylim(0, 30)
-# ax[0].set_yticks([50, 150, 250, 350, 450])
-# ax[0].legend()
-
-# Plot trial-by-trial choice rate
-trial_label = t_wise_stats_df.index
-steps = t_wise_stats_df['p_steps'].values
-drills = t_wise_stats_df['p_drills'].values
-ax[1] = plt.subplot(gs[1, :])
-ax[1].bar(trial_label, drills, label='drill')
-# ax['drill_vs_step'].set_title('Action choices', fontsize=14)
-ax[1].bar(trial_label, steps, bottom=drills, label='steps')
-ax[1].set_xlabel('Trial', fontsize=12)
-ax[1].grid(True, axis='y', linewidth=.5, color=[.9, .9, .9])
-ax[1].set_ylabel('\% Action choice', fontsize=12)
-ax[1].set_ylim(0, 1)
-ax[1].set_yticks([0, 0.25, 0.5, 0.75])
-ax[1].legend()
-
-# Plot number of drills over rounds
-x = [int(col[col.find('n_drills_r') + 10:]) for col in descr_stats_all_subs_df.columns if 'n_drills_r' in col]
-y = r_wise_stats_df.drills_mean.values
-yerr = r_wise_stats_df.drills_sdt.values
-ax[2] = plt.subplot(gs[2, 0])
-ax[2].errorbar(x, y, yerr,
-               marker='o', ls='', capsize=2, lw=1, ms=4)
-# ax[2].set_ylim([0, max(y)+5])
-ax[2].set_xlabel('Round')
-ax[2].set_ylabel('Mean Number of drills')
-ax[2].grid(True, linewidth=.5, color=[.9, .9, .9])
-
-# Plot group percent of drills over rounds
-roundwise_drills_col_names = [col for col in descr_stats_all_subs_df.columns if 'p_drills_r' in col]
-roundnumbers = [int(col[col.find('p_drills_r') + 10:]) for col in descr_stats_all_subs_df.columns if
-                'p_drills_r' in col]
-group_drills_p_df = descr_stats_all_subs_df[roundwise_drills_col_names]
-group_drills_p_array = group_drills_p_df.to_numpy().reshape(len(roundnumbers))
-ax[3] = plt.subplot(gs[3, 0])
-ax[3].bar(roundnumbers, group_drills_p_array)
-ax[3].set_xlabel('Round')
-ax[3].set_ylabel('Group \% of drills')
-ax[3].set_ylim(0, 1)
-ax[3].grid(True, linewidth=.5, color=[.9, .9, .9])
-
-# Add letter to sub_id-figures
-for key, value in ax.items():
-    value.text(-0.06, 1.1, string.ascii_uppercase[key],
-               transform=value.transAxes,
-               size=20, weight='bold')
-
-# Print group level descriptive figure
-fig.tight_layout()
-fig.savefig(fig_2_fn, dpi=300, format='pdf')
-
-# scatter number of drills over rounds
-x = []
-y = []
-# for sub in descr_stats_all_subs_df.index:
-#     roundwise_drill_counts_column_names = [col for col in descr_stats_all_subs_df.columns if 'n_drills_r' in col]
-#     roundnumbers = [int(col[-1]) for col in descr_stats_all_subs_df.columns if 'n_drills_r' in col]
-#     x.extend(roundnumbers)
-#     y.extend(descr_stats_all_subs_df.loc[sub, roundwise_drill_counts_column_names])
-# fig_drill_r_scatter_fn = os.path.join(out_fig_dir, 'drills_roundwise.png')
-# fig_drill_r_scatter, ax_drill_r_scatter = plt.subplots()
-# ax_drill_r_scatter.scatter(x, y)
-# ax_drill_r_scatter.set_ylim([0, max(y) + 5])
-# ax_drill_r_scatter.set_xlabel('round')
-# ax_drill_r_scatter.set_ylabel('number of drills')
-# ax_drill_r_scatter.set_title('number of drills in each round')
-# fig_drill_r_scatter.savefig(fig_drill_r_scatter_fn)

@@ -263,9 +263,9 @@ class Agent:
         """Identify state s2 dependent observation set"""
         if action == 0:
             if self.task.s2_t[node] == 0:
-                if np.around(self.marg_s4_b[node]) == 0:
+                if np.around(self.marg_s4_b[node], 10) == 0:
                     self.o_s2 = [1]
-                elif np.around(self.marg_s4_b[node]) == 1:
+                elif np.around(self.marg_s4_b[node], 10) == 1:
                     self.o_s2 = [2]
                 else:
                     self.o_s2 = [1, 2]
