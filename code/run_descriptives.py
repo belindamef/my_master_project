@@ -25,8 +25,8 @@ File creation
 """
 # Specify dataset and experiment name
 dataset = 'sim'  # 'exp' or 'sim'
-#exp_label = 'main'
-exp_label = 'main_sim_100'
+exp_label = 'main'
+#exp_label = 'main_sim_100'
 dim = 5
 n_block_this_label = {'main': 3, 'main_sim_100': 100}
 n_blocks = n_block_this_label[exp_label]
