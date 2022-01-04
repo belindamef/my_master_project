@@ -157,7 +157,8 @@ for block_ in range(n_blocks):
                              xticks=[0, 1, 1.5, 2, 2.5, 3, 3.5],
                              xticklabels=['Participants', 'A1', 'A2', 'A3', 'C1', 'C2', 'C3'],
                              yticks=np.linspace(0, n_tr_b, 6),
-                             ytickslabels=np.around(np.linspace(0, n_tr_b, 6), 2))
+                             #ytickslabels=np.around(np.linspace(0, n_tr_b, 6), 2))
+                             ytickslabels=[0, 2, 4, 6, 8, 10])
 
 # Add letter and title
 very_plotter.config_axes(ax[0], title="Task performance")
@@ -188,14 +189,17 @@ for block in range(n_blocks):
 
     # Configure axis
     very_plotter.config_axes(this_ax,
-                             y_label="\% Informative actions", y_lim=[0, 1],
+                             y_label="\%", y_lim=[0, 1],
                              xticks=[0, 1, 1.5, 2, 2.5, 3, 3.5],
                              xticklabels=['Participants', 'A1', 'A2', 'A3', 'C1', 'C2', 'C3'],
-                             yticks=np.linspace(0, 1.0, 6),
-                             ytickslabels=np.around(np.linspace(0, 1.0, 6), 2))
+                             yticks=np.linspace(0, 1, 6),
+                             #ytickslabels=int(np.linspace(0, 100, 6), 0))
+                             #ytickslabels=np.linspace(0, 100, 6))
+                             ytickslabels=[0, 20, 40, 60, 80, 100])
+    #this_ax.yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
 
 # Add letter and title
-very_plotter.config_axes(ax[0], title="Average choice rates")
+very_plotter.config_axes(ax[0], title="Informative choice rates")
 very_plotter.add_letters({1: ax[0]})
 
 # ------Trial-by-trial/round-wise average choice rates--------------------------------------------
@@ -208,7 +212,7 @@ for block in range(n_blocks):
     x = tw_exp_bw[block].trial.values
     y = tw_exp_bw[block].mean_drill.values
     this_ax.scatter(x, y, alpha=0.2, s=s, color=col_exp[1], clip_on=False,
-                    label="Participant group's \n trial-by-trial choices") #facecolors='none', edgecolors=col_exp[1])
+                    label="Participants' group \n trial-by-trial choices") #facecolors='none', edgecolors=col_exp[1])
 
     # Experimental group round-by-round choices
     tw_exp_run_grpby_round = tw_exp_bw[block].groupby('round')
@@ -216,8 +220,8 @@ for block in range(n_blocks):
     y = [np.mean(tw_exp_run_thisround['mean_drill']) for round_, tw_exp_run_thisround in tw_exp_run_grpby_round]
     e = [np.std(tw_exp_run_thisround['mean_drill']) for round_, tw_exp_run_thisround in tw_exp_run_grpby_round]
     this_ax.errorbar(x, y, alpha=0.7, markersize=4, color=col_exp[1], fmt='o', linestyle='-', linewidth=0.8,
-                     label="Participant group's \n round-wise average", clip_on=False)
-                     #yerr=e)
+                     label="Participants' group \n round-wise average", clip_on=False,
+                     yerr=e)
 
     # Bayesian agents
     i = 0
@@ -237,16 +241,17 @@ for block in range(n_blocks):
     this_ax.vlines(vlines, colors=[.9, .9, .9], linewidth=.4, ymin=0, ymax=1)  # Add vertical lines
     vlines.append(120)  # Add last boundary, to have 12 xticklabels
     very_plotter.config_axes(this_ax,
-                             x_lim=[0, 150], x_label='Trial', xticks=vlines,
+                             x_lim=[0, 155], x_label='Trial', xticks=vlines,
                              xticklabels=np.around((np.linspace(1, 120, 11))).astype(int),
-                             y_label="\% Informative actions", y_lim=[0, 1],
+                             y_label="\%", y_lim=[0, 1],
                              yticks=np.linspace(0, 1.0, 6),
-                             ytickslabels=np.around(np.linspace(0, 1.0, 6), 2))
+                             #ytickslabels=np.around(np.linspace(0, 1.0, 6), 2))
+                             ytickslabels=[0, 20, 40, 60, 80, 100])
 
 # Add letter, title and legend
-ax[1].legend(loc='center right')
+ax[1].legend(loc='upper right', fontsize=11)
 
-very_plotter.config_axes(ax[1], title="Trial-by-trial/round-by-round choice rates")
+very_plotter.config_axes(ax[1], title="Trial-by-trial/roundwise informative choice rates")
 # Add letter
 very_plotter.add_letters({2: ax[1]})
 
@@ -271,11 +276,12 @@ very_plotter.plot_bar(ax=this_ax, x=[2.5, 3, 3.5], height=grp_lvl_stats_sim_100_
 # Configure axis
 very_plotter.config_axes(this_ax,
                          title="Task performance",
-                         y_label="Average Number of Treasures", y_lim=[0, n_tr_b],
+                         y_label="Number of Treasures", y_lim=[0, n_tr_b],
                          xticks=[1, 1.5, 2, 2.5, 3, 3.5],
                          xticklabels=['A1', 'A2', 'A3', 'C1', 'C2', 'C3'],
                          yticks=np.linspace(0, n_tr_b, 6),
-                         ytickslabels=np.around(np.linspace(0, n_tr_b, 6), 2))
+                         #ytickslabels=np.around(np.linspace(0, n_tr_b, 6), 2))
+                         ytickslabels=[0, 2, 4, 6, 8, 10])
 
 # Add letter
 very_plotter.add_letters({3: ax[4]})
@@ -296,12 +302,13 @@ very_plotter.plot_bar(ax=this_ax, x=[2.5, 3, 3.5], height=grp_lvl_stats_sim_100_
 
 # Configure axis
 very_plotter.config_axes(this_ax,
-                         title="Action choice rates",
-                         y_label="\% Informative actions", y_lim=[0, 1],
+                         title="Informative choice rates",
+                         y_label="\%", y_lim=[0, 1],
                          xticks=[1, 1.5, 2, 2.5, 3, 3.5],
                          xticklabels=['A1', 'A2', 'A3', 'C1', 'C2', 'C3'],
                          yticks=np.linspace(0, 1.0, 6),
-                         ytickslabels=np.around(np.linspace(0, 1.0, 6), 2))
+                         #ytickslabels=np.around(np.linspace(0, 1.0, 6), 2))
+                         ytickslabels=[0, 20, 40, 60, 80, 100])
 
 # Roundwise action choices
 s = 14
@@ -319,7 +326,7 @@ for agent, agent_tw_df in tw_sim_100_aw.items():
     y = [np.nanmean(ev_df['p_drills']) for round_, ev_df in ev_thisagent_gbround]
     e = [np.nanstd(ev_df['p_drills']) for round_, ev_df in ev_thisagent_gbround]
     this_ax.errorbar(x, y, alpha=0.7, markersize=4, color=agent_colors[i], fmt='o', linestyle='-',
-                     linewidth=0.8, clip_on=False, label=f"{agent}'s average over round", yerr=e)
+                     linewidth=0.8, clip_on=False, label=f"{agent} average across tasks", yerr=e)
     this_ax.vlines(vlines, colors=[.9, .9, .9], linewidth=.4, ymin=0, ymax=1)
     i += 1
 
@@ -327,12 +334,15 @@ for agent, agent_tw_df in tw_sim_100_aw.items():
 this_ax.vlines(vlines, colors=[.9, .9, .9], linewidth=.4, ymin=0, ymax=1)  # Add vertical lines
 vlines.append(120)  # Add last boundary, to have 12 xticklabels
 very_plotter.config_axes(this_ax,
-                         title="Roundwise action choice rates",
+                         title="Roundwise informative choice rates",
                          x_lim=[0, 150], x_label='Trial', xticks=vlines,
                          xticklabels=np.around((np.linspace(1, 120, 11))).astype(int),
-                         y_label="\% Informative actions", y_lim=[0, 1],
+                         y_label="\%", y_lim=[0, 1],
                          yticks=np.linspace(0, 1.0, 6),
-                         ytickslabels=np.around(np.linspace(0, 1.0, 6), 2))
+                         #ytickslabels=np.around(np.linspace(0, 1.0, 6), 2))
+                         ytickslabels=[0, 20, 40, 60, 80, 100])
+
+this_ax.legend(loc='center right', fontsize=11)
 
 # Print subject level descriptive figure
 fig.tight_layout()
