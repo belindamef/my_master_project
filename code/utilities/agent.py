@@ -447,6 +447,9 @@ class Agent:
 
             # Set drill action to minus value ( --> to always have lower value than zero)
             #self.v[np.where(self.a_s1 == 0)] = -1  # Needed, otherwise A1 will drill in last trials
+            # Let agent stop drilling, if node is not black or if it's last round
+            if self.c == (self.task.n_rounds - 1):  # or self.task.s_2_node_color[self.task.s_1] != 0:
+                self.v[np.where(self.a_s1 == 0)] = -1
 
         # 'A2' pure explorer agent
         # --------------------------------------------------------------------------
