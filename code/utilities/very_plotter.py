@@ -81,23 +81,23 @@ def config_axes(ax, y_label=None, y_lim=None, title=None, x_label=None, x_lim=No
     """Set basic setting for plot axes"""
     ax.grid(True, axis='y', linewidth=.3, color=[.9, .9, .9])
     if title is not None:
-        ax.set_title(title, size=16)
+        ax.set_title(title, size=18)
     if y_label is not None:
-        ax.set_ylabel(y_label, fontsize=12, loc='center')
+        ax.set_ylabel(y_label, fontsize=14, loc='center')
     if y_lim is not None:
         ax.set_ylim(y_lim)
     if x_label is not None:
-        ax.set_xlabel(x_label, fontsize=12)
+        ax.set_xlabel(x_label, fontsize=14)
     if x_lim is not None:
         ax.set_xlim(x_lim)
     if xticks is not None:
         ax.set_xticks(xticks)
     if xticklabels is not None:
-        ax.set_xticklabels(xticklabels, fontsize=11)
+        ax.set_xticklabels(xticklabels, fontsize=13)
     if yticks is not None:
         ax.set_yticks(yticks)
     if ytickslabels is not None:
-        ax.set_yticklabels(ytickslabels, fontsize=11)
+        ax.set_yticklabels(ytickslabels, fontsize=13)
 
 
 def plot_bar(ax, x, height, colors, bar_width=0.6, errorbar_size=10, yerr=None):
@@ -134,6 +134,6 @@ def plot_bar_scatter(ax, data, color, bar_width):
 def add_letters(ax):
     """Add letters to subplots"""
     for key, value in ax.items():
-        value.text(-0.05, 1.1, string.ascii_lowercase[key],
+        value.text(-0.05, 1.25, string.ascii_lowercase[key],
                    transform=value.transAxes,
-                   size=22, weight='bold')
+                   size=30, weight='bold')
