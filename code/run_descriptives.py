@@ -25,8 +25,8 @@ File creation
 """
 # Specify dataset and experiment name
 dataset = 'sim'  # 'exp' or 'sim'
-exp_label = 'main'
-#exp_label = 'main_sim_100'
+#exp_label = 'main'
+exp_label = 'main_sim_100'
 dim = 5
 n_block_this_label = {'main': 3, 'main_sim_100': 100}
 n_blocks = n_block_this_label[exp_label]
@@ -202,6 +202,9 @@ if grp_lvl_stats_df.empty or ('whole_sample' not in grp_lvl_stats_df.sub_id.valu
     descr_stats_whole_sample_df = descr_stats_whole_sample.perform_descr_stats()
     grp_lvl_stats_df = grp_lvl_stats_df.append(descr_stats_whole_sample_df, ignore_index=True)
     if dataset == 'exp':
+        grp_lvl_stats_whole_sample_object = GroupStats(events_all_subs_df, dataset, descr_stats_all_subs_df)
+        grp_lvl_stats_whole_sample_df = grp_lvl_stats_whole_sample_object.perform_group_descr_stats(group_by='block_type')
+        grp_lvl_stats_df = grp_lvl_stats_df.append(grp_lvl_stats_whole_sample_df)
         for block_, block_df in events_all_subs_bw.items():
             descr_stats_whole_sample_bw = DescrStats(block_df, dataset, subject=f'whole_sample_b')
             grp_lvl_stats_bw[block_] = descr_stats_whole_sample_bw.perform_descr_stats()
