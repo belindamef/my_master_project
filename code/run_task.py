@@ -557,7 +557,6 @@ def show_instructions():
     stimuli.current_pos.draw()
     event.waitKeys(keyList='up')
     win.flip()
-    event.waitKeys(keyList='up')
     pos_demo -= 5  # Present movement to new field
     pos_xy_demo = rowcol_to_xy(node_to_rowcol(pos_demo, dim), dim, gridsize)
     stimuli.cube.pos = pos_xy_demo
@@ -698,7 +697,7 @@ def show_instructions():
     stimuli.score_tr.autoDraw = True
     stimuli.grid.draw()
     win.flip()
-    event.waitKeys()
+    event.waitKeys(keyList='space')
     moves -= 1  # Update move count
     stimuli.move_count.text = f"Moves left: {moves} / {exp_trials}"
     for x in range(60):  # Present drilling stimulus
