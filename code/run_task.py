@@ -72,8 +72,9 @@ my_mac.setDistance(33.872)
 my_mac.saveMon()
 
 # Get experiment name and create main data directory
-exp_label = input("What kind of test is this? \n"
-                  "(Entered name will be used as directory name): ")
+exp_label = input("Enter dataset name (main/test/rm)\n"
+                  "Corresponding task configuration will be loaded, if existing, \n"
+                  "or new configuration will be created.")
 exp_data_dir = os.path.join(raw_exp_data_dir, f'{exp_label}')  # main data directory
 exp_data_ext_dir = os.path.join(raw_exp_data_dir, f'{exp_label}_ext')  # extended data
 if not os.path.exists(exp_data_dir):  # create if non existent
