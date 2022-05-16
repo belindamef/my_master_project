@@ -4,11 +4,8 @@
 
 ---
 ## Table of contents
-- [# Treasure Hunt](#-treasure-hunt)
-- [Table of contents](#table-of-contents)
 - [General Info](#general-info)
 - [Treasure Hunt task](#treasure-hunt-task)
-    - [Task design and trial layout](#task-design-and-trial-layout)
 - [Task Model](#task-model)
 - [Agent Models](#agent-models)
 - [Simulations](#simulations)
@@ -25,8 +22,7 @@ The Treasure Hunt task is behavioral paradigm that presents a spatial search pro
 Script to run the rask: [run_task.py](https://github.com/belindamef/my_master_project/blob/main/code/run_task.py)
 
 
-#### Task design and trial layout
-<img src="manuscript/task_design_trial_layout.png" width="80%"/>
+<img src="manuscript/task_design_trial_layout.png" width="70%"/>
 
 **a. Task design. b. Trial layout**
 
@@ -45,7 +41,7 @@ The model of the task is formulated using concepts from the theory of partially 
 * Script to run simulation [run_simulation.py](code/run_simulation.py)
 * method to simulate agent-task interaction: [agent_task_interaction.py](code/utilities/agent_task_interaction.py)
 
-<img src="manuscript/graph_model_&_agent_task_interaction.png" width="100%"/>
+<img src="manuscript/graph_model_&_agent_task_interaction.png" width="70%"/>
 
 **a. Graph model. b. Agent-Task-Interaction**
 
@@ -54,7 +50,7 @@ The model of the task is formulated using concepts from the theory of partially 
 * Scrip to run stats: [run_descriptives.py](code/run_descriptives.py)
 * Script to plot figures: [plot_figures.py](code/plot_figures.py)
 
-<img src="figures/figure_1.png" width="100%"/>
+<img src="figures/figure_1.png" width="70%"/>
 
 **Human and agent behavioral results**
 
