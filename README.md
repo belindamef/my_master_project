@@ -1,65 +1,64 @@
-# My Master Project
+# Treasure Hunt
 ---
 *NOTE:*  All contents in this repo are still work in progress and incomplete
 
 ---
 ## Table of contents
-* [General Info](#general-info)
-* [Spatial Search Task](#spatial-search-task-treasure-hunt-game)
-* [Task Model](#task-model)
-* [Behavioural Models](#behavioural-models) 
-* [Simulations](#simulations)
-* [Data-Analyses](#data-analyses)
-* [References](#references)
-
+- [# Treasure Hunt](#-treasure-hunt)
+- [Table of contents](#table-of-contents)
+- [General Info](#general-info)
+- [Treasure Hunt task](#treasure-hunt-task)
+    - [Task design and trial layout](#task-design-and-trial-layout)
+- [Task Model](#task-model)
+- [Agent Models](#agent-models)
+- [Simulations](#simulations)
+- [Data Analyses](#data-analyses)
+- [References](#references)
 
 
 ## General Info 
-This repository contains all scripts and tools for my master project.
+This repository contains all scripts and tools to run the [treasure hunt task](#treasure-hunt-task), simulations with a corresponding [task model](#task-model) and [agent models](#agent-models) and [data analyses](#data-analyses).
 
-In my master project I am investigating human sequential decision making in an exploration-exploitation dilemma.
+## Treasure Hunt task
+The Treasure Hunt task is behavioral paradigm that presents a spatial search problem with an exploration-exploitation dilemma
 
-For this I designed a [spatial search task](#spatial_search_task)) and developed a set of probabilistic agent-based [behavioural models](#behavioural_models) to compare different decision making strategies that participants may use for the task. This set includes explorative and exploitative Bayesian agents as well as control agents.
-
-All scripts and tools I used for [simulations](#simulations) of agent-task-interactions and [data analyses](#data_analyses) are stored in this repository.
-
+Script to run the rask: [run_task.py](https://github.com/belindamef/my_master_project/blob/main/code/run_task.py)
 
 
+#### Task design and trial layout
+<img src="manuscript/task_design_trial_layout.png" width="80%"/>
 
-## Spatial Search Task (Treasure Hunt Game)
-#### Scripts
-* Script to run the rask: [run_task.py](https://github.com/belindamef/my_master_project/blob/main/code/run_task.py)
-* task model: [task.py](https://github.com/belindamef/my_master_project/blob/main/code/utilities/task.py)
-
-In this spatial search task participants had to make sequential decisions under uncertainty. Available actions were associated with varying expected reward values and varying information gains. 
-
-The **task goal** was to find as many treasures as possible in a 5x5 grid-world, which was represented from a bird's eye perspective. One game consisted of 10 rounds. In each round, the participant had to find a treasure within 15 moves. One round ended if either the participant succeeded or the move limit was reached after 15 trials. Consequently, they could find between 0 and 10 treasures in one game. 
-Importantly, the treasure could only be hidding on one of 6 "**hiding spots**", which, at the beginning of the game, were invisible for the participant. However, they had the option to unveil hiding spots by trading one move for a "drill". Unveiled hiding spots remained visible throughout all rounds of one game.
-
-
-#### Trial layout
-![alt text](https://github.com/belindamef/my_master_project/blob/main/figures/trial_layout.png)
-
-On each trial participants were first presented with their current position (state s<sup>1</sup><sub>t</sub>)  and the prompt to choose an action. If participants chose the un-informative action a<sup>t</sup> to take a step, they were presented with their new position (state s<sup>1</sup><sub>t+1</sub>), and received the information whether they found the treasure or not. If participants chose the informative action to drill, they were first presented with an animated stimulus representing'drilling' and received the information whether they detected a hiding spot or not. (A) Scenario in which the participant decided to take a step in three consecutive trials. (B) Scenario in which the participant alternated between drills (trials 1 and 3) and steps (trial 2). Note that unveiled hiding spots remain visible over all rounds of one game as shown in the very right images.
+**a. Task design. b. Trial layout**
 
 ## Task Model
 The model of the task is formulated using concepts from the theory of partially observable Markov decision processes (PoMDP) [[1]](#references)
 
-## Behavioural Models
-#### Scripts
-* Agent models: [agent.py](https://github.com/belindamef/my_master_project/blob/main/code/utilities/agent.py)
-* Model components (prior and likelihood arrays): [model_comp.py](https://github.com/belindamef/my_master_project/blob/main/code/utilities/model_comp.py)
+
+
+* Task model class [task.py](code/utilities/task.py)
+## Agent Models
+* Agent model class: [agent.py](code/utilities/agent.py)
+* Model components (prior and likelihood arrays): [model_comp.py](code/utilities/model_comp.py)
 
 ## Simulations
-#### Scripts
-* Script to run simulation with fixed or random task configurations: [run_simulation.py](https://github.com/belindamef/my_master_project/blob/main/code/run_simulation.py)
-* method to simulate agent-task interaction: [agent_task_interaction.py](https://github.com/belindamef/my_master_project/blob/main/code/utilities/agent_task_interaction.py)
+
+* Script to run simulation [run_simulation.py](code/run_simulation.py)
+* method to simulate agent-task interaction: [agent_task_interaction.py](code/utilities/agent_task_interaction.py)
+
+<img src="manuscript/graph_model_&_agent_task_interaction.png" width="100%"/>
+
+**a. Graph model. b. Agent-Task-Interaction**
 
 ## Data Analyses
+
+* Scrip to run stats: [run_descriptives.py](code/run_descriptives.py)
+* Script to plot figures: [plot_figures.py](code/plot_figures.py)
+
+<img src="figures/figure_1.png" width="100%"/>
+
+**Human and agent behavioral results**
 
 ## References
 [1] Bertsekas, D. P. (2005)._Dynamic Programming and Optimal Control_.Belmont, Mass: AthenaScientific, 3rd edition
 
-## Contact
-fl.belinda@gmail.com
 
