@@ -36,8 +36,8 @@ np.set_printoptions(linewidth=500)
 # -----------------------------------------------------------------------------
 
 # Specify work, stimuli, and data directories
-working_dir = os.getcwd()
-project_dir = os.sep.join(working_dir.split(os.sep)[:4])  # Should be Users/$USER/my_master_project
+working_dir = os.path.dirname(os.path.abspath(__file__))
+project_dir = os.sep.join(working_dir.split(os.sep)[:4])  # Should be Users/$USER/treasure-hunt
 stimuli_dir = os.path.join(working_dir, 'stimuli')
 raw_exp_data_dir = os.path.join(project_dir, 'data', 'rawdata', 'exp')  # raw experimental data output directory
 

@@ -48,7 +48,8 @@ agent_models = ['C1', 'C2', 'C3', 'A1', 'A2', 'A3']  # generating and analysis m
 
 
 config_files_dir = os.path.join(working_dir, 'task_config',
-                                f'b-{n_blocks}_r-{n_rounds}_t-{n_trials}', f'{sim_name}')
+                                f'b-{n_blocks}_r-{n_rounds}_'
+                                f't-{n_trials}', f'{sim_name}')
 
 # Create or load if existent components
 model_comp = ModelComps(working_dir=working_dir, dim=dim, n_hides=n_hides)
