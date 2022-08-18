@@ -12,6 +12,7 @@ class Model:
     a_t : array_like
         Action value in trial t
     """
+
     def __init__(self):
 
         # Initialize empty attribute to embed agent object of class Agent
