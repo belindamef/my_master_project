@@ -1,8 +1,8 @@
-import numpy as np
-import more_itertools
 import os
 import time
 import pickle
+import numpy as np
+import more_itertools
 
 
 class ModelComps:
@@ -27,7 +27,8 @@ class ModelComps:
     """
 
     def __init__(self, working_dir, dim, n_hides):
-        """This function is the instantiation operation of the model component class"""
+        """This function is the instantiation operation of the
+        model component class"""
 
         self.working_dir = working_dir
         self.dim = dim
@@ -73,16 +74,18 @@ class ModelComps:
         # Evaluate number of s4 permutations
         self.n_s4_perms = len(self.s4_perms)
 
-        # Load or evaluate agent's initial belief state in first trials ---(Prior)---
+        # Load/evaluate agent's initial belief state in 1. trial ---(Prior)---
         start = time.time()
         prior_fn = os.path.join(
-            self.working_dir, "utilities", f"prior_dim-{self.dim}_h{self.n_hides}.npy"
+            self.working_dir,
+            "utilities",
+            f"prior_dim-{self.dim}_h{self.n_hides}.npy"
         )
         if os.path.exists(prior_fn):
             self.prior_c0 = np.load(prior_fn)
             end = time.time()
             print(f"ModelComps loading prior: {end - start}")
-            sum_p_c0 = np.sum(self.prior_c0)
+            # sum_p_c0 = np.sum(self.prior_c0)
         else:
             self.prior_c0 = np.full((self.n_nodes, self.n_s4_perms), 0.0)
             self.eval_prior()
@@ -90,10 +93,12 @@ class ModelComps:
             end = time.time()
             print(f"ModelComps computing prior: {end - start}")
 
-        # Load or evaluate action-dependent state-conditional observation distribution ---(Likelihood)---
+        # Load/eval action-dep. state-cond. obs distrib ---(Likelihood)---
         start = time.time()
         lklh_fn = os.path.join(
-            self.working_dir, "utilities", f"lklh_dim-{self.dim}_h{self.n_hides}.npy"
+            self.working_dir,
+            "utilities",
+            f"lklh_dim-{self.dim}_h{self.n_hides}.npy"
         )
         if os.path.exists(lklh_fn):
             self.lklh = np.load(lklh_fn)
@@ -114,7 +119,9 @@ class ModelComps:
         """Evaluate permutations of s4 states"""
         s_4_values = [0] * (self.n_nodes - self.n_hides)
         s_4_values.extend([1] * self.n_hides)
-        self.s4_perms = sorted(more_itertools.distinct_permutations(s_4_values))
+        self.s4_perms = sorted(
+            more_itertools.distinct_permutations(s_4_values)
+            )
 
     def eval_prior(self):
         """Evaluate agent's state priors"""
@@ -123,43 +130,50 @@ class ModelComps:
             for index, s4_perm in enumerate(self.s4_perms):
 
                 if s4_perm[s3] == 1:
-                    self.prior_c0[s3, index] = 1 / (self.n_s4_perms * self.n_hides)
+                    self.prior_c0[s3, index] = 1 / (self.n_s4_perms
+                                                    * self.n_hides)
                     # self.prior_c0[s3, index] = 1 / 1062600
 
-        sum = np.sum(self.prior_c0)
-        stop = 4
+        # sum = np.sum(self.prior_c0)
+        # stop = 4
 
     def eval_likelihood(self):
-        """Evaluate action-dependent state-conditional observation distribution p(o|s) (likelihood),
-        seperately for action = 0 and action not 0"""
+        """Evaluate action-dependent state-conditional observation
+        distribution p(o|s) (likelihood), seperately for
+        action = 0 and action not 0"""
 
         # # Loop through s4_permutations:
         # for index, s4_perm in enumerate(self.s4_perms):
         #
-        #     # Loop through through s1 values
+        #     # Loop through s1 values
         #     for s1 in range(self.n_nodes):
         #
         #         # ---------for all a = 0---------------
         #
-        #         # If s4[s1] == 0 (not hiding spot), lklh(o == 1 (grey)) = 1, else remain zero
+        #         # If s4[s1] == 0 (not hiding spot), lklh(o == 1 (grey)) = 1,
+        #           else remain zero
         #         if s4_perm[s1] == 0:
         #             self.lklh[0, s1, 1, :, index] = 1
         #
-        #         # If s4[s1] == 1 (hiding spot), lklh( o == 2 (blue)) = 1, else remain zero
+        #         # If s4[s1] == 1 (hiding spot), lklh( o == 2 (blue)) = 1,
+        #           else remain zero
         #         if s4_perm[s1] == 1:
         #             self.lklh[0, s1, 2, :, index] = 1
         #
         #         # ---------for all a = 1---------------
         #
-        #         # For s3 == s1, lklh(o == 0 (black)) = 0, else lklh(o == 0 (black)) = 1
+        #         # For s3 == s1, lklh(o == 0 (black)) = 0,
+        #           else lklh(o == 0 (black)) = 1
         #         self.lklh[1, s1, 0, :, index] = 1
         #         self.lklh[1, s1, 0, s1, index] = 0
         #
-        #         # For s3 == s1, lklh(o == 1 (grey)) = 0, else lklh(o == 1 (grey)) = 1
+        #         # For s3 == s1, lklh(o == 1 (grey)) = 0,
+        #              else lklh(o == 1 (grey)) = 1
         #         self.lklh[1, s1, 1, :, index] = 1
         #         self.lklh[1, s1, 1, s1, index] = 0
         #
-        #         # For s3 == s1, liklh(o == 2 (blue)) = 0, else lklh(o==2 (blue) = 1
+        #         # For s3 == s1, liklh(o == 2 (blue)) = 0,
+        #           else lklh(o==2 (blue) = 1
         #         self.lklh[1, s1, 2, :, index] = 1
         #         self.lklh[1, s1, 2, s1, index] = 0
         #
@@ -169,12 +183,13 @@ class ModelComps:
         # Loop through s4_permutations:
         for index, s4_perm in enumerate(self.s4_perms):
 
-            # Loop through through s1 values
+            # Loop through s1 values
             for s1 in range(self.n_nodes):
 
                 # ---------for all a = 0---------------
 
-                # If s4[s1] == 0 (not hiding spot), lklh(o == 1 (grey)) = 1, else remain zero
+                # If s4[s1] == 0 (not hiding spot), lklh(o == 1 (grey)) = 1,
+                #   else remain zero
                 if s4_perm[s1] == 0:
 
                     # for s2[s1] == 0 (black)
@@ -194,7 +209,8 @@ class ModelComps:
                     s2_s1 = 2
                     # bg color blue is impossible for s4_s1=0
 
-                # If s4[s1] == 1 (hiding spot), lklh( o == 2 (blue)) = 1, else remain zero
+                # If s4[s1] == 1 (hiding spot), lklh( o == 2 (blue)) = 1,
+                    # else remain zero
                 if s4_perm[s1] == 1:
 
                     # for s2[s1] == 0 (black)
@@ -224,7 +240,8 @@ class ModelComps:
                     # -----------------------
                     s2_s1 = 0
 
-                    # For s3 == s1, lklh(o == 0 (black)) = 0, else lklh(o == 0 (black)) = 1
+                    # For s3 == s1, lklh(o == 0 (black)) = 0,
+                    # else lklh(o == 0 (black)) = 1
                     self.lklh[1, s1, s2_s1, 0, :, index] = 1
                     self.lklh[1, s1, s2_s1, 0, s1, index] = 0
 
@@ -234,7 +251,8 @@ class ModelComps:
                     # -----------------------
                     s2_s1 = 1
 
-                    # For s3 == s1, lklh(o == 1 (grey)) = 0, else lklh(o == 1 (grey)) = 1
+                    # For s3 == s1, lklh(o == 1 (grey)) = 0,
+                    # else lklh(o == 1 (grey)) = 1
                     self.lklh[1, s1, s2_s1, 1, :, index] = 1
                     self.lklh[1, s1, s2_s1, 1, s1, index] = 0
 
@@ -251,11 +269,13 @@ class ModelComps:
                     # -----------------------
                     s2_s1 = 0
 
-                    # For s3 == s1, lklh(o == 0 (black)) = 0, else lklh(o == 0 (black)) = 1
+                    # For s3 == s1, lklh(o == 0 (black)) = 0,
+                    # else lklh(o == 0 (black)) = 1
                     self.lklh[1, s1, s2_s1, 0, :, index] = 1
                     self.lklh[1, s1, s2_s1, 0, s1, index] = 0
 
-                    # For s3 == 1, liklh(o == 3 (treasure)) = 1, else remain zero
+                    # For s3 == 1, liklh(o == 3 (treasure)) = 1,
+                    # else remain zero
                     self.lklh[1, s1, s2_s1, 3, s1, index] = 1
 
                     # all other observations ( o==1, o==2 remain 0)
@@ -270,9 +290,11 @@ class ModelComps:
                     # -----------------------
                     s2_s1 = 2
 
-                    # For s3 == s1, liklh(o == 2 (blue)) = 0, else lklh(o==2 (blue) = 1
+                    # For s3 == s1, liklh(o == 2 (blue)) = 0,
+                    # else lklh(o==2 (blue) = 1
                     self.lklh[1, s1, s2_s1, 2, :, index] = 1
                     self.lklh[1, s1, s2_s1, 2, s1, index] = 0
 
-                    # For s3 == 1, liklh(o == 3 (treasure)) = 1, else remain zero
+                    # For s3 == 1, liklh(o == 3 (treasure)) = 1,
+                    # else remain zero
                     self.lklh[1, s1, s2_s1, 3, s1, index] = 1

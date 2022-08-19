@@ -117,7 +117,8 @@ class Task:
         self.drill_finding = np.nan
         self.tr_found_on_blue = np.nan
 
-        # Get shortest distances between two nodes from json or evaluate save to json if not existent
+        # Get the shortest distances between two nodes from json or evaluate
+        # save to json if not existent
         # ---------------------------------------------------------------------
         # Initialize dictionary with shortest distances
         self.shortest_dist_dic = {}
@@ -211,7 +212,7 @@ class Task:
                                     shortest_path = new_path
                                     shortest_distance = len(shortest_path)-1
 
-                                    # Add shortest path to dictionary
+                                    # Add the shortest path to dictionary
                                     self.shortest_dist_dic[f'{start_node}_to_{end_node}'] = shortest_distance
                                     self.shortest_dist_dic[f'{end_node}_to_{start_node}'] = shortest_distance
                                     queue = []
@@ -235,7 +236,7 @@ class Task:
         self.drill_finding = np.nan
 
     def return_observation(self):
-        """Return observation, i.e. each nodes current status (color) and treasure disc (yes/no).
+        """Return observation, i.e. each node current status (color) and treasure disc (yes/no).
         This function maps action, reward and states s3 and s4 onto observation o_t, as specified in g
         """
         # If node color black and no treasure

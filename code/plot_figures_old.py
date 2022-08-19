@@ -1,17 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-# from matplotlib import cm
-import matplotlib.ticker as mticker
 import matplotlib.gridspec as gridspec
-import wesanderson
 import pandas as pd
 import os
 import glob
-
-from utilities.data_class import Data
-from utilities.data_analyses import DescrStats
-from utilities.data_analyses import GroupStats
-# from utilities.plot_colormap import plot_colormap
 import utilities.very_plotter as very_plotter
 
 
@@ -33,8 +25,10 @@ figures_dir = os.path.join(project_dir, 'figures')
 
 exp_data_dir = os.path.join(data_dir, 'rawdata', 'exp', f'{exp_label}')
 sim_data_dir = os.path.join(data_dir, 'rawdata', 'sim', f'{sim_label}')
-exp_proc_data_dir = os.path.join(data_dir, 'processed_data', 'exp', f'{exp_label}')
-sim_proc_data_dir = os.path.join(data_dir, 'processed_data', 'sim', f'{exp_label}')
+exp_proc_data_dir = os.path.join(data_dir, 'processed_data', 'exp',
+                                 f'{exp_label}')
+sim_proc_data_dir = os.path.join(data_dir, 'processed_data', 'sim',
+                                 f'{exp_label}')
 
 ev_exp_fn = os.path.join(exp_proc_data_dir, 'sub-all_task-th_run-all_beh')
 ev_sim_fn = os.path.join(sim_proc_data_dir, 'sub-all_task-th_run-all_beh')
@@ -43,10 +37,14 @@ ev_sim_run_fn = os.path.join(sim_proc_data_dir, 'sub-all_task-th_run-')
 
 ds_exp_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}', 'descr_stats')
 ds_sim_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}', 'descr_stats')
-grp_stats_exp_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}', 'grp_lvl_stats')
-grp_stats_sim_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}', 'grp_lvl_stats')
-tw_exp_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}', 't_wise_stats')
-tw_sim_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}', 't_wise_stats')
+grp_stats_exp_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}',
+                                'grp_lvl_stats')
+grp_stats_sim_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}',
+                                'grp_lvl_stats')
+tw_exp_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}',
+                         't_wise_stats')
+tw_sim_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}',
+                         't_wise_stats')
 
 # Load data
 exp_ev_all_subs_df = pd.read_pickle(f'{ev_exp_fn}.pkl')
@@ -210,12 +208,15 @@ fig.savefig(fig_fn, dpi=200, format='png')
 # very_plotter.plot_bar(ax=this_ax, x=0, height=np.mean(ds_os_beh_df['n_tr'].div(n_tr_max)),
 #                       yerr=np.std(ds_os_beh_df['n_tr'].div(n_tr_max)),
 #                       colors=greens[0])
-# very_plotter.plot_bar(ax=this_ax, x=[1, 1.5, 2], height=ds_A_sim_df['n_tr'].div(n_tr_max).values,
+# very_plotter.plot_bar(ax=this_ax, x=[1, 1.5, 2],
+#                       height=ds_A_sim_df['n_tr'].div(n_tr_max).values,
 #                       colors=blues, bar_width=half_bar_width)
-# very_plotter.plot_bar(ax=this_ax, x=[2.5, 3, 3.5], height=ds_C_sim_df['n_tr'].div(n_tr_max).values,
+# very_plotter.plot_bar(ax=this_ax, x=[2.5, 3, 3.5],
+#                       height=ds_C_sim_df['n_tr'].div(n_tr_max).values,
 #                       colors=yellows, bar_width=half_bar_width)
 #
-# very_plotter.plot_bar_scatter(this_ax, ds_os_beh_df['n_tr'].div(n_tr_max), color=greens[1], bar_width=bar_width)
+# very_plotter.plot_bar_scatter(this_ax, ds_os_beh_df['n_tr'].div(n_tr_max),
+#                               color=greens[1], bar_width=bar_width)
 #
 # very_plotter.config_axes(this_ax, title=f"Participant and Agent's task performance",
 #                          y_label="\% Treasures", y_lim=[0, 1],

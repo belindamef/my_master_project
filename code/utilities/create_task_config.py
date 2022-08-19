@@ -80,7 +80,7 @@ class TaskConfigurator:
             for round_ in range(self.n_rounds):
                 # Set treasure to equal start position
                 self.s_3_tr_loc[block, round_] = cp.deepcopy(self.s_1[block, round_])
-                # Sample treasure location until its not the starting position s_0
+                # Sample treasure location until it's not the starting position s_0
                 while self.s_3_tr_loc[block, round_] == self.s_1[block, round_]:
                     self.s_3_tr_loc[block, round_] = np.random.choice(self.hides_loc[block], 1)
 

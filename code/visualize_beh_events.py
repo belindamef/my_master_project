@@ -45,7 +45,7 @@ proc_data_fn = os.path.join(out_proc_data_dir, f'events_sub-{sub_id}_proc')
 events_this_sub_df = pd.read_pickle(f'{proc_data_fn}.pkl')
 # Create subject-specific figure output-directory if not existent
 out_fig_sub_dir = os.path.join(out_fig_dir, f'sub-{sub_id}')
-if not os.path.exists(out_fig_sub_dir):  # Create if non existent
+if not os.path.exists(out_fig_sub_dir):  # Create if non-existent
     os.makedirs(out_fig_sub_dir)
 
 # Moves Visualization

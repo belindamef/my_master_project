@@ -6,7 +6,7 @@ file creations
 bids-compatible tabular file with behavioral data:
     /<raw_beh_data_dir>/<exp_label>/sub-<ID>/beh/sub-<ID>_task-th_beh.tsv
 
-bids-compatible json file with meta data:
+bids-compatible json file with metadata:
     /<raw_beh_data_dir>/<exp_label>/participants.json
     /<raw_beh_data_dir>/<exp_label>/task-th.json
 
@@ -41,12 +41,12 @@ project_dir = os.sep.join(working_dir.split(os.sep)[:4])  # Should be Users/$USE
 stimuli_dir = os.path.join(working_dir, 'stimuli')
 raw_exp_data_dir = os.path.join(project_dir, 'data', 'rawdata', 'exp')  # raw experimental data output directory
 
-if not os.path.exists(raw_exp_data_dir):  # create if non existent
+if not os.path.exists(raw_exp_data_dir):  # create if non-existent
     os.makedirs(raw_exp_data_dir)
 
 # Specify experimental parameter
-exp_blocks = 3  # No. of task blocks (each block has different tr location, but same hiding spots
-exp_rounds = 10  # No. of hunting rounds per task block
+exp_blocks = 3  # No. of task blocks
+exp_rounds = 10  # No. of hunting rounds per block
 exp_trials = 12
 dim = 5  # dimension: No. of rows and columns of stimuli.grid
 n_nodes = dim ** 2
@@ -74,14 +74,14 @@ my_mac.saveMon()
 # Get experiment name and create main data directory
 exp_label = input("What kind of test is this? \n"
                   "(Entered name will be used as directory name): ")
-exp_data_dir = os.path.join(raw_exp_data_dir, f'{exp_label}')  # main data directory
+exp_data_dir = os.path.join(raw_exp_data_dir, f'{exp_label}')  # main data dir
 exp_data_ext_dir = os.path.join(raw_exp_data_dir, f'{exp_label}_ext')  # extended data
-if not os.path.exists(exp_data_dir):  # create if non existent
+if not os.path.exists(exp_data_dir):  # create if non-existent
     os.makedirs(exp_data_dir)
     print(f'Creating new data folder {exp_data_dir}')
 else:
     print(f'Outputs will be saved to {exp_data_dir}')
-if not os.path.exists(exp_data_ext_dir):  # create if non existent
+if not os.path.exists(exp_data_ext_dir):  # create if non-existent
     os.makedirs(exp_data_ext_dir)
 
 # Store experiment data meta json files if not existent
@@ -336,7 +336,7 @@ else:
     with open(f'{participants_fn}.tsv', 'w') as tsv_file:
         tsv_file.write(part_df.to_csv(sep='\t', na_rep=np.NaN, index=False))
 
-# Get user input whether or not to show instructions
+# Get user input whether to show instructions
 while True:
     try:
         show_instr_details = input("Show instructions (y/n)?: ")
@@ -346,7 +346,7 @@ while True:
     except ValueError:
         print("Invalid value")
 
-# Get user input whether or not to run exercise trials
+# Get user input whether to run exercise trials
 while True:
     try:
         run_practice_blocks = input("Start practice trials (y/n)?: ")
@@ -675,7 +675,8 @@ def show_instructions():
                           "again harbour a treasure in a following round, " \
                           "as indicated by a change of the field background color." \
                           " Another one is to use the unveil-hiding-spot option"
-    # Select explanation that fits the setting whether or not a hide should be unveiled upon treasure discovery
+    # Select explanation that fits the setting whether a hide should be
+    # unveiled upon treasure discovery
     if unv_hide_with_tr:
         n_options = two_options_version
     elif not unv_hide_with_tr:
@@ -780,7 +781,7 @@ def show_instructions():
                      "For each move you can choose between two different actions: \n\n"
                      "Walk on a neighbouring field \n or \n drill at your current location",
                      "Either action will cost you one move."]
-    # f"In the end, your score will be summed up over all games."]
+    # f"In the end, your score will be summed up over all games."
     for page in rules_summary:
         stimuli.instr_center.text = page
         win.flip()

@@ -46,8 +46,8 @@ def start_agent_task_interaction(
     agent_models : list of str
         List of agent models
     task_configs : dict
-        {'s_1', 's_3_tr_loc', 'hides_loc}
-    model_comps : object
+        {'s_1', 's_3_tr_loc', 'hides_loc'}
+    model_comps : obj
         Object of class ModelComponents
     """
 

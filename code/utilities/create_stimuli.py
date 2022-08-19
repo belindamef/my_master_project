@@ -316,8 +316,11 @@ class StimulusCreation:
         self.create_score_tr_stim()  # Initial score = O
         self.create_treasure_stim()
 
-        # Create score count stimuli if not existent for this setting with regards to number of blocks and rounds
-        if not os.path.exists(f'{stimuli_dir}/"score_prompt_blocks-{self.blocks}_rounds-{self.rounds}'):
+        # Create score count stimuli if not existent for this setting (
+        # no of blocks and rounds)
+        if not os.path.exists(
+                f"{stimuli_dir}/\"score_prompt_blocks-{self.blocks}"
+                f"_rounds-{self.rounds}"):
             self.create_score_prompt_png()
 
     # -----------------------------------------------------------------------------
@@ -370,7 +373,7 @@ class StimulusCreation:
                 n_rowstofill = int(tr_score // n_columns + 1)
             # Create new image, in which all treasure images will be pasted
             score_tr_image = Image.new('RGB', (total_width, total_height), color=self.back_col)
-            # Start at y axis offset 0
+            # Start at y-axis offset 0
             y_offset = 0
             # Loop through rows
             for row in range(0, n_rowstofill):

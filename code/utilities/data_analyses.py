@@ -253,7 +253,7 @@ class ConditionalFrequencies:
         when action_v to drill was chosen
 
         self.p_unv_giv_drill : rel frequ. of unveiling a hiding spot given that
-                                    that aciton to drill was chosen
+                                    the action to drill was chosen
         """
         groupby_action_type = self.events_df.groupby('action_type')
         p_unv_giv_drill = groupby_action_type['drill_finding'].mean()  # out: Pandas series with prob grouped by action_v type
@@ -265,14 +265,17 @@ class ConditionalFrequencies:
 
     def p_visible_hide_giv_tr_disc(self):
         """
-        Probability (i.e. relative frequency) of that the current position was a unveiled hiding spot,
+        Probability (i.e. relative frequency) of that the current position
+        was an unveiled hiding spot,
         when a treasure was discovered.
 
-        This kind of describes the percentage of treasures found on a unveiled and visible hiding spot versus
+        This kind of describes the percentage of treasures found on an
+        unveiled and visible hiding spot versus
         not unveiled hiding spots
         """
         groupby_tr_disc = self.events_df.groupby('tr_disc')  # group trial in those, where treasure was discovered and those where no treasure was discovered
-        p_was_unv_hide_giv_tr_disc = groupby_tr_disc['tr_found_on_blue'].mean()  # out: Pandas series with probs that a spot was a unveiled hiding spot grouped by treasure discovered in current trial or not
+        p_was_unv_hide_giv_tr_disc = groupby_tr_disc[
+            'tr_found_on_blue'].mean()  # out: Pandas series with probs that a spot was an unveiled hiding spot grouped by treasure discovered in current trial or not
         cols = []
         for tr_disc_status in p_was_unv_hide_giv_tr_disc.index:
             cols.append(f'p_visible_hide_giv_{tr_disc_status}_tr_disc')
@@ -505,7 +508,8 @@ class GroupStats(DescrStats):
     # Number of hides being unveiled after drilling
     # print(self.df.groupby(['action_type', 'is_hide'])) # todo: after new data
 
-    # Number of treasures found on a unveiled hiding spot vs on not unveiled field
+    # Number of treasures found on an unveiled hiding spot vs on not
+# unveiled field
 
     # Number of treasures found as function of number of unveleid hiding spots
 

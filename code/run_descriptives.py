@@ -262,9 +262,13 @@ if dataset == 'sim':
         agent_group_by_object = events_all_subs_df.groupby('agent')
 
         # Iterate through agents
-        for agent, agent_df in agent_group_by_object:
-            grp_stats_thisagent_all_blocks = GroupStats(agent_df, dataset, descr_stats_all_subs_df)
-            t_wise_stats_all_blocks[agent] = grp_stats_thisagent_all_blocks.eval_t_wise_stats(groupby='trial_cont_overallb')
+        for agent_, agent_df in agent_group_by_object:
+            grp_stats_thisagent_all_blocks = GroupStats(agent_df,
+                                                    dataset,
+                                                    descr_stats_all_subs_df)
+            t_wise_stats_all_blocks[agent_] = \
+                grp_stats_thisagent_all_blocks.eval_t_wise_stats(
+                    groupby='trial_cont_overallb')
 
     # Save data  # TODO: move downwards, once working
     for agent, t_wise_thisagent_df in t_wise_stats_all_blocks.items():

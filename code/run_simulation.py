@@ -11,10 +11,10 @@ for each agent and task configuration.
 Author: Belinda Fleischmann
 """
 
+import os
 from utilities.agent_task_interaction import start_agent_task_interaction
 from utilities.model_comp import ModelComps
 from utilities.create_task_config import TaskConfigurator
-import os
 
 # Specify directories
 working_dir = os.path.dirname(os.path.abspath(__file__))
