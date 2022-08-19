@@ -12,7 +12,7 @@ dim = 5
 
 # Specify directories and create if not existent
 working_dir = os.getcwd()
-project_dir = os.sep.join(working_dir.split(os.sep)[:4])  # Should be Users/<{$USER}>/<{$PROJECTFOLDER}>
+project_dir = os.sep.join(working_dir.split(os.sep)[:4])
 data_dir = os.path.join(project_dir, '02-data')
 results_dir = os.path.join(project_dir, '03-results')
 figures_dir = os.path.join(project_dir, '04-figures')

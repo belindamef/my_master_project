@@ -93,7 +93,7 @@ class ModelComps:
             end = time.time()
             print(f"ModelComps computing prior: {end - start}")
 
-        # Load/eval action-dep. state-cond. obs distrib ---(Likelihood)---
+        # Load/eval action-dep. state-cond. obs distribution ---(Likelihood)---
         start = time.time()
         lklh_fn = os.path.join(
             self.working_dir,
@@ -103,7 +103,7 @@ class ModelComps:
         if os.path.exists(lklh_fn):
             self.lklh = np.load(lklh_fn)
             end = time.time()
-            print(f"ModelComps loading likhl: {end - start}")
+            print(f"ModelComps loading lkhl: {end - start}")
         else:
 
             self.lklh = np.full(
@@ -112,7 +112,7 @@ class ModelComps:
             self.eval_likelihood()  # TODO: gets killed; figure out alternative
             np.save(lklh_fn, self.lklh)
             end = time.time()
-            print(f"ModelComps computing likhl: {end - start}")
+            print(f"ModelComps computing lkhl: {end - start}")
         start = time.time()
 
     def eval_s4_perms(self):
@@ -139,7 +139,7 @@ class ModelComps:
 
     def eval_likelihood(self):
         """Evaluate action-dependent state-conditional observation
-        distribution p(o|s) (likelihood), seperately for
+        distribution p(o|s) (likelihood), separately for
         action = 0 and action not 0"""
 
         # # Loop through s4_permutations:
@@ -172,12 +172,12 @@ class ModelComps:
         #         self.lklh[1, s1, 1, :, index] = 1
         #         self.lklh[1, s1, 1, s1, index] = 0
         #
-        #         # For s3 == s1, liklh(o == 2 (blue)) = 0,
+        #         # For s3 == s1, lklh(o == 2 (blue)) = 0,
         #           else lklh(o==2 (blue) = 1
         #         self.lklh[1, s1, 2, :, index] = 1
         #         self.lklh[1, s1, 2, s1, index] = 0
         #
-        #         # For s3 == 1, liklh(o == 3 (treasure)) = 1, else remain zero
+        #         # For s3 == 1, lklh(o == 3 (treasure)) = 1, else remain zero
         #         self.lklh[1, s1, 3, s1, index] = 1
 
         # Loop through s4_permutations:
@@ -227,7 +227,7 @@ class ModelComps:
 
                     # for s2[s1] == 2 (blue)
                     # -----------------------
-                    # will return same color as already unvealed
+                    # will return same color as already unveiled
                     s2_s1 = 2
                     self.lklh[0, s1, s2_s1, 2, :, index] = 1
                     self.lklh[0, s1, s2_s1, 2, s1, index] = 0
@@ -274,7 +274,7 @@ class ModelComps:
                     self.lklh[1, s1, s2_s1, 0, :, index] = 1
                     self.lklh[1, s1, s2_s1, 0, s1, index] = 0
 
-                    # For s3 == 1, liklh(o == 3 (treasure)) = 1,
+                    # For s3 == 1, lklh(o == 3 (treasure)) = 1,
                     # else remain zero
                     self.lklh[1, s1, s2_s1, 3, s1, index] = 1
 
@@ -290,11 +290,11 @@ class ModelComps:
                     # -----------------------
                     s2_s1 = 2
 
-                    # For s3 == s1, liklh(o == 2 (blue)) = 0,
+                    # For s3 == s1, lklh(o == 2 (blue)) = 0,
                     # else lklh(o==2 (blue) = 1
                     self.lklh[1, s1, s2_s1, 2, :, index] = 1
                     self.lklh[1, s1, s2_s1, 2, s1, index] = 0
 
-                    # For s3 == 1, liklh(o == 3 (treasure)) = 1,
+                    # For s3 == 1, lklh(o == 3 (treasure)) = 1,
                     # else remain zero
                     self.lklh[1, s1, s2_s1, 3, s1, index] = 1

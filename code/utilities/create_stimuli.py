@@ -14,7 +14,8 @@ stimuli_dir = os.path.join(project_dir, 'code', 'stimuli')  # stimuli directory
 
 
 class StimulusCreation:
-    """Methods to create stimuli with the psychopy module to implement the treasure hunt task
+    """Methods to create stimuli with the psychopy module to implement the
+    treasure hunt task
 
     Attributes
     ----------
@@ -22,8 +23,8 @@ class StimulusCreation:
     """
     def __init__(self, task_params):
         """
-        This function is the instantiation operation of the gridworld stimulus class,
-        created with psychopy.visual.ElementArrayStim()
+        This function is the instantiation operation of the gridworld
+        stimulus class, created with psychopy.visual.ElementArrayStim()
 
         Input
             dim       : dimensionality (No. of rows and columns of the gridworld
@@ -231,6 +232,7 @@ class StimulusCreation:
 
         Parameters
         ----------
+        s4_hide_node
         todo
         """
         for node, value in enumerate(s4_hide_node):

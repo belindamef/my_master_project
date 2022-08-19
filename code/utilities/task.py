@@ -120,7 +120,7 @@ class Task:
         # Get the shortest distances between two nodes from json or evaluate
         # save to json if not existent
         # ---------------------------------------------------------------------
-        # Initialize dictionary with shortest distances
+        # Initialize dictionary with the shortest distances
         self.shortest_dist_dic = {}
 
         # Specify path for shortest_distances storage file

@@ -53,7 +53,7 @@ class Data:
 
 
     def extract_block_wise_dataframes(self):
-        """Groupby blocks and extract one separate dataframe for each block with continuous trial counts"""
+        """Group by blocks and extract one separate dataframe for each block with continuous trial counts"""
         for block_, block_df in self.events_df.groupby('block'):
             events_block_drop13 = block_df[block_df.trial != 13]
             n_trials = len(events_block_drop13)

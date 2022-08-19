@@ -83,7 +83,7 @@ class Counts:
 
     def count_treasures(self):
         """Count number of treasures found over all trials"""
-        # ------Count total treausures-----------------
+        # ------Count total treasures-----------------
         self.counts_df['n_tr'] = self.events_df['tr_disc'].sum()
 
         # ------Count treasures blockwise-----------------
@@ -226,8 +226,8 @@ class ConditionalFrequencies:
         Absolute and relative frequency (Probability) of finding a treasure given the number
         of unveiled hiding spots
 
-        self.p_tr_disc_giv_hides : rel. frequ. of finding a treasure as a function of
-                                   the number of unveiled hiding spots
+        self.p_tr_disc_giv_hides : rel. frequ. of finding a treasure as a
+        function of the number of unveiled hiding spots
         """
         groupby_n_hides = self.events_df.groupby('n_blue')
 

@@ -177,10 +177,10 @@ def start_agent_task_interaction(
                     a_t = np.full(n_trials + 1, np.nan)  # action
                     p_o_giv_o_t = np.full(
                         n_trials + 1, np.nan, dtype=object
-                    )  # b-dep posterioir predictive distribution
+                    )  # b-dep posterior predictive distribution
                     kl_giv_a_o = np.full(
                         n_trials + 1, np.nan, dtype=object
-                    )  # b-dep posterioir predictive distribution
+                    )  # b-dep posterior predictive distribution
                     agent_t = np.full(
                         (n_trials + 1, 1), np.nan
                     )  # Recordings for sanity checks

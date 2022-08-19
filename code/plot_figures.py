@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 # from matplotlib import cm
-import matplotlib.ticker as mticker
 import matplotlib.gridspec as gridspec
 import wesanderson
 import pandas as pd
@@ -25,7 +24,7 @@ n_blocks = 3
 
 # Specify directories and filenames
 working_dir = os.getcwd()
-project_dir = os.sep.join(working_dir.split(os.sep)[:4])  # Should be Users/<{$USER}>/<{$PROJECTFOLDER}>
+project_dir = os.sep.join(working_dir.split(os.sep)[:4])
 data_dir = os.path.join(project_dir, 'data')
 results_dir = os.path.join(project_dir, 'results')
 descr_stats_dir = os.path.join(results_dir, 'descr_stats')
@@ -64,7 +63,7 @@ exp_ev_all_subs_df = pd.read_pickle(f'{ev_exp_fn}.pkl')
 grp_lvl_stats_sim_100 = pd.read_pickle(f'{grp_stats_sim_100_fn}.pkl')
 grp_lvl_stats_sim_100_A = grp_lvl_stats_sim_100[grp_lvl_stats_sim_100['sub_id'].isin(['Agent A1', 'Agent A2', 'Agent A3'])]
 grp_lvl_stats_sim_100_C = grp_lvl_stats_sim_100[grp_lvl_stats_sim_100['sub_id'].isin(['Agent C1', 'Agent C2', 'Agent C3'])]
-tw_sim_100_aw = {} # trialwise stats each agent over all blocks
+tw_sim_100_aw = {}  # trial wise stats each agent over all blocks
 for agent in ['A1', 'A2', 'A3']:
     tw_sim_100_aw[agent] = pd.read_pickle(f'{tw_sim_100_fn}_agent-Agent {agent}.pkl')
 
@@ -347,7 +346,7 @@ very_plotter.config_axes(this_ax,
                          #ytickslabels=np.around(np.linspace(0, 1.0, 6), 2))
                          ytickslabels=[0, 20, 40, 60, 80, 100])
 
-# Roundwise action choices
+# Round wise action choices
 s = 14
 ax[6] = plt.subplot(gs[3, 4:10])
 this_ax = ax[6]

@@ -17,7 +17,7 @@ n_blocks = 3
 
 # Specify directories and filenames
 working_dir = os.getcwd()
-project_dir = os.sep.join(working_dir.split(os.sep)[:4])  # Should be Users/<{$USER}>/<{$PROJECTFOLDER}>
+project_dir = os.sep.join(working_dir.split(os.sep)[:4])
 data_dir = os.path.join(project_dir, 'data')
 results_dir = os.path.join(project_dir, 'results')
 descr_stats_dir = os.path.join(results_dir, 'descr_stats')
@@ -120,7 +120,7 @@ for block in range(n_blocks):
                              yticks=np.linspace(0, 1.0, 6),
                              ytickslabels=np.around(np.linspace(0, 1.0, 6), 2))
 
-# ------Plot trialwise tr_disc--------------------------------------------
+# ------Plot trial wise tr_disc--------------------------------------------
 s = 14
 for block in range(n_blocks):
     block += 1

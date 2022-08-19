@@ -1,8 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-# from matplotlib import cm
-import matplotlib.ticker as mticker
-import matplotlib.gridspec as gridspec
 import pandas as pd
 import os
 import glob
@@ -33,7 +29,7 @@ n_blocks = n_block_this_label[exp_label]
 
 # Specify directories and create if not existent
 working_dir = os.getcwd()
-project_dir = os.sep.join(working_dir.split(os.sep)[:4])  # Should be Users/<{$USER}>/<{$PROJECTFOLDER}>
+project_dir = os.sep.join(working_dir.split(os.sep)[:4])
 data_dir = os.path.join(project_dir, 'data')
 results_dir = os.path.join(project_dir, 'results')
 figures_dir = os.path.join(project_dir, 'figures')
@@ -129,11 +125,11 @@ for index, events_fn in enumerate(ev_file_list):
             print(f'unpacking sub-{sub_id} proc_events.pkl')
             events_this_sub_df = pd.read_pickle(f'{proc_data_fn}.pkl')
 
-        # Check separately, if processed data blockwise existent
+        # Check separately, if processed data block wise existent
         events_bw_run1_this_sub_fn = f'{out_proc_data_dir}/sub-{sub_id}_task-th_run-01_beh.pkl'
         if os.path.exists(events_bw_run1_this_sub_fn):
             events_block_this_sub = {}
-            # Unpack each run's (block's) event datafram and write to dict
+            # Unpack each run's (block's) event dataframe and write to dict
             for run_number in range(n_blocks):
                 block_ = run_number + 1
                 events_block_this_sub[block_] = pd.read_pickle(f'{out_proc_data_dir}/sub-{sub_id}_task-th_run-{block_:02d}_beh.pkl')
@@ -253,7 +249,7 @@ if dataset == 'sim':
     t_wise_stats_all_blocks = {}
 
     for agent in agent_list:
-        # Initialize dictionary for blockwise trialswise counts
+        # Initialize dictionary for blockwise trialwise counts
         t_wise_bw_agent[agent] = {}
         t_wise_stats_all_blocks[agent] = {}
 

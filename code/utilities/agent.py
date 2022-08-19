@@ -44,7 +44,7 @@ class Agent:
     o_s2 : array_like
         State-dependent observation-set
     v : array_like
-        (a_s1 x 1)-dimensional array denoting decision valences for each availabe action
+        (a_s1 x 1)-dimensional array denoting decision valences for each available action
     d : float
         Agent's decision
     s4_perms : list of tuple

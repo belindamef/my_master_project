@@ -781,7 +781,6 @@ def show_instructions():
                      "For each move you can choose between two different actions: \n\n"
                      "Walk on a neighbouring field \n or \n drill at your current location",
                      "Either action will cost you one move."]
-    # f"In the end, your score will be summed up over all games."
     for page in rules_summary:
         stimuli.instr_center.text = page
         win.flip()
@@ -904,7 +903,7 @@ def perform_state_transition():
 
     # After informative actions:
     if action == 0:
-        # Change node colors (trasnsition s_2):
+        # Change node colors (transition s_2):
         if s4_hide_node[int(s1_node)] == 0:  # If s1 is not a hiding spot
             if s2_node_color[int(s1_node)] == 0:  # If node is (was) black
                 drill_finding = 0
@@ -1264,7 +1263,7 @@ for this_block in range(blocks):
             get_response()  # Get participant response
             if this_resp == 'escape':  # Check for quit
                 break  # Break this round
-            eval_action()  # evalute participant's action choixe
+            eval_action()  # evaluate participant's action choixe
 
             # ------Ending Routine "trial"------
             # Update move count and move count stimulus
