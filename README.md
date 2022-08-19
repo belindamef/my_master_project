@@ -16,6 +16,7 @@
 ## General Info 
 This repository contains all scripts and tools to run the [treasure hunt task](#treasure-hunt-task), simulations with a corresponding [task model](#task-model) and [agent models](#agent-models) and [data analyses](#data-analyses).
 
+The current state of the code only works with ```python version 3.8.2```
 ## Treasure Hunt task
 The Treasure Hunt task is behavioral paradigm that presents a spatial search problem with an exploration-exploitation dilemma
 
