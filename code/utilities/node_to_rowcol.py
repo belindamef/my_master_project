@@ -3,8 +3,8 @@ import numpy as np
 
 def node_to_rowcol(nodes, dim):
     """
-    This function transforms positions node notation to a row and column notation
-    in a gridworld with dimension dim
+    This function transforms positions node notation to a row and column
+    notation in a gridworld with dimension dim
 
     Input
         nodes : (nodes.size)-array with positions in nodes notation

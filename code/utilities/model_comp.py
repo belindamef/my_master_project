@@ -19,7 +19,7 @@ class ModelComps:
         Dimensionality of the gridworld
     n_hides : int
         Number of hiding spots
-    TODO
+    # TODO
 
     Methods
     -------
@@ -113,7 +113,7 @@ class ModelComps:
             np.save(lklh_fn, self.lklh)
             end = time.time()
             print(f"ModelComps computing lkhl: {end - start}")
-        start = time.time()
+        # start = time.time()
 
     def eval_s4_perms(self):
         """Evaluate permutations of s4 states"""
@@ -206,7 +206,7 @@ class ModelComps:
 
                     # for s2[s1] == 2 (blue)
                     # -----------------------
-                    s2_s1 = 2
+                    # s2_s1 = 2
                     # bg color blue is impossible for s4_s1=0
 
                 # If s4[s1] == 1 (hiding spot), lklh( o == 2 (blue)) = 1,
@@ -222,7 +222,7 @@ class ModelComps:
 
                     # for s2[s1] == 1 (grey)
                     # -----------------------
-                    s2_s1 = 1
+                    # s2_s1 = 1
                     # grey node bg color impossible for s4_s1=1
 
                     # for s2[s1] == 2 (blue)
@@ -260,7 +260,7 @@ class ModelComps:
 
                     # for s2[s1] == 2 (blue)
                     # -----------------------
-                    s2_s1 = 2
+                    # s2_s1 = 2
                     # node color blue is impossible
 
                 # If s4[s1] == 1 (node is a hiding spot)
@@ -282,7 +282,7 @@ class ModelComps:
 
                     # for s2[s1] == 1 (grey)
                     # -----------------------
-                    s2_s1 = 1
+                    # s2_s1 = 1
 
                     # observation grey impossible --> all zero
 

@@ -17,7 +17,8 @@ data_dir = os.path.join(project_dir, '02-data')
 results_dir = os.path.join(project_dir, '03-results')
 figures_dir = os.path.join(project_dir, '04-figures')
 input_data_dir = os.path.join(data_dir, f'{dataset}', f'{run}')
-out_proc_data_dir = os.path.join(results_dir, f'{dataset}', f'{run}', 'processed_data')
+out_proc_data_dir = os.path.join(
+    results_dir, f'{dataset}', f'{run}', 'processed_data')
 out_descr_stats_dir = os.path.join(results_dir, f'{dataset}', f'{run}')
 out_fig_dir = os.path.join(figures_dir, f'{dataset}', f'{run}')
 if not os.path.exists(out_proc_data_dir):
@@ -28,7 +29,7 @@ if not os.path.exists(out_fig_dir):
     os.makedirs(out_fig_dir)
 
 # Specify experimental parameter
-blocks = 1  # No. of task blocks (each block has different tr location, but same hiding spots
+blocks = 1
 rounds = 10  # No. of hunting rounds per task block
 dim = 5  # dimension: No. of rows and columns of gridworld
 trials = 12
@@ -49,7 +50,7 @@ if not os.path.exists(out_fig_sub_dir):  # Create if non-existent
     os.makedirs(out_fig_sub_dir)
 
 # Moves Visualization
-# ----------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 s1_t = np.array(events_this_sub_df['s1_pos'].tolist())
 s7_c = np.array(events_this_sub_df['s3_tr_loc']).tolist()
 
@@ -82,13 +83,13 @@ task_params = {
 # Create gridworld background
 block_filenames = []  # Initialize image name list
 for block in range(blocks):
-    #stim_init.block = block  # Embed block count
+    # stim_init.block = block  # Embed block count
     hround_filenames = []  # Initialize image name list
     for hround in range(rounds):
-        #stim_init.hround = hround  # Embed hunting round count
+        # stim_init.hround = hround  # Embed hunting round count
         stimuli = StimulusCreation(task_params)  # Create gridworld stimulus
-        #grid_init.hround = hround  # Embed hunting round count
-        #grid_init.block = block  # Embed block count
+        # grid_init.hround = hround  # Embed hunting round count
+        # grid_init.block = block  # Embed block count
         stimuli.create_stimuli()
         stimuli.grid.draw()
         stimuli.create_pos_stim_for_fig(block=block, hround=hround)
@@ -99,14 +100,17 @@ for block in range(blocks):
         stimuli.treasure.draw()
         win.flip()
         win.getMovieFrame()
-        win.saveMovieFrames(f"{out_fig_sub_dir}/block-{block}_hround-{hround}.png")
-        hround_filenames.append(f"{out_fig_sub_dir}/block-{block}_hround-{hround}.png")
+        win.saveMovieFrames(
+            f"{out_fig_sub_dir}/block-{block}_hround-{hround}.png")
+        hround_filenames.append(
+            f"{out_fig_sub_dir}/block-{block}_hround-{hround}.png")
 
     # Concatenate multiple round png-files to one figure
     # ------------------------------------------------------------------------
     hround_figures = [Image.open(x) for x in hround_filenames]
     c_widths, c_heights = zip(*(i.size for i in hround_figures))
-    # Create new figure (one block with all rounds) with one gridworld for each round
+    # Create new figure (one block with all rounds) with one gridworld
+    #  for each round
     total_width_c = sum(c_widths)
     max_height_c = max(c_heights)
     block_figure = Image.new('RGB', (total_width_c, max_height_c))

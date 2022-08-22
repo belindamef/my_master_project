@@ -36,21 +36,26 @@ class Task:
     n_hides : int
         Number of hiding spots
     model : object
-        Object of class Model, directly linked (i.e. attributes will change, when model attributes change)
+        Object of class Model, directly linked
+        (i.e. attributes will change, when model attributes change)
     s1_t : int
         State s1, scalar denoting the position in trial t
     s2_t : array_like
-        State s2, (25x1)-dimensional array denoting each nodes color (0:black, 1:grey, 2:blue) in trial t
+        State s2, (25x1)-dimensional array denoting each nodes color
+        (0:black, 1:grey, 2:blue) in trial t, initial value: 0 = black
     s3_c : int
         State s3, scalar denoting the treasure location in round c
     s4 : array_like
-        State s4, (25x1)-dimensional array denoting each nodes hiding spot status (0:non-hiding spot, 1:hiding spot)
+        State s4, (25x1)-dimensional array denoting each nodes hiding spot
+        status (0:non-hiding spot, 1:hiding spot)
     a_set : array_like
-        Action set, (5x1)-dimensional array with all actions available in the treasure hunt task
+        Action set, (5x1)-dimensional array with all actions available in the
+        treasure hunt task
     o_t : int
         Observation in trial t
     tr_disc_t : int
-        Variable denoting whether or not the treasure was found in trial t (0: not found, 1:found)
+        Variable denoting whether or not the treasure was found in trial t
+        (0: not found, 1:found)
     hides_loc : array_like
         Hiding spot locations (n_hides x 1)-dimensional array
     n_black : int
@@ -64,7 +69,8 @@ class Task:
     drill_finding : any
         Variable denoting the result of drilling in trial t
     tr_found_on_blue : any
-        Variable denoting whether the treasure (if found) was found on a blue node
+        Variable denoting whether the treasure (if found) was found on
+        a blue node
     shortest_dist_dic : dict
         Shortest distance between two nodes
 
@@ -75,15 +81,18 @@ class Task:
     eval_s_4()
         Evaluates s_4 values according to hides_loc
     start_new_round()
-        Resets trial-wise changing attributes to initial values for t=0 in a new round
+        Resets trial-wise changing attributes to initial values for t=0
+        in a new round
     start_new_trial()
         Resets dynamic attributes to initial values for each trial t
     return_observations()
         Returns observation given states and action in trial t
     perform_state_transition_f()
-        Performs state transitions given prior states and action in trial t
+        Performs state transitions given prior states and action in
+        trial t
     eval_whether_treasure()
-        Evaluates whether the new position s_{t+1} is the treasure location
+        Evaluates whether the new position s_{t+1} is the treasure
+        location
     eval_action()
         Evaluates the action in trial t
     """
@@ -100,16 +109,17 @@ class Task:
         self.model = None
 
         # Initialize task model components
-        self.s1_t = np.nan  # Position in trial t
-        self.s2_t = np.full(self.n_nodes, 0)  # Node colors in trial t, initial values: 0 = black
-        self.s3_c = np.full(1, np.nan)  # Treasure location in round c
-        self.s4 = np.full(self.n_nodes, 0)  # Each node's hiding spot status, initial value: 0 = non-hiding spot
-        self.a_set = np.array([0, -self.dim, 1, self.dim, -1])  # Set of actions
-        self.o_t = np.full(1, np.nan)  # Observation in trial t
+        self.s1_t = np.nan
+        self.s2_t = np.full(self.n_nodes, 0)
+        self.s3_c = np.full(1, np.nan)
+        self.s4 = np.full(self.n_nodes, 0)
+        self.a_set = np.array([0, -self.dim, 1, self.dim, -1])
+        self.o_t = np.full(1, np.nan)
 
         # Initialize variables for computations
-        self.tr_disc_t = 0  # treasure discovery at current position, initial value: 0
-        self.hides_loc = np.full(self.n_hides, np.nan)  # hidden state, hiding spots of current block/task
+        self.tr_disc_t = 0  # treasure discovery at s1 initial value: 0
+        self.hides_loc = np.full(  # hiding spots of current block/task
+            self.n_hides, np.nan)
         self.n_black = cp.deepcopy(self.n_nodes)
         self.n_blue = 0
         self.n_grey = 0
@@ -124,7 +134,9 @@ class Task:
         self.shortest_dist_dic = {}
 
         # Specify path for shortest_distances storage file
-        short_dist_fn = os.path.join(self.working_dir, 'utilities', f'shortest_dist_dim-{self.dim}.json')
+        short_dist_fn = os.path.join(
+            self.working_dir, 'utilities',
+            f'shortest_dist_dim-{self.dim}.json')
         # Read in json file as dic if existent for given dimensionality
         if os.path.exists(short_dist_fn):
             with open(short_dist_fn) as json_file:
@@ -200,7 +212,8 @@ class Task:
                         if node not in explored:
                             neighbours = cp.deepcopy(adj_list[node])
 
-                            # Go through all neighbouring nodes, construct new path and push into queue
+                            # Go through all neighbouring nodes, construct new
+                            # path and push into queue
                             for neighbour in neighbours:
                                 new_path = list(path)
                                 new_path.append(neighbour)
@@ -213,8 +226,12 @@ class Task:
                                     shortest_distance = len(shortest_path)-1
 
                                     # Add the shortest path to dictionary
-                                    self.shortest_dist_dic[f'{start_node}_to_{end_node}'] = shortest_distance
-                                    self.shortest_dist_dic[f'{end_node}_to_{start_node}'] = shortest_distance
+                                    self.shortest_dist_dic[
+                                        f'{start_node}_to_{end_node}'
+                                    ] = shortest_distance
+                                    self.shortest_dist_dic[
+                                        f'{end_node}_to_{start_node}'
+                                    ] = shortest_distance
                                     queue = []
                                     break
 
@@ -236,8 +253,9 @@ class Task:
         self.drill_finding = np.nan
 
     def return_observation(self):
-        """Return observation, i.e. each node current status (color) and treasure disc (yes/no).
-        This function maps action, reward and states s3 and s4 onto observation o_t, as specified in g
+        """Return observation, i.e. each node current status (color) and
+        treasure disc (yes/no). This function maps action, reward and states
+        s3 and s4 onto observation o_t, as specified in g
         """
         # If node color black and no treasure
         if (self.s2_t[self.s1_t] == 0) and (self.tr_disc_t == 0):
@@ -268,18 +286,23 @@ class Task:
                 if self.s2_t[self.s1_t] == 0:  # If node is (was) black
                     self.drill_finding = 0
                 else:
-                    self.drill_finding = 3  # Drill finding = 3, if drilled on unveiled spot (i.e. not black)
-                self.s2_t[self.s1_t] = 1  # Change color to grey (not a hiding spot)
+                    # Drill finding = 3, if drilled on unveiled spot
+                    # (i.e. not black)
+                    self.drill_finding = 3
+                    # Change color to grey (not a hiding spot)
+                self.s2_t[self.s1_t] = 1
             elif self.s4[self.s1_t] == 1:  # Elif s_1 is hiding spot
                 if self.s2_t[self.s1_t] == 0:  # If node is (was) black
                     self.drill_finding = 1
                 else:
-                    self.drill_finding = 3  # Drill finding = 3, if drilled on unveiled spot (i.e. not black)
+                    # Drill finding = 3, if drilled on unveiled spot
+                    # (i.e. not black)
+                    self.drill_finding = 3
                 self.s2_t[self.s1_t] = 2  # Change color to blue (hiding spot)
 
     def eval_whether_treasure(self):
         """Evaluate whether new current position is the treasure location"""
-        if self.s1_t == self.s3_c:  # if current position equals treasure location
+        if self.s1_t == self.s3_c:  # if s1 equals treasure location
             self.tr_disc_t = 1
 
             # Evaluate whether found on hide

@@ -23,4 +23,5 @@ class Model:
 
     def return_action(self):
         """This function returns the action value given agent's decision."""
-        self.a_t = cp.deepcopy(self.agent.d)  # probability action given decision of 1
+        # probability action given decision of 1
+        self.a_t = cp.deepcopy(self.agent.d)

@@ -33,15 +33,18 @@ def rowcol_to_xy(rowcol_pos, dim, gridsize):
     >>> position = np.array([[0., 0.]])
     >>> dimension = 6
     >>> grid_size = 12
-    >>> rowcol_to_xy(rowcol_pos=position, dim=dimension, gridsize=grid_size)
+    >>> rowcol_to_xy(
+    rowcol_pos=position, dim=dimension, gridsize=grid_size)
     array([-5.,  5.])
     """
     cubesize = gridsize / dim
     # all possible cube positions along x&y-axis [cm], (last entry not needed!)
-    stim_pos_all = (np.linspace(0, gridsize, dim + 1) - gridsize / 2) + cubesize / 2
+    stim_pos_all = ((np.linspace(0, gridsize, dim + 1) - gridsize / 2)
+                    + cubesize / 2)
     # Initialize empty array for
     xy_pos = np.empty(2)
-    col = int(rowcol_pos[:, 1]) + 1  # add 1 to get (1,1) notation for upper left corner
+    # add 1 to get (1,1) notation for upper left corner
+    col = int(rowcol_pos[:, 1]) + 1
     row = int(rowcol_pos[:, 0]) + 1
     # enter x-coordinate in cm given col pos., i.e. 2nd entry of pos_start
     xy_pos[0] = stim_pos_all[col - 1]

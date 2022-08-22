@@ -19,7 +19,7 @@ class StimulusCreation:
 
     Attributes
     ----------
-    todo
+    # TODO
     """
     def __init__(self, task_params):
         """
@@ -27,7 +27,7 @@ class StimulusCreation:
         stimulus class, created with psychopy.visual.ElementArrayStim()
 
         Input
-            dim       : dimensionality (No. of rows and columns of the gridworld
+            dim       : dimensionality (No of rows and columns of the gridworld
             gridsize  : size of the gridworld given in cm
             TODO
 
@@ -46,10 +46,12 @@ class StimulusCreation:
         self.blocks = task_params['blocks']
         self.win.color = self.back_col
         self.cube_size = self.gridsize / self.dim
-        #self.s1_t = task_params['s1_pos']
-        #self.s7_tr_loc = task_params['s7_tr_loc'] # TODO: right condition that this is only used for figure creation
+        # self.s1_t = task_params['s1_pos']  # TODO: why is s1_pos not fetched?
+        # self.s7_tr_loc = task_params['s7_tr_loc']  # TODO: right condition
+        #  that this is only used for figure creation
 
-        # Initialize attributes (i.e. stimuli) that can be created in this class
+        # Initialize attributes (i.e. stimuli) that can be created in this
+        # class
         self.ready = None
         self.instr_top = None
         self.instr_center = None
@@ -58,7 +60,7 @@ class StimulusCreation:
         self.grid = None
         self.move_count = None
         self.round_count = None
-        self.block_count= None
+        self.block_count = None
         self.score_count = None
         self.score_tr = None
         self.cube = None
@@ -86,13 +88,18 @@ class StimulusCreation:
                                          height=0.5, bold=True,
                                          color='#067D39')
 
-        self.current_pos = visual.TextStim(self.win, text='Current \n position',
+        self.current_pos = visual.TextStim(self.win, text='Current \nposition',
                                            height=0.4, bold=True,
                                            color='#0000CC')
         grid_boarder = self.gridsize / 2
-        self.instr_top = visual.TextStim(self.win, height=0.8, pos=[0, grid_boarder + 1.3], color=self.text_col)
-        self.instr_center = visual.TextStim(self.win, height=0.8, color=self.text_col)
-        self.instr_low = visual.TextStim(self.win, height=0.6, pos=[0, -(grid_boarder + 1.3)], color=self.text_col)
+        self.instr_top = visual.TextStim(self.win, height=0.8,
+                                         pos=[0, grid_boarder + 1.3],
+                                         color=self.text_col)
+        self.instr_center = visual.TextStim(self.win, height=0.8,
+                                            color=self.text_col)
+        self.instr_low = visual.TextStim(self.win, height=0.6,
+                                         pos=[0, -(grid_boarder + 1.3)],
+                                         color=self.text_col)
         self.fix = visual.TextStim(self.win, text="+", color=self.text_col)
 
     def create_figure_stims(self):
@@ -100,7 +107,7 @@ class StimulusCreation:
         This function creates the gridworld stimulus
 
         Input
-            dim       : dimensionality (No. of rows and columns of the gridworld
+            dim       : dimensionality (No of rows and columns of the gridworld
             gridsize  : size of the gridworld given in cm
             TODO
 
@@ -108,58 +115,85 @@ class StimulusCreation:
             gridstim : gridworld stimulus of class visual.ElementArrayStim
         """
 
-        # Create array for gridline positions, evenly spread along x/y-axis relative to gridsize
-        # e.g. for dim = 5: [-5., -3., -1.,  1.,  3.,  5.]
-        line_pos = np.linspace(0, self.gridsize, self.dim + 1) - self.gridsize / 2
+        # Create array for gridline positions, evenly spread along x/y-axis
+        # relative to gridsize e.g. for dim = 5: [-5., -3., -1.,  1.,  3.,  5.]
+        line_pos = (np.linspace(0, self.gridsize, self.dim + 1)
+                    - self.gridsize / 2)
 
-        # Create array with x/y-axis positions of the center of each gridline relative to the field center
-        # e.g. dim = 5: [[0.,-5.], [0.,-3.], [0.,-1.], [0.,1.], [0.,3.], [0.,5.],
-        #               [-5.,0.], [-3.,0.], [-1.,0.], [1.,0.], [3.,0.], [5.,0.]])
-        gridline_xys = np.column_stack((np.concatenate((np.zeros(self.dim + 1), line_pos)),
-                                        np.concatenate((line_pos, np.zeros(self.dim + 1)))))
+        # Create array with x/y-axis positions of the center of each
+        # gridline relative to the field center e.g. dim = 5:
+        # [[0.,-5.], [0.,-3.], [0.,-1.], [0.,1.], [0.,3.], [0.,5.],
+        #  [-5.,0.], [-3.,0.], [-1.,0.], [1.,0.], [3.,0.], [5.,0.]])
+        gridline_xys = np.column_stack(
+            (np.concatenate((np.zeros(self.dim + 1), line_pos)),
+             np.concatenate((line_pos, np.zeros(self.dim + 1)))
+             )
+        )
 
         # Create array with orientations for each gridline
         # e.g. for dim = 5: [0, 0, 0, 0, 0, 0, 90, 90, 90, 90, 90, 90]
-        # An ori of 0 is vertical; increasing ori values are increasingly clockwise
-        # CAVE, here it's somehow the other way around
-        line_oris = np.concatenate((np.zeros(self.dim + 1), np.full(self.dim + 1, 90)))
+        # An ori of 0 is vertical; increasing ori values are increasingly
+        # clockwise CAVE, here it's somehow the other way around
+        line_oris = np.concatenate((np.zeros(self.dim + 1), np.full(self.dim
+                                                                    + 1, 90)))
 
         # Create gridworld stimulus
         self.grid = visual.ElementArrayStim(self.win, fieldPos=(0.0, 0.0),
                                             nElements=(self.dim + 1) * 2,
-                                            sizes=[self.gridsize, 0.03], xys=gridline_xys,
-                                            colors='#C0C0C0', oris=line_oris, sfs=0,
-                                            elementTex=None, elementMask=None, texRes=48)
+                                            sizes=[self.gridsize, 0.03],
+                                            xys=gridline_xys, colors='#C0C0C0',
+                                            oris=line_oris, sfs=0,
+                                            elementTex=None,
+                                            elementMask=None, texRes=48)
 
         # Create arrows half the length of one node field
         cube_size = cp.deepcopy(self.cube_size)
-        arrow_right_vert = [(-cube_size / 2, cube_size / 8), (-cube_size / 2, -cube_size / 8),
-                            (-cube_size / 4, -cube_size / 8), (-cube_size / 4, -cube_size / 4),
+        arrow_right_vert = [(-cube_size / 2, cube_size / 8),
+                            (-cube_size / 2, -cube_size / 8),
+                            (-cube_size / 4, -cube_size / 8),
+                            (-cube_size / 4, -cube_size / 4),
                             (0, 0),
-                            (-cube_size / 4, cube_size / 4), (-cube_size / 4, cube_size / 8)]
-        arrow_left_vert = [(cube_size / 2, cube_size / 8), (cube_size / 2, -cube_size / 8),
-                           (cube_size / 4, -cube_size / 8), (cube_size / 4, -cube_size / 4),
+                            (-cube_size / 4, cube_size / 4),
+                            (-cube_size / 4, cube_size / 8)
+                            ]
+        arrow_left_vert = [(cube_size / 2, cube_size / 8),
+                           (cube_size / 2, -cube_size / 8),
+                           (cube_size / 4, -cube_size / 8),
+                           (cube_size / 4, -cube_size / 4),
                            (0, 0),
-                           (cube_size / 4, cube_size / 4), (cube_size / 4, cube_size / 8)]
-        arrow_up_vert = [(-cube_size / 8, -cube_size / 2), (cube_size / 8, -cube_size / 2),
-                         (cube_size / 8, -cube_size / 4), (cube_size / 4, -cube_size / 4),
+                           (cube_size / 4, cube_size / 4),
+                           (cube_size / 4, cube_size / 8)
+                           ]
+        arrow_up_vert = [(-cube_size / 8, -cube_size / 2),
+                         (cube_size / 8, -cube_size / 2),
+                         (cube_size / 8, -cube_size / 4),
+                         (cube_size / 4, -cube_size / 4),
                          (0, 0),
-                         (-cube_size / 4, -cube_size / 4), (-cube_size / 8, -cube_size / 4)]
-        arrow_down_vert = [(-cube_size / 8, cube_size / 2), (cube_size / 8, cube_size / 2),
-                           (cube_size / 8, cube_size / 4), (cube_size / 4, cube_size / 4),
+                         (-cube_size / 4, -cube_size / 4),
+                         (-cube_size / 8, -cube_size / 4)]
+        arrow_down_vert = [(-cube_size / 8, cube_size / 2),
+                           (cube_size / 8, cube_size / 2),
+                           (cube_size / 8, cube_size / 4),
+                           (cube_size / 4, cube_size / 4),
                            (0, 0),
-                           (-cube_size / 4, cube_size / 4), (-cube_size / 8, cube_size / 4)]
-        self.arrow_right = visual.ShapeStim(self.win, vertices=arrow_right_vert,
-                                            fillColor='#067D39', lineColor='#067D39',
+                           (-cube_size / 4, cube_size / 4),
+                           (-cube_size / 8, cube_size / 4)]
+        self.arrow_right = visual.ShapeStim(self.win,
+                                            vertices=arrow_right_vert,
+                                            fillColor='#067D39',
+                                            lineColor='#067D39',
                                             opacity=0.5)
         self.arrow_left = visual.ShapeStim(self.win, vertices=arrow_left_vert,
-                                           fillColor='#067D39', lineColor='#067D39',
+                                           fillColor='#067D39',
+                                           lineColor='#067D39',
                                            opacity=0.5)
         self.arrow_up = visual.ShapeStim(self.win, vertices=arrow_up_vert,
-                                         fillColor='#067D39', lineColor='#067D39',
+                                         fillColor='#067D39',
+                                         lineColor='#067D39',
                                          opacity=0.5)
         self.arrow_down = visual.ShapeStim(self.win, vertices=arrow_down_vert,
-                                           fillColor='#067D39', lineColor='#067D39',
+                                           fillColor='#067D39',
+                                           lineColor='#067D39',
                                            opacity=0.5)
         self.pos_cross = visual.TextStim(self.win, text='X',
                                          height=cube_size, bold=True,
@@ -170,28 +204,36 @@ class StimulusCreation:
 
         # Create cube animated drilling stimulus
         self.drill = visual.Rect(self.win, lineColor=None, fillColor='white',
-                                 size=self.cube_size * 2)#, opacity=0.8)
+                                 size=self.cube_size * 2)  # opacity=0.8)
 
     def create_count_stims(self):
         """
         Create stimuli that prompt move, round and score counts
         """
-        grid_boarder = self.gridsize / 2  # gridworld border: left (neg), right (pos),
-                                          # lower (neg), upper (pos)
-                                          # needed for text positions
+        grid_boarder = self.gridsize / 2  # gridworld border: left (neg),
+        # right (pos),
+        # lower (neg), upper (pos)
+        # needed for text positions
         self.move_count = visual.TextStim(self.win,
                                           height=0.8,
-                                          pos=[- grid_boarder, grid_boarder - 1],
-                                          color=self.text_col, alignText='left')
+                                          pos=[- grid_boarder, grid_boarder
+                                               - 1],
+                                          color=self.text_col,
+                                          alignText='left')
         self.round_count = visual.TextStim(self.win, height=0.8,
-                                           pos=[- grid_boarder, grid_boarder - 3],
-                                           color=self.text_col, alignText='left')
+                                           pos=[- grid_boarder,
+                                                grid_boarder - 3],
+                                           color=self.text_col,
+                                           alignText='left')
         self.block_count = visual.TextStim(self.win, height=0.8,
-                                           pos=[- grid_boarder, grid_boarder - 4],
-                                           color=self.text_col, alignText='left')
+                                           pos=[- grid_boarder,
+                                                grid_boarder - 4],
+                                           color=self.text_col,
+                                           alignText='left')
         self.score_count = visual.TextStim(self.win, text='Total Score:',
                                            height=0.8, color=self.text_col,
-                                           pos=[-grid_boarder, grid_boarder - 5],
+                                           pos=[-grid_boarder,
+                                                grid_boarder - 5],
                                            alignText='left')
 
     def create_score_tr_stim(self, score=0):
@@ -206,17 +248,22 @@ class StimulusCreation:
         grid_boarder = self.gridsize / 2
 
         if score > 0:
-            tr_count_image_filename = f"{stimuli_dir}/score_prompt_blocks-{self.blocks}_" \
-                                      f"rounds-{self.rounds}/{score}_treasures.png"
+            tr_count_image_filename = f"{stimuli_dir}/score_prompt_blocks" \
+                                      f"-{self.blocks}_" \
+                                      f"rounds-{self.rounds}" \
+                                      f"/{score}_treasures.png"
 
-            tr_count_image = Image.open(tr_count_image_filename)
-            self.score_tr = visual.ImageStim(self.win, image=tr_count_image_filename,
-                                             pos=[-grid_boarder - 5, grid_boarder - 8],
+            # tr_count_image = Image.open(tr_count_image_filename)
+            self.score_tr = visual.ImageStim(self.win,
+                                             image=tr_count_image_filename,
+                                             pos=[-grid_boarder - 5,
+                                                  grid_boarder - 8],
                                              size=4)
         else:
             self.score_tr = visual.TextStim(self.win, text='0',
                                             height=0.8, color=self.text_col,
-                                            pos=[- grid_boarder, grid_boarder - 7],
+                                            pos=[- grid_boarder,
+                                                 grid_boarder - 7],
                                             alignText='left')
 
     def create_treasure_stim(self):
@@ -224,7 +271,8 @@ class StimulusCreation:
         Create treasure picture stimulus
         """
         treasure_image = os.path.join(stimuli_dir, 'treasure.png')
-        self.treasure = visual.ImageStim(self.win, image=treasure_image, size=self.cube_size)
+        self.treasure = visual.ImageStim(self.win, image=treasure_image,
+                                         size=self.cube_size)
 
     def create_hides_stims(self, s4_hide_node):
         """
@@ -233,24 +281,28 @@ class StimulusCreation:
         Parameters
         ----------
         s4_hide_node
-        todo
+        # TODO
         """
         for node, value in enumerate(s4_hide_node):
             if value == 0:
                 self.hides[node] = visual.Rect(
-                    self.win, lineColor=None, fillColor='#C0C0C0', size=self.cube_size, opacity=0.5,
-                    pos=rowcol_to_xy(node_to_rowcol(np.array(node), self.dim), self.dim, self.gridsize))
+                    self.win, lineColor=None, fillColor='#C0C0C0',
+                    size=self.cube_size, opacity=0.5,
+                    pos=rowcol_to_xy(node_to_rowcol(np.array(node), self.dim),
+                                     self.dim, self.gridsize))
             elif value == 1:
                 self.hides[node] = visual.Rect(
-                    self.win, lineColor=None, fillColor='#006666', size=self.cube_size, opacity=0.5,
-                    pos=rowcol_to_xy(node_to_rowcol(np.array(node), self.dim), self.dim, self.gridsize))
+                    self.win, lineColor=None, fillColor='#006666',
+                    size=self.cube_size, opacity=0.5,
+                    pos=rowcol_to_xy(node_to_rowcol(np.array(node), self.dim),
+                                     self.dim, self.gridsize))
 
     def create_pos_stim_for_fig(self, block, hround):
         """
         This function creates the gridworld stimulus
 
         Input
-            dim       : dimensionality (No. of rows and columns of the gridworld
+            dim       : dimensionality (No of rows and columns of the gridworld
             gridsize  : size of the gridworld given in cm
             TODO
 
@@ -258,32 +310,37 @@ class StimulusCreation:
 
         """
         # Create position stimuli
-        # -----------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         C = self.rounds  # Number of rounds
         T = self.trials  # Number of trials
         s_1_t = self.s1_t
         s_7_c = self.s7_tr_loc
-        starttrial_c = hround * T + block * C * T  # First this_trial of current hunting round
-        end_index_c = int(pd.DataFrame(s_1_t[starttrial_c:starttrial_c + T]).apply(pd.Series.last_valid_index).values)
+        starttrial_c = hround * T + block * C * T  # First this_trial of
+        # current hunting round
+        end_index_c = int(pd.DataFrame(
+           s_1_t[starttrial_c:starttrial_c + T]).apply(
+            pd.Series.last_valid_index).values)
         endtrial_c = (starttrial_c + end_index_c)
 
         # Get starting end ending position of current round
         startpos_c = np.array(s_1_t[starttrial_c])  # start
-        startpos_c_rowcol = node_to_rowcol(startpos_c, self.dim)  # Transform to rowcol
+        startpos_c_rowcol = node_to_rowcol(startpos_c, self.dim)
         endpos_c = s_1_t[endtrial_c]  # end
-        endpos_c_rowcol = node_to_rowcol(endpos_c, self.dim)  # Transform to rowcol
+        endpos_c_rowcol = node_to_rowcol(endpos_c, self.dim)
 
         # Get treasure position of current round
         th_c = np.array(s_7_c[hround * T])
         th_c_rowcol = node_to_rowcol(th_c, self.dim)
 
         # Create starting end ending position stimuli
-        startpos_c_xy = rowcol_to_xy(startpos_c_rowcol, self.dim, self.gridsize)  # Transform to xy
-        endpos_c_xy = rowcol_to_xy(endpos_c_rowcol, self.dim, self.gridsize)  # Transform to xy
+        startpos_c_xy = rowcol_to_xy(startpos_c_rowcol, self.dim,
+                                     self.gridsize)
+        endpos_c_xy = rowcol_to_xy(endpos_c_rowcol, self.dim, self.gridsize)
 
         # Create cube stimuli
-        self.startcube = visual.Rect(self.win, lineColor=None, fillColor='white',
-                                     pos=startpos_c_xy, size=self.cube_size, opacity=0.8)
+        self.startcube = visual.Rect(self.win, lineColor=None,
+                                     fillColor='white', pos=startpos_c_xy,
+                                     size=self.cube_size, opacity=0.8)
 
         self.starttext = visual.TextStim(self.win, text='START',
                                          height=0.4, bold=True,
@@ -291,7 +348,8 @@ class StimulusCreation:
                                          color='#067D39')
 
         self.endcube = visual.Rect(self.win, lineColor=None, fillColor='white',
-                                   pos=endpos_c_xy, size=self.cube_size, opacity=0.6)
+                                   pos=endpos_c_xy, size=self.cube_size,
+                                   opacity=0.6)
 
         self.endtext = visual.TextStim(self.win, text='END',
                                        height=0.6, bold=True,
@@ -299,7 +357,7 @@ class StimulusCreation:
                                        color='#990000')
 
         # Create treasure location position stimuli
-        treasure_pos_c_xy = rowcol_to_xy(th_c_rowcol, self.dim, self.gridsize)  # Transform to xy
+        treasure_pos_c_xy = rowcol_to_xy(th_c_rowcol, self.dim, self.gridsize)
         treasure_image = os.path.join(stimuli_dir, 'treasure.png')
         self.treasure = visual.ImageStim(self.win, image=treasure_image,
                                          size=self.cube_size * 0.5,
@@ -325,9 +383,9 @@ class StimulusCreation:
                 f"_rounds-{self.rounds}"):
             self.create_score_prompt_png()
 
-    # -----------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # Create stimuli png files
-    # -----------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
 
     def create_grid_png(self):
         """This function presents the gridworld stimulus and takes a screenshot
@@ -338,7 +396,8 @@ class StimulusCreation:
         self.win.saveMovieFrames(f"{stimuli_dir}/gridworld.png")
 
     def create_score_prompt_png(self):
-        """This function creates score count stimuli for different numbers of treasures"""
+        """This function creates score count stimuli for different numbers
+        of treasures"""
 
         # Directory management
         tr_im_path = os.path.join(stimuli_dir, "treasure.png")
@@ -374,13 +433,15 @@ class StimulusCreation:
             else:
                 n_rowstofill = int(tr_score // n_columns + 1)
             # Create new image, in which all treasure images will be pasted
-            score_tr_image = Image.new('RGB', (total_width, total_height), color=self.back_col)
+            score_tr_image = Image.new('RGB', (total_width, total_height),
+                                       color=self.back_col)
             # Start at y-axis offset 0
             y_offset = 0
             # Loop through rows
             for row in range(0, n_rowstofill):
                 x_offset = 0
-                for figure in tr_figures[(row * n_columns):(row * n_columns + n_columns)]:
+                for figure in tr_figures[(row * n_columns):(row * n_columns
+                                                            + n_columns)]:
                     score_tr_image.paste(figure, (x_offset, y_offset))
                     x_offset += figure.size[0]
                 y_offset += max(heights)
