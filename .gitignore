@@ -7,6 +7,7 @@
 *doc*
 *archive*
 .my-master-project
+.th_env
 .DS_Store
 .idea/
 *code/utilities/lklh_dim-5_h6.npy  # very large file
