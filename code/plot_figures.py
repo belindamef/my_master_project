@@ -8,9 +8,10 @@ import utilities.very_plotter as very_plotter
 
 """This script plots figure 1"""
 
-# Specify task configuration
-exp_label = 'main'
-sim_label = 'test'
+# Get task configuration
+exp_label = str(input("Enter exp_label (e.g. 'main' or 'test'): "))
+sim_label = str(input("Enter sim_label (e.g. 'main' or 'test'): "))
+
 dim = 5
 n_blocks = 3
 

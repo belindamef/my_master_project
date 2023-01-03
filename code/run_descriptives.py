@@ -16,15 +16,16 @@ File creation
 
 """
 # Specify dataset and experiment name
-dataset = 'sim'  # 'exp' or 'sim'
-# exp_label = 'main'
-exp_label = 'main_sim_100'
+
+dataset = str(input("Enter dataset ('exp' or 'sim): "))
+exp_label = str(input("Enter exp_label ('main' or 'main_sim_100' or 'test'): "))
+
 dim = 5
-n_block_this_label = {'main': 3, 'main_sim_100': 100}
+n_block_this_label = {'main': 3, 'main_sim_100': 100, 'test': 3, 'rm': 3}
 n_blocks = n_block_this_label[exp_label]
 
 # Specify directories and create if not existent
-working_dir = os.getcwd()
+working_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.sep.join(working_dir.split(os.sep)[:4])
 data_dir = os.path.join(project_dir, 'data')
 results_dir = os.path.join(project_dir, 'results')
