@@ -164,13 +164,15 @@ for index, events_fn in enumerate(ev_file_list):
             events_this_sub_df.to_pickle(f'{proc_data_fn}.pkl')
 
         # Add this subs events to events_all_subs_df
-        events_all_subs_df = events_all_subs_df.append(
-            events_this_sub_df, ignore_index=True)
+        events_all_subs_df = pd.concat([events_all_subs_df,
+                                        events_this_sub_df],
+                                       ignore_index=True)
         for run_number in range(n_blocks):
             block_ = run_number + 1
-            events_all_subs_bw[block_] = events_all_subs_bw[block_].append(
-                events_block_this_sub[block_], ignore_index=True)
-
+            events_all_subs_bw[block_] = pd.concat(
+                [events_all_subs_bw[block_],
+                 events_block_this_sub[block_]],
+                 ignore_index=True)
         # TODO: why is descr_stats_all_subs_bw sometimes empty??
         # Perform descriptive statistics for this subject and
         # append to descr stats df of all subs
@@ -178,17 +180,20 @@ for index, events_fn in enumerate(ev_file_list):
             events_this_sub_df, dataset, subject=sub_id)
         # (One row for this subject)
         descr_stats_this_sub_df = descr_stats_this_sub.perform_descr_stats()
-        descr_stats_all_subs_df = descr_stats_all_subs_df.append(
-            descr_stats_this_sub_df, ignore_index=True)
-
+        descr_stats_all_subs_df = pd.concat([descr_stats_all_subs_df,
+                                             descr_stats_this_sub_df],
+                                            ignore_index=True)
+        descr_stats_all_subs_df = pd.concat([descr_stats_all_subs_df,
+                                             descr_stats_this_sub_df],
+                                            ignore_index=True)
         for block_, block_df in events_block_this_sub.items():
             descr_stats_this_block = DescrStats(
                 block_df, dataset, subject=sub_id)
             descr_stats_this_block_df = \
                 descr_stats_this_block.perform_descr_stats()
-            descr_stats_all_subs_bw[block_] = descr_stats_all_subs_bw[
-                block_].append(descr_stats_this_block_df, ignore_index=True)
-
+            descr_stats_all_subs_bw[block_] = pd.concat([
+                descr_stats_all_subs_bw[block_],
+                descr_stats_this_block_df], ignore_index=True)
     else:
         print(
             f'Skipping processing for sub-{sub_id}, '
@@ -206,16 +211,18 @@ if grp_lvl_stats_df.empty or (
 
     descr_stats_whole_sample_df = \
         descr_stats_whole_sample.perform_descr_stats()
-    grp_lvl_stats_df = grp_lvl_stats_df.append(
-        descr_stats_whole_sample_df, ignore_index=True)
+    grp_lvl_stats_df = pd.concat([grp_lvl_stats_df,
+                                  descr_stats_whole_sample_df],
+                                 ignore_index=True)
     if dataset == 'exp':
         grp_lvl_stats_whole_sample_object = GroupStats(
             events_all_subs_df, dataset, descr_stats_all_subs_df)
         grp_lvl_stats_whole_sample_df = \
             grp_lvl_stats_whole_sample_object.perform_group_descr_stats(
                 group_by='block_type')
-        grp_lvl_stats_df = grp_lvl_stats_df.append(
-            grp_lvl_stats_whole_sample_df)
+        grp_lvl_stats_df = pd.concat([grp_lvl_stats_df,
+                                      grp_lvl_stats_whole_sample_df],
+                                     ignore_index=True)
         for block_, block_df in events_all_subs_bw.items():
             descr_stats_whole_sample_bw = DescrStats(
                 block_df, dataset, subject=f'whole_sample_b')
@@ -225,8 +232,12 @@ if grp_lvl_stats_df.empty or (
                 block_df, dataset, descr_stats_all_subs_bw[block_])
             grp_descr_stats_df = grp_stats_object.perform_group_descr_stats(
                 group_by='block_type')
-            grp_lvl_stats_bw[block_] = grp_lvl_stats_bw[block_].append(
-                grp_descr_stats_df)
+            grp_lvl_stats_bw[block_] = pd.concat([grp_lvl_stats_bw[block_],
+                                                  grp_descr_stats_df],
+                                                 ignore_index=True)
+            grp_lvl_stats_bw[block_] = pd.concat([grp_lvl_stats_bw,
+                                                  grp_descr_stats_df],
+                                                 ignore_index=True)
 
     edited_grp_lvl_stats = True
 
@@ -239,9 +250,9 @@ if dataset == 'sim':
             agent_group_descr_stats_incomplete = True
             break
     if agent_group_descr_stats_incomplete:
-        grp_lvl_stats_df = grp_lvl_stats_df.append(
-            grp_stats.perform_group_descr_stats(group_by='agent'))
-
+        grp_lvl_stats_df = pd.concat([grp_lvl_stats_df,
+                                      grp_stats.perform_group_descr_stats(group_by='agent')],
+                                     ignore_index=True)
         for block_, block_df in events_all_subs_bw.items():
             descr_stats_whole_sample_bw = DescrStats(
                 block_df, dataset, subject=f'whole_sample_b')
@@ -251,8 +262,9 @@ if dataset == 'sim':
                 block_df, dataset, descr_stats_all_subs_bw[block_])
             grp_descr_stats_df = grp_stats_object.perform_group_descr_stats(
                 group_by='agent')
-            grp_lvl_stats_bw[block_] = grp_lvl_stats_bw[block_].append(
-                grp_descr_stats_df)
+            grp_lvl_stats_bw[block_] = pd.concat([grp_lvl_stats_bw[block_],
+                                                  grp_descr_stats_df],
+                                                 ignore_index=True)
 
         edited_grp_lvl_stats = True
 

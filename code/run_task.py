@@ -1419,7 +1419,7 @@ for this_block in range(blocks):
             rawdata_c.at[this_trial, 'hiding_spots'] = hides_loc_t
 
         # Append dataframe from 'this_round' to dataframe from 'this_block'
-        rawdata_b = rawdata_b.append(rawdata_c, ignore_index=True)
+        rawdata_b = pd.concat([rawdata_b, rawdata_c], ignore_index=True)
 
         # Check quit
         if this_resp == 'escape':
@@ -1472,8 +1472,7 @@ for this_block in range(blocks):
 
     # ------Ending Routine "block"--------------------------------------
     # Append dataframe from 'this_block' to df for data over all blocks
-    rawdata = rawdata.append(rawdata_b, ignore_index=True)
-
+    rawdata = pd.concat([rawdata, rawdata_b], ignore_index=True)
     # Check quit
     if this_resp == 'escape':
         break  # Break this block

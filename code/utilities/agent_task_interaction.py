@@ -410,12 +410,14 @@ def start_agent_task_interaction(
 
                     sim_dat_c["zerosum_denom"] = zero_sum_denom_t
                     # Append df from 'this_round' to df from 'this_block'
-                    sim_dat_b = sim_dat_b.append(sim_dat_c, ignore_index=True)
+                    sim_dat_b = pd.concat([sim_dat_b, sim_dat_c],
+                                          ignore_index=True)
                     # completed all repeats of "rounds"
 
                 # ------Ending Routine "block"-------
                 # Append dataframe from 'this_block' to entire Dataframe
-                sim_data = sim_data.append(sim_dat_b, ignore_index=True)
+                sim_data = pd.concat([sim_data, sim_dat_b],
+                                      ignore_index=True)
 
                 end = time.time()
                 print(
@@ -424,6 +426,6 @@ def start_agent_task_interaction(
                 )
 
             # Save data
-            with open(f"{fn_stem}.tsv", "w") as tsv_file:
+            with open(f"{fn_stem}.tsv", "w", encoding="utf8") as tsv_file:
                 tsv_file.write(sim_data.to_csv(sep="\t", na_rep=np.NaN,
                                                index=False))

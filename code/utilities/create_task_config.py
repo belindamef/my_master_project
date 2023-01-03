@@ -134,8 +134,9 @@ class TaskConfigurator:
                 config_this_block_df['s1'] = self.s_1[block_]
                 config_this_block_df['s3'] = self.s_3_tr_loc[block_]
 
-                config_all_block_df = config_all_block_df.append(
-                    config_this_block_df, ignore_index=True)
+                config_all_block_df = pd.concat([config_all_block_df,
+                                                 config_this_block_df],
+                                                ignore_index=True)
             with open(df_fn, 'w') as tsv_file:
                 tsv_file.write(config_all_block_df.to_csv(sep='\t',
                                                           index=False))
