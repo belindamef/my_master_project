@@ -11,7 +11,7 @@
 .DS_Store
 .idea/
 *code/utilities/lklh_dim-5_h6.npy  # very large file
-*code/utilities/lklh_dim-5_h6.npy*
+code/utilities/lklh_dim-5_h6_bu.npy
 __pycache__/
 **__pycache__/
 

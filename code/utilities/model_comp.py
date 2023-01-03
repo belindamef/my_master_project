@@ -106,10 +106,10 @@ class ModelComps:
             print(f"ModelComps loading lkhl: {end - start}")
         else:
 
-            self.lklh = np.full(
-                (2, self.n_nodes, 3, 4, self.n_nodes, self.n_s4_perms), 0.0
-            )
-            self.eval_likelihood()  # TODO: gets killed; figure out alternative
+            self.lklh = np.zeros(
+                (2, self.n_nodes, 3, 4, self.n_nodes, self.n_s4_perms),
+                dtype=np.uint16)
+            self.eval_likelihood()
             np.save(lklh_fn, self.lklh)
             end = time.time()
             print(f"ModelComps computing lkhl: {end - start}")
@@ -142,43 +142,6 @@ class ModelComps:
         distribution p(o|s) (likelihood), separately for
         action = 0 and action not 0"""
 
-        # # Loop through s4_permutations:
-        # for index, s4_perm in enumerate(self.s4_perms):
-        #
-        #     # Loop through s1 values
-        #     for s1 in range(self.n_nodes):
-        #
-        #         # ---------for all a = 0---------------
-        #
-        #         # If s4[s1] == 0 (not hiding spot), lklh(o == 1 (grey)) = 1,
-        #           else remain zero
-        #         if s4_perm[s1] == 0:
-        #             self.lklh[0, s1, 1, :, index] = 1
-        #
-        #         # If s4[s1] == 1 (hiding spot), lklh( o == 2 (blue)) = 1,
-        #           else remain zero
-        #         if s4_perm[s1] == 1:
-        #             self.lklh[0, s1, 2, :, index] = 1
-        #
-        #         # ---------for all a = 1---------------
-        #
-        #         # For s3 == s1, lklh(o == 0 (black)) = 0,
-        #           else lklh(o == 0 (black)) = 1
-        #         self.lklh[1, s1, 0, :, index] = 1
-        #         self.lklh[1, s1, 0, s1, index] = 0
-        #
-        #         # For s3 == s1, lklh(o == 1 (grey)) = 0,
-        #              else lklh(o == 1 (grey)) = 1
-        #         self.lklh[1, s1, 1, :, index] = 1
-        #         self.lklh[1, s1, 1, s1, index] = 0
-        #
-        #         # For s3 == s1, lklh(o == 2 (blue)) = 0,
-        #           else lklh(o==2 (blue) = 1
-        #         self.lklh[1, s1, 2, :, index] = 1
-        #         self.lklh[1, s1, 2, s1, index] = 0
-        #
-        #         # For s3 == 1, lklh(o == 3 (treasure)) = 1, else remain zero
-        #         self.lklh[1, s1, 3, s1, index] = 1
 
         # Loop through s4_permutations:
         for index, s4_perm in enumerate(self.s4_perms):

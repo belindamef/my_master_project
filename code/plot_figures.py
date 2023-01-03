@@ -10,7 +10,7 @@ import utilities.very_plotter as very_plotter
 
 # Specify task configuration
 exp_label = 'main'
-sim_label = 'main_bu'
+sim_label = 'test'
 dim = 5
 n_blocks = 3
 

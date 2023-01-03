@@ -5,6 +5,6 @@ numpy
 palettable
 pandas
 pip
-PsychoPy
+PsychoPy==2020.2.8
 wesanderson
 Pillow

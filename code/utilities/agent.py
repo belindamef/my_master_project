@@ -205,16 +205,16 @@ class Agent:
         if np.sum(prior_belief_state * self.lklh[a, s1, s2_s1, o, :, :]) == 0:
             if record_zerosum:
                 self.zero_sum_denominator = 1
-            post_belief_state = prior_belief_state * self.lklh[a, s1, s2_s1,
-                                                               o, :, :]
+            post_belief_state = (prior_belief_state
+                                 * self.lklh[a, s1, s2_s1, o, :, :])
             print('zero_sum occurred')
             # debug = 'here'
         else:
-            post_belief_state = prior_belief_state * self.lklh[
-                                                     a, s1, s2_s1, o, :, :] \
-                                * (1 / np.sum(prior_belief_state
-                                              * self.lklh[
-                                                a, s1, s2_s1, o, :, :]))
+            post_belief_state = (prior_belief_state
+                                 * self.lklh[a, s1, s2_s1, o, :, :]
+                                 * (1 / np.sum(prior_belief_state
+                                               * self.lklh[
+                                                 a, s1, s2_s1, o, :, :])))
 
         return post_belief_state
 
