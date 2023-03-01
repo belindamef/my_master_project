@@ -70,6 +70,7 @@ task_configs = task_configurator.return_task_configuration()
 start_agent_task_interaction(
     working_dir=working_dir,
     output_dir=raw_sim_data_dir,
+    data_dir=data_dir,
     n_blocks=n_blocks,
     n_rounds=n_rounds,
     n_trials=n_trials,
@@ -78,4 +79,5 @@ start_agent_task_interaction(
     agent_models=agent_models,
     task_configs=task_configs,
     model_comps=model_comp,
+    mode='simulation'
 )

@@ -70,6 +70,8 @@ def start_agent_task_interaction(  # TODO: change input to be dict
 
             # Create output dir and fn
             sim_data = pd.DataFrame()
+            # TODO: quickfix
+            log_L_n = {}
             if "C" in agent_model:
                 sub_id = f"{agent_model}_{repetition}"
             else:
@@ -181,6 +183,17 @@ def start_agent_task_interaction(  # TODO: change input to be dict
                     v_t = np.full(
                         n_trials + 1, np.nan, dtype=object
                     )  # decision valence values in each trial
+                    p_a_giv_h_t = np.full(
+                        n_trials + 1, np.nan, dtype=object
+                    )
+                    p_a_giv_h_exp_t = np.full(
+                        n_trials + 1, np.nan, dtype=object
+                    )
+                    ln_p_a_t = np.full(
+                        n_trials + 1, np.nan, dtype=object
+                    )
+                    p_a_giv_h = None  # todo
+                    a_exp_t = np.full(n_trials + 1, np.nan)
                     d_t = np.full(n_trials + 1, np.nan)  # agent's decision
                     a_t = np.full(n_trials + 1, np.nan)  # action
                     p_o_giv_o_t = np.full(
@@ -241,19 +254,71 @@ def start_agent_task_interaction(  # TODO: change input to be dict
                         n_grey_t[this_t] = task.n_grey
                         n_blue_t[this_t] = task.n_blue
                         o_t[this_t] = task.o_t  # Record agent observation
-                        # ---------------------------------------------------------------------------
 
-                        # ---------------------------------------------------------------------------
-                        # task-agent-model-Interaction
-                        task.start_new_trial()
-                        agent.start_new_trial()
-                        task.return_observation()
-                        agent.update_belief_state()
-                        agent.make_decision()
-                        model.return_action()
-                        task.eval_action()
+                        # -------------------------------------------------
+                        if mode == 'simulation':
+                            # task-agent-model-Interaction
 
-                        # ---------------------------------------------------------------------------
+                            agent.make_decision()
+                            model.return_action()
+                            task.eval_action()
+
+                        elif mode == 'eval_lklh':
+                            # Load participant beh data
+                            exp_data = pd.read_csv(
+                                os.path.join(data_dir, "rawdata",
+                                             "exp", "main",
+                                             "sub-01", "beh",
+                                             "sub-01_task-th_beh.tsv"),
+                                sep='\t')
+
+                            s_1_exp = exp_data.loc[
+                                (exp_data['block'] == this_block
+                                 + 1)
+                                & (exp_data['round'] == this_round
+                                   + 1)
+                                & (exp_data['trial'] == this_t + 1),
+                                's1_pos']
+                            a_exp = exp_data.loc[
+                                (exp_data['block'] == this_block
+                                 + 1)
+                                & (exp_data['round'] == this_round
+                                   + 1)
+                                & (exp_data['trial'] == this_t + 1),
+                                'action'].values
+
+                            if np.isnan(s_1_exp.values):
+                                task.s1_t = np.nan
+                                break
+
+                            else:
+                                task.s1_t = int(s_1_exp)
+
+                            # -------------------------------------------------
+                            # task-agent-model-Interaction
+                            agent.make_decision()
+                            model.return_action()
+                            task.eval_action()
+
+                            # Evaluate probability of actions given the history
+                            # of actions and observations
+                            tau = 1.2  # TODO: parameter value auslagern
+
+                            p_a_giv_h = np.exp((1 / tau) * agent.v) / sum(
+                                np.exp((1 / tau) * agent.v))
+
+                            try:
+                                p_a_giv_h_exp = p_a_giv_h[np.where(agent.a_s1
+                                                                   == a_exp)[
+                                    0][0]]
+                                ln_p_a = np.log(p_a_giv_h_exp)
+                            except:
+                                print("block: ", this_block,
+                                      "round: ", this_round,
+                                      "trial: ", this_t,
+                                      "experimental action: ", a_exp)
+                                raise
+                        # -----------------------------------------------------
                         # trial END recordings
                         marg_s3_b_t[this_t] = agent.marg_s3_b
                         marg_s4_b_t[this_t] = agent.marg_s4_b
@@ -270,8 +335,12 @@ def start_agent_task_interaction(  # TODO: change input to be dict
                         closest_max_s3_b_nodes_t[this_t] = \
                             agent.closest_max_s3_b_nodes
                         v_t[this_t] = agent.v  # valences
+                        p_a_giv_h_t[this_t] = p_a_giv_h  # todo
+                        p_a_giv_h_exp_t[this_t] = p_a_giv_h_exp
+                        ln_p_a_t[this_t] = ln_p_a
                         d_t[this_t] = agent.d  # decision
                         a_t[this_t] = model.a_t  # action
+                        a_exp_t[this_t] = a_exp
                         tr_disc_t[
                             this_t
                         ] = task.tr_disc_t  # tr. discovery of # this trial
@@ -280,7 +349,16 @@ def start_agent_task_interaction(  # TODO: change input to be dict
                         # -----------------------------------------------------
 
                         # End round, if treasure discovered
-                        if task.tr_disc_t == 1:
+                        if task.tr_disc_t == 1 or (mode == 'eval_lklh' and
+                                                   exp_data.loc[
+                                                       (exp_data['block'] ==
+                                                        this_block + 1)
+                                                       & (exp_data[
+                                                              'round'] == this_round +
+                                                          1)
+                                                       & (exp_data[
+                                                              'trial'] == this_t + 1),
+                                                       'tr_disc'].values == 1):
                             # Return t+1 obs. and make add. belief update
                             task.return_observation()
                             agent.update_belief_state()
@@ -293,10 +371,12 @@ def start_agent_task_interaction(  # TODO: change input to be dict
                             s_1_t[this_t + 1] = task.s1_t  # current position
                             s_2_node_color_t[
                                 this_t + 1
-                            ] = task.s2_t  # s at end of the last trial
+                                ] = task.s2_t  # s at end of the last trial
+                            o_t[this_t + 1] = task.o_t  # Record agent
+                            # observation
                             n_black_t[
                                 this_t + 1
-                            ] = task.n_black
+                                ] = task.n_black
                             n_grey_t[this_t + 1] = task.n_grey
                             n_blue_t[this_t + 1] = task.n_blue
 
@@ -373,9 +453,20 @@ def start_agent_task_interaction(  # TODO: change input to be dict
                     for trial in range(n_trials + 1):
                         sim_dat_c.at[trial, "v"] = v_t[trial]
                     sim_dat_c["d"] = d_t
-
                     sim_dat_c["action"] = a_t
+                    if mode == "eval_lklh":
+                        sim_dat_c["p_a_giv_h"] = np.full(n_trials + 1,
+                                                         np.nan)
+                        sim_dat_c["p_a_giv_h"] = sim_dat_c[
+                            "p_a_giv_h"].astype("object")
+                        for t in range(n_trials + 1):
+                            sim_dat_c.at[t, "p_a_giv_h"] = p_a_giv_h_t[t]
 
+                        sim_dat_c["p_a_giv_h_exp"] = p_a_giv_h_exp_t
+
+                        sim_dat_c["ln_p_a"] = ln_p_a_t
+
+                    sim_dat_c["action_exp"] = a_exp_t
                     sim_dat_c["tr_disc"] = tr_disc_t  # Treasure discovery
                     sim_dat_c["drill_finding"] = drill_finding_t
                     sim_dat_c["tr_found_on_blue"] = tr_found_on_hide_t
@@ -426,13 +517,20 @@ def start_agent_task_interaction(  # TODO: change input to be dict
                 # ------Ending Routine "block"-------
                 # Append dataframe from 'this_block' to entire Dataframe
                 sim_data = pd.concat([sim_data, sim_dat_b],
-                                      ignore_index=True)
+                                     ignore_index=True)
 
                 end = time.time()
                 print(
-                    f"Agent {agent_model} finished block {this_block} in"
-                    f" {end-start} sec"
+                    f"Agent {agent_model} finished block {this_block + 1} in"
+                    f" {end - start} sec"
                 )
+
+                # TODO: quickfix
+
+                log_L_n[this_block + 1] = np.nansum(sim_dat_b[
+                                                        "ln_p_a"].values)
+
+            print(log_L_n)
 
             # Save data
             with open(f"{fn_stem}.tsv", "w", encoding="utf8") as tsv_file:

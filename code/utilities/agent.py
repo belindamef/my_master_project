@@ -413,6 +413,7 @@ class Agent:
             # start = time.time()
             # diffs = np.where(p_x != q_x)
             kl_mask = np.sum(p_x * np.ma.masked_invalid(np.log(p_x / q_x)))
+            # TODO: fix RuntimeWarning
             # end = time.time()
             # print(f'Using ma.masked all_in_one: {end - start}')
 
