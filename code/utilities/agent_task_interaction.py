@@ -21,7 +21,7 @@ def start_agent_task_interaction(  # TODO: change input to be dict
         dim,
         n_hides,
         agent_models,
-        task_configs,
+        task_config,
         model_comps,
         mode
 ):

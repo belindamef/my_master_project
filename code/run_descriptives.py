@@ -18,10 +18,11 @@ File creation
 # Specify dataset and experiment name
 
 dataset = str(input("Enter dataset ('exp' or 'sim): "))
-exp_label = str(input("Enter exp_label ('main' or 'main_sim_100' or 'test'): "))
+exp_label = str(input("Enter exp_label ('exp_msc' or 'sim_100_msc' or "
+                      "'test'): "))
 
 dim = 5
-n_block_this_label = {'main': 3, 'main_sim_100': 100, 'test': 3, 'rm': 3}
+n_block_this_label = {'exp_msc': 3, 'sim_100_msc': 100, 'test': 3, 'rm': 3}
 n_blocks = n_block_this_label[exp_label]
 
 # Specify directories and create if not existent

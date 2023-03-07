@@ -24,6 +24,8 @@ import os.path
 import pandas as pd
 import json
 
+from utilities.config import Paths
+from utilities.config import TaskDesignParameters
 from utilities.create_task_config import TaskConfigurator
 from utilities.create_stimuli import StimulusCreation
 from utilities.rowcol_to_xy import rowcol_to_xy
@@ -36,13 +38,13 @@ np.set_printoptions(linewidth=500)
 # -----------------------------------------------------------------------------
 
 # Specify work, stimuli, and data directories
-working_dir = os.path.dirname(os.path.abspath(__file__))
-project_dir = os.sep.join(working_dir.split(os.sep)[:4])
-stimuli_dir = os.path.join(working_dir, 'stimuli')
-raw_exp_data_dir = os.path.join(project_dir, 'data', 'rawdata', 'exp')
+# working_dir = os.path.dirname(os.path.abspath(__file__))
+# project_dir = os.sep.join(working_dir.split(os.sep)[:4])
+# raw_exp_data_dir = os.path.join(project_dir, 'data', 'rawdata', 'exp')
 
-if not os.path.exists(raw_exp_data_dir):  # create if non-existent
-    os.makedirs(raw_exp_data_dir)
+paths = Paths()
+if not os.path.exists(paths.exp_data):  # create if non-existent
+    os.makedirs(paths.exp_data)
 
 # Specify experimental parameter
 exp_blocks = 3  # No. of task blocks (each block has different tr location,
@@ -75,22 +77,23 @@ my_mac.setDistance(33.872)
 my_mac.saveMon()
 
 # Get experiment name and create main data directory
-exp_label = input("Enter dataset name (main/test/rm)\n"
-                  "Corresponding task configuration will be loaded, "
+exp_label = input("Enter dataset name (msc/test/rm)\n"
+                  "Corresponding task configuration will be loaded, " #TODO !
                   "if existing, \n"
                   "or new configuration will be created.")
-exp_data_dir = os.path.join(raw_exp_data_dir, f'{exp_label}')  # main data dir
-exp_data_ext_dir = os.path.join(raw_exp_data_dir, f'{exp_label}_ext')
-if not os.path.exists(exp_data_dir):  # create if non-existent
-    os.makedirs(exp_data_dir)
-    print(f'Creating new data folder {exp_data_dir}')
+paths.data_this_exp= os.path.join(paths.exp_data, f'{exp_label}')  # main data
+# dir
+exp_data_ext_dir = os.path.join(paths.exp_data, f'{exp_label}_ext')
+if not os.path.exists(paths.data_this_exp):  # create if non-existent
+    os.makedirs(paths.data_this_exp)
+    print(f'Creating new data folder {paths.data_this_exp}')
 else:
-    print(f'Outputs will be saved to {exp_data_dir}')
+    print(f'Outputs will be saved to {paths.data_this_exp}')
 if not os.path.exists(exp_data_ext_dir):  # create if non-existent
     os.makedirs(exp_data_ext_dir)
 
 # Store experiment data meta json files if not existent
-events_json_fn = os.path.join(exp_data_dir, 'task-th_beh.json')
+events_json_fn = os.path.join(paths.data_this_exp, 'task-th_beh.json')
 
 if not os.path.exists(events_json_fn):
     events_json_dic = {
@@ -271,7 +274,7 @@ if not os.path.exists(events_json_fn):
     with open(events_json_fn, 'w') as json_f:
         json.dump(events_json_dic, json_f, indent=4)
 
-participants_fn = os.path.join(exp_data_dir, 'participants')
+participants_fn = os.path.join(paths.data_this_exp, 'participants')
 if not os.path.exists(participants_fn):
     participants_dic = {
         "age": {
@@ -307,7 +310,7 @@ while True:
         if len(sub_ID) != 2:
             raise ValueError
         # Create subject folder (if not existing) and output filenames
-        sub_dir = os.path.join(exp_data_dir, f'sub-{sub_ID}')
+        sub_dir = os.path.join(paths.data_this_exp, f'sub-{sub_ID}')
         sub_beh_dir = os.path.join(sub_dir, 'beh')
         sub_ext_dir = os.path.join(exp_data_ext_dir, f'sub-{sub_ID}')
         if not os.path.exists(sub_beh_dir):
@@ -420,11 +423,12 @@ else:
                         monitor="my_mac", units="cm")
 
 # ------Create or load task configuration-------------------------------
-config_files_dir = os.path.join(working_dir, 'task_config',
+# TODO: recover task config files?
+config_files_dir = os.path.join(paths.code, 'task_config',
                                 f'b-{exp_blocks}_r-{exp_rounds}_'
                                 f't-{exp_trials}', f'{exp_label}')
 if os.path.exists(config_files_dir):
-    print(f'loading task configuration for {exp_data_dir}')
+    print(f'loading task configuration for {exp_label}')
 
 # Create task config (object will load config if existing for
 # task_params and sim_name)
@@ -434,7 +438,7 @@ task_configurator = TaskConfigurator(task_config_dir=config_files_dir,
 task_configs = task_configurator.return_task_configuration()
 
 config_pr_file_dir = os.path.join(
-    working_dir, 'task_config',
+    paths.code, 'task_config',
     f'b-{pract_blocks}_r-{pract_rounds}_t-{pract_trials}',
     f'{exp_label}')
 

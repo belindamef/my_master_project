@@ -104,7 +104,7 @@ class TaskConfigurator:
         s_3_fn = os.path.join(self.task_config_dir, 's_3.npy')
         hides_fn = os.path.join(self.task_config_dir, 'hides.npy')
 
-        # Create task configuration fn and directories or load if existent
+        # Load task configuration if existent, else create new
         if os.path.exists(self.task_config_dir):
             self.s_1 = np.load(s_1_fn)
             self.s_3_tr_loc = np.load(s_3_fn)
