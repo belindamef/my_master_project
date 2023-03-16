@@ -8,6 +8,55 @@ import numpy as np
 import pandas as pd
 
 
+def get_user_yes_no(question):
+    reply = input(question + " (Y/N): ").lower().strip()
+    try:
+        if reply[:1] == 'y':
+            return True
+        elif reply[:1] == 'n':
+            return False
+        else:
+            print('Invalid answer. Please answer with (Y/N). ')
+            return get_user_yes_no(question)
+    except Exception as error:
+        print("Please enter valid inputs")
+        print(error)
+        return get_user_yes_no(question)
+
+
+def create_agent_id(agent_model, repetition_number):
+    if "C" in agent_model:
+        agent_id = f"{agent_model}_{repetition_number + 1}"
+    else:
+        agent_id = agent_model
+    return agent_id
+    # TODO: change output creation to only one directory per sub
+    # TODO: adapt stats scripts first
+
+
+def define_and_create_sub_out_dir(sim_out_dir, sub_id):
+    sub_dir = os.path.join(sim_out_dir, f"sub-{sub_id}", "beh")
+    if not os.path.exists(sub_dir):
+        os.makedirs(sub_dir)
+    return sub_dir
+
+
+def define_out_filename(sub_dir, sub_id):
+    """Return filename for behavioral data output
+
+    Parameters
+    ----------
+    sub_dir : str
+    sub_id : str
+
+    Returns
+    -------
+    str
+
+    """
+    return os.path.join(sub_dir, f"sub-{sub_id}_task-th_beh")
+
+
 @dataclass
 class Paths:
     """A class to store directory and file paths as string values
@@ -21,13 +70,30 @@ class Paths:
     sim_data: str
         path to directory to store data generated in data simulations
     """
-
     project = os.sep.join(os.path.dirname(os.getcwd()).split(os.sep))
     code = os.path.join(project, "code")
     task_configs = os.path.join(code, "task_config")
     data = os.path.join(project, "data")
     sim_data = os.path.join(data, "rawdata", "sim")
     exp_data = os.path.join(data, "rawdata", "exp")
+    sub_dir: str = None
+    this_sim_out: str = None
+
+
+class DirectoryManager:
+    """Class of methods to create or check for directories"""
+
+    @staticmethod
+    def create_data_out_dir(paths):
+        while True:
+            try:
+                sim_name = input("Enter label for data output directory: ")
+                paths.this_sim_out = os.path.join(paths.sim_data, sim_name)
+                os.makedirs(paths.this_sim_out)
+                break
+            except FileExistsError:
+                print(f'Simulation output directory with this name already '
+                      f'exists.')
 
 
 @dataclass
@@ -91,34 +157,49 @@ class TaskConfigurator:
         self.task_design_params = task_design_params
 
     def get_user_input(self):
-        """Get user input for simulation task configuration"""
-        self.new_config_needed = bool(
-            input("Create new task configuration? (yes/no->return)"))
-        if self.new_config_needed:
-            self.config_label = input(
-                "Enter label for new task configuration: ")
-            self.task_design_params.n_blocks = int(input(
-                "Enter number of blocks: "))
+        """Get user input for simulation task configuration
+        """
+        n_blocks = "as in loaded configuration"
+        new_config_needed = get_user_yes_no("Create new task configuration?")
+        if new_config_needed:
+            while True:
+                config_label = input("Enter label for new task "
+                                     "configuration: ")
+                if os.path.exists(os.path.join(
+                        self.paths.task_configs, config_label)):
+                    print("A task configuration with this name already exists."
+                          "\nEnter another name. ")
+                else:
+                    break
+            n_blocks = int(input("Enter number of blocks: "))
         else:
-            self.config_label = input("Enter label of existing task config ("
-                                      "'exp_msc'/'sim_100_msc')")
+            while True:
+                config_label = input("Enter label of existing task config ("
+                                     "'exp_msc'/'sim_100_msc'): ")
+                if not os.path.exists(os.path.join(
+                        self.paths.task_configs, config_label)):
+                    print(f"No configuration named '{config_label}' "
+                          f"found.")
+                else:
+                    break
+        return new_config_needed, config_label, n_blocks
 
-    def add_config_paths(self):
+    def add_config_paths(self, config_label):
         """Add path to this task configurations config files dir to path obj"""
         self.paths.this_config = os.path.join(
-            self.paths.task_configs, self.config_label)
+            self.paths.task_configs, config_label)
 
     def sample_hiding_spots(self):
         """Sample hiding spots from a discrete uniform distribution over
          all nodes (without replacement)"""
-        hides_loc = np.full((self.task_design_params.n_blocks,
-                             self.task_design_params.n_hides), np.nan)
+        hides_loc = np.empty((self.task_design_params.n_blocks,
+                             self.task_design_params.n_hides), dtype=int)
         for block in range(self.task_design_params.n_blocks):
             hides_loc[block] = np.random.choice(
                 self.task_design_params.n_nodes,
                 self.task_design_params.n_hides,
                 replace=False)
-        self.task_config['hides_loc'] = hides_loc
+        self.task_config['hides'] = hides_loc
 
     def sample_start_pos(self):
         """Sample the starting position from a discrete uniform distribution
@@ -145,25 +226,20 @@ class TaskConfigurator:
                 while s_3[block, round_] == self.task_config['s_1'][block,
                                                                     round_]:
                     s_3[block, round_] = np.random.choice(
-                        self.task_config['hides_loc'][block], 1)
+                        self.task_config['hides'][block], 1)
         self.task_config['s_3'] = s_3
 
     def save_task_config(self):
         """Save newly sampled task states to task config directory"""
-        if not os.path.exists(self.paths.this_config):
-            os.makedirs(self.paths.this_config)
-        else:
-            print("A task configuration with this name already exists. \n"
-                  "Program will be terminated.")
-            exit()  # TODO: why sys.exit() better?
-
+        os.makedirs(self.paths.this_config)
         for key, value in self.task_config.items():
             np.save(os.path.join(self.paths.this_config, f'{key}.npy'), value)
 
         config_df_fn = os.path.join(self.paths.this_config,
                                     'config_params.tsv')
         all_block_df = pd.DataFrame()
-        for block_ in range(self.task_design_params.n_blocks):  # TODO:eleganter
+        for block_ in range(self.task_design_params.n_blocks):
+            # TODO: refine
             this_block_df = pd.DataFrame(
                 index=range(0, self.task_design_params.n_rounds))
             this_block_df['block'] = block_ + 1
@@ -176,7 +252,7 @@ class TaskConfigurator:
                 'hides'].astype('object')
             for round_ in range(self.task_design_params.n_rounds):
                 this_block_df.at[
-                    round_, 'hides'] = self.task_config['hides_loc'][block_]
+                    round_, 'hides'] = self.task_config['hides'][block_]
             this_block_df['s1'] = self.task_config['s_1'][block_]
             this_block_df['s3'] = self.task_config['s_3'][block_]
 
@@ -200,15 +276,16 @@ class TaskConfigurator:
             self.task_config[item] = np.load(
                 os.path.join(self.paths.this_config, f'{item}.npy'))
 
-    def prepare_task_config(self):
-        """Prepare task configuration according to user input"""
-        self.get_user_input()
-        self.add_config_paths()
-        if self.new_config_needed:
+    def get_config(self):
+        """Create or load task configuration according to user input"""
+        new_config_is_needed, config_label, n_blocks = self.get_user_input()
+        self.add_config_paths(config_label)
+        if new_config_is_needed:
+            self.task_design_params.n_blocks = n_blocks
             self.sample_task_config()
         else:
             self.load_task_config()
+            self.task_design_params.n_blocks = list(
+                self.task_config.values())[0].shape[0]
 
-    def return_task_configuration(self):
-        """Return task configuration"""
         return self.task_config

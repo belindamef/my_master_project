@@ -22,7 +22,8 @@ exp_label = str(input("Enter exp_label ('exp_msc' or 'sim_100_msc' or "
                       "'test'): "))
 
 dim = 5
-n_block_this_label = {'exp_msc': 3, 'sim_100_msc': 100, 'test': 3, 'rm': 3}
+n_block_this_label = {'exp_msc': 3, 'sim_100_msc': 100, 'test': 3, 'rm': 3,
+                      'test_forreal':3}
 n_blocks = n_block_this_label[exp_label]
 
 # Specify directories and create if not existent
@@ -114,92 +115,93 @@ ev_file_list.sort()
 sub_id_list = []
 # ------Loop through subjects to create events and descr stats----------------
 # noinspection SpellCheckingInspection
+
 for index, events_fn in enumerate(ev_file_list):
 
-    # Get subject ID
-    sub_id = events_fn[(events_fn.find('beh/sub-') + 8):events_fn.find(
-        '_task-th')]
-    sub_id_list.append(sub_id)
+        # Get subject ID
+        sub_id = events_fn[(events_fn.find('beh/sub-') + 8):events_fn.find(
+            '_task-th')]
+        sub_id_list.append(sub_id)
 
-    # -------Process data------------------
-    # Check if subject in descr_stats_all_subs_df
-    if events_all_subs_df.empty or (
-            sub_id not in events_all_subs_df.sub_id.values) or \
-            descr_stats_all_subs_df.empty or \
-            (sub_id not in descr_stats_all_subs_df.sub_id.values):
+        # -------Process data------------------
+        # Check if subject in descr_stats_all_subs_df
+        if events_all_subs_df.empty or (
+                sub_id not in events_all_subs_df.sub_id.values) or \
+                descr_stats_all_subs_df.empty or \
+                (sub_id not in descr_stats_all_subs_df.sub_id.values):
 
-        # Check if processed data existent
-        proc_data_fn = os.path.join(
-            out_proc_data_dir, f'sub-{sub_id}_task-th_run-all_beh')
-        if os.path.exists(f'{proc_data_fn}.pkl'):
-            print(f'unpacking sub-{sub_id} proc_events.pkl')
-            events_this_sub_df = pd.read_pickle(f'{proc_data_fn}.pkl')
+            # Check if processed data existent
+            proc_data_fn = os.path.join(
+                out_proc_data_dir, f'sub-{sub_id}_task-th_run-all_beh')
+            if os.path.exists(f'{proc_data_fn}.pkl'):
+                print(f'unpacking sub-{sub_id} proc_events.pkl')
+                events_this_sub_df = pd.read_pickle(f'{proc_data_fn}.pkl')
 
-        # Check separately, if processed data block wise existent
-        events_bw_run1_this_sub_fn = \
-            f'{out_proc_data_dir}/sub-{sub_id}_task-th_run-01_beh.pkl'
-        if os.path.exists(events_bw_run1_this_sub_fn):
-            events_block_this_sub = {}
-            # Unpack each run's (block's) event dataframe and write to dict
+            # Check separately, if processed data block wise existent
+            events_bw_run1_this_sub_fn = \
+                f'{out_proc_data_dir}/sub-{sub_id}_task-th_run-01_beh.pkl'
+            if os.path.exists(events_bw_run1_this_sub_fn):
+                events_block_this_sub = {}
+                # Unpack each run's (block's) event dataframe and write to dict
+                for run_number in range(n_blocks):
+                    block_ = run_number + 1
+                    events_block_this_sub[block_] = pd.read_pickle(
+                        f'{out_proc_data_dir}/'
+                        f'sub-{sub_id}_task-th_run-{block_:02d}_beh.pkl')
+
+            else:
+                print(f'processing events data for sub-{sub_id}')
+                # Get and prepare data from this subject's events and
+                # append to events_df of all subs
+                data_this_sub = Data(  # Instantiate data class object
+                    dataset, sub_id, events_fn, dim)
+                data_this_sub.prep_data()
+                # --> Adds object attribute: data.event_data
+                events_this_sub_df = data_this_sub.events_df
+                events_block_this_sub = data_this_sub.events_block
+
+                # ------Save processed data--------
+                with open(f'{proc_data_fn}.tsv', 'w') as tsv_file:
+                    tsv_file.write(
+                        events_this_sub_df.to_csv(
+                            sep='\t', na_rep=np.NaN, index=False))
+                events_this_sub_df.to_pickle(f'{proc_data_fn}.pkl')
+
+            # Add this subs events to events_all_subs_df
+            events_all_subs_df = pd.concat([events_all_subs_df,
+                                            events_this_sub_df],
+                                           ignore_index=True)
             for run_number in range(n_blocks):
                 block_ = run_number + 1
-                events_block_this_sub[block_] = pd.read_pickle(
-                    f'{out_proc_data_dir}/'
-                    f'sub-{sub_id}_task-th_run-{block_:02d}_beh.pkl')
-
+                events_all_subs_bw[block_] = pd.concat(
+                    [events_all_subs_bw[block_],
+                     events_block_this_sub[block_]],
+                     ignore_index=True)
+            # TODO: why is descr_stats_all_subs_bw sometimes empty??
+            # Perform descriptive statistics for this subject and
+            # append to descr stats df of all subs
+            descr_stats_this_sub = DescrStats(
+                events_this_sub_df, dataset, subject=sub_id)
+            # (One row for this subject)
+            descr_stats_this_sub_df = descr_stats_this_sub.perform_descr_stats()
+            descr_stats_all_subs_df = pd.concat([descr_stats_all_subs_df,
+                                                 descr_stats_this_sub_df],
+                                                ignore_index=True)
+            descr_stats_all_subs_df = pd.concat([descr_stats_all_subs_df,
+                                                 descr_stats_this_sub_df],
+                                                ignore_index=True)
+            for block_, block_df in events_block_this_sub.items():
+                descr_stats_this_block = DescrStats(
+                    block_df, dataset, subject=sub_id)
+                descr_stats_this_block_df = \
+                    descr_stats_this_block.perform_descr_stats()
+                descr_stats_all_subs_bw[block_] = pd.concat([
+                    descr_stats_all_subs_bw[block_],
+                    descr_stats_this_block_df], ignore_index=True)
         else:
-            print(f'processing events data for sub-{sub_id}')
-            # Get and prepare data from this subject's events and
-            # append to events_df of all subs
-            data_this_sub = Data(  # Instantiate data class object
-                dataset, sub_id, events_fn, dim)
-            data_this_sub.prep_data()
-            # --> Adds object attribute: data.event_data
-            events_this_sub_df = data_this_sub.events_df
-            events_block_this_sub = data_this_sub.events_block
-
-            # ------Save processed data--------
-            with open(f'{proc_data_fn}.tsv', 'w') as tsv_file:
-                tsv_file.write(
-                    events_this_sub_df.to_csv(
-                        sep='\t', na_rep=np.NaN, index=False))
-            events_this_sub_df.to_pickle(f'{proc_data_fn}.pkl')
-
-        # Add this subs events to events_all_subs_df
-        events_all_subs_df = pd.concat([events_all_subs_df,
-                                        events_this_sub_df],
-                                       ignore_index=True)
-        for run_number in range(n_blocks):
-            block_ = run_number + 1
-            events_all_subs_bw[block_] = pd.concat(
-                [events_all_subs_bw[block_],
-                 events_block_this_sub[block_]],
-                 ignore_index=True)
-        # TODO: why is descr_stats_all_subs_bw sometimes empty??
-        # Perform descriptive statistics for this subject and
-        # append to descr stats df of all subs
-        descr_stats_this_sub = DescrStats(
-            events_this_sub_df, dataset, subject=sub_id)
-        # (One row for this subject)
-        descr_stats_this_sub_df = descr_stats_this_sub.perform_descr_stats()
-        descr_stats_all_subs_df = pd.concat([descr_stats_all_subs_df,
-                                             descr_stats_this_sub_df],
-                                            ignore_index=True)
-        descr_stats_all_subs_df = pd.concat([descr_stats_all_subs_df,
-                                             descr_stats_this_sub_df],
-                                            ignore_index=True)
-        for block_, block_df in events_block_this_sub.items():
-            descr_stats_this_block = DescrStats(
-                block_df, dataset, subject=sub_id)
-            descr_stats_this_block_df = \
-                descr_stats_this_block.perform_descr_stats()
-            descr_stats_all_subs_bw[block_] = pd.concat([
-                descr_stats_all_subs_bw[block_],
-                descr_stats_this_block_df], ignore_index=True)
-    else:
-        print(
-            f'Skipping processing for sub-{sub_id}, '
-            f'already in descr_stats_all_subs_df')
+            print(
+                f'Skipping processing for sub-{sub_id}, '
+                f'already in descr_stats_all_subs_df')
 
 # ------Evaluate group-level stats-------------------------
 if grp_lvl_stats_df.empty or (

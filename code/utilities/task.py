@@ -36,7 +36,7 @@ class Task:
     n_hides : int
         Number of hiding spots
     model : object
-        Object of class Model, directly linked
+        Object of class BehavioralModel, directly linked
         (i.e. attributes will change, when model attributes change)
     s1_t : int
         State s1, scalar denoting the position in trial t
@@ -53,7 +53,7 @@ class Task:
         treasure hunt task
     o_t : int
         Observation in trial t
-    tr_disc_t : int
+    r_t : int
         Variable denoting whether or not the treasure was found in trial t
         (0: not found, 1:found)
     hides_loc : array_like
@@ -97,15 +97,15 @@ class Task:
         Evaluates the action in trial t
     """
 
-    def __init__(self, working_dir, n_rounds, n_trials, dim, n_hides):
-        self.working_dir = working_dir
-        self.n_rounds = n_rounds
-        self.n_trials = n_trials
-        self.dim = dim
+    def __init__(self, code_dir, task_design_params):
+        self.working_dir = code_dir
+        self.n_rounds = task_design_params.n_rounds
+        self.n_trials = task_design_params.n_trials
+        self.dim = task_design_params.dim
         self.n_nodes = self.dim ** 2  # Number of fields
-        self.n_hides = n_hides
+        self.n_hides = task_design_params.n_hides
 
-        # Initialize empty attribute to embed model object of class Model
+        # Initialize empty attribute to embed model object of class BehavioralModel
         self.model = None
 
         # Initialize task model components
@@ -117,7 +117,7 @@ class Task:
         self.o_t = np.full(1, np.nan)
 
         # Initialize variables for computations
-        self.tr_disc_t = 0  # treasure discovery at s1 initial value: 0
+        self.r_t = 0  # treasure discovery at s1 initial value: 0
         self.hides_loc = np.full(  # hiding spots of current block/task
             self.n_hides, np.nan)
         self.n_black = cp.deepcopy(self.n_nodes)
@@ -126,6 +126,8 @@ class Task:
         self.n_hides_left = cp.deepcopy(self.n_hides)
         self.drill_finding = np.nan
         self.tr_found_on_blue = np.nan
+
+        self.t = np.nan
 
         # Get the shortest distances between two nodes from json or evaluate
         # save to json if not existent
@@ -243,14 +245,29 @@ class Task:
         for node in self.hides_loc:
             self.s4[node] = 1
 
-    def start_new_round(self):
-        """Reset dynamic states to initial values for a new round"""
-        self.tr_disc_t = 0  # treasure discovery
+
+    def start_new_block(self, task_config, block_number):
+        """Start new block with new task_configuration
+
+        Parameters
+        ----------
+        task_config : dict
+        """
+        self.hides_loc = task_config["hides"][block_number]
+        self.eval_s_4()
+
+    def start_new_round(self, task_config, block_number, round_number):
+        """Fetch configuration-specific initial task states and reset
+        dynamic states to initial values for a new round"""
+        self.s1_t = task_config["s_1"][block_number, round_number]
+        self.s3_c = task_config["s_3"][block_number, round_number]
+        self.r_t = 0  # reward
         self.tr_found_on_blue = np.nan
 
-    def start_new_trial(self):
+    def start_new_trial(self, trial_number):
         """Reset dynamic states to initial values for a new trial"""
         self.drill_finding = np.nan
+        self.t = trial_number
 
     def return_observation(self):
         """Return observation, i.e. each node current status (color) and
@@ -258,7 +275,7 @@ class Task:
         s3 and s4 onto observation o_t, as specified in g
         """
         # If node color black and no treasure
-        if (self.s2_t[self.s1_t] == 0) and (self.tr_disc_t == 0):
+        if (self.s2_t[self.s1_t] == 0) and (self.r_t == 0):
             self.o_t = 0
 
         # If node color = grey (always no treasure found)
@@ -266,11 +283,11 @@ class Task:
             self.o_t = 1
 
         # If node color = blue and no treasure
-        elif (self.s2_t[self.s1_t] == 2) and (self.tr_disc_t == 0):
+        elif (self.s2_t[self.s1_t] == 2) and (self.r_t == 0):
             self.o_t = 2
 
         # If treasure found
-        elif self.tr_disc_t == 1:
+        elif self.r_t == 1:
             self.o_t = 3
 
     def perform_state_transition_f(self):
@@ -303,7 +320,7 @@ class Task:
     def eval_whether_treasure(self):
         """Evaluate whether new current position is the treasure location"""
         if self.s1_t == self.s3_c:  # if s1 equals treasure location
-            self.tr_disc_t = 1
+            self.r_t = 1
 
             # Evaluate whether found on hide
             if self.s2_t[self.s1_t] == 2:
@@ -311,7 +328,7 @@ class Task:
             elif self.s2_t[self.s1_t] == 0:
                 self.tr_found_on_blue = 0
         else:
-            self.tr_disc_t = 0
+            self.r_t = 0
 
     def eval_action(self):
         """Evaluate model action and update affected task states"""

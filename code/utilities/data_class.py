@@ -70,7 +70,7 @@ class Data:
     def map_action_types(self):
         """Rename action with verbose expressions and group into action
         types """
-        self.events_df['action_v'] = self.events_df['action'].replace(
+        self.events_df['action_v'] = self.events_df['a'].replace(
             [0, -self.dim, 1, self.dim, -1, 999],
             ['drill', 'up', 'right', 'down', 'left', 'esc'])
         self.events_df['action_type'] = self.events_df[
@@ -86,8 +86,10 @@ class Data:
     @staticmethod
     def str_to_array(values_string):
         """Transform the values in the column 'hide_nodes_s6 to lists"""
-
-        return np.array(list(map(float, values_string.strip('][').split(' '))))
+        if type(values_string) == str:
+            return np.array(list(map(float, values_string.strip('][').split(' '))))
+        else:
+            return values_string
 
     def prep_data(self):
         """ Prepare data to be analysis ready"""
@@ -99,7 +101,7 @@ class Data:
         self.extract_block_wise_dataframes()
 
         # -------Convert from string to lists and/or arrays------------
-        self.events_df['s2_node_color'] = self.events_df[
-            's2_node_color'].apply(self.str_to_array)
-        self.events_df['s4_hide_node'] = self.events_df['s4_hide_node'].apply(
+        self.events_df['s2'] = self.events_df[
+            's2'].apply(self.str_to_array)
+        self.events_df['s4'] = self.events_df['s4'].apply(
             self.str_to_array)

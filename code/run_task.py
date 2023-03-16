@@ -25,7 +25,6 @@ import pandas as pd
 import json
 
 from utilities.config import Paths
-from utilities.config import TaskDesignParameters
 from utilities.create_task_config import TaskConfigurator
 from utilities.create_stimuli import StimulusCreation
 from utilities.rowcol_to_xy import rowcol_to_xy

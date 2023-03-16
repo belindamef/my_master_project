@@ -5,7 +5,7 @@ import os
 from .define_agent_models import define_agent_model
 from .task import Task
 from .agent import Agent
-from .model import Model
+from .modelling import BehavioralModel
 import time
 
 np.set_printoptions(linewidth=500)
@@ -123,7 +123,7 @@ def start_agent_task_interaction(  # TODO: change input to be dict
                     task_object=task,
                 )
 
-                model = Model()
+                model = BehavioralModel()
 
                 # Connect interacting models
                 model.agent = agent  # Embed agent object in model init. object
@@ -343,14 +343,14 @@ def start_agent_task_interaction(  # TODO: change input to be dict
                         a_exp_t[this_t] = a_exp
                         tr_disc_t[
                             this_t
-                        ] = task.tr_disc_t  # tr. discovery of # this trial
+                        ] = task.r_t  # tr. discovery of # this trial
                         drill_finding_t[this_t] = task.drill_finding
                         tr_found_on_hide_t[this_t] = task.tr_found_on_blue
                         # -----------------------------------------------------
 
                         # End round, if treasure discovered
-                        if task.tr_disc_t == 1 or (mode == 'eval_lklh' and
-                                                   exp_data.loc[
+                        if task.r_t == 1 or (mode == 'eval_lklh' and
+                                             exp_data.loc[
                                                        (exp_data['block'] ==
                                                         this_block + 1)
                                                        & (exp_data[

@@ -1,5 +1,6 @@
 import numpy as np
 import copy as cp
+from .modelling import BayesianModelComps
 
 
 class Agent:
@@ -9,27 +10,13 @@ class Agent:
 
     ...
 
-    Parameters
-    ----------
-    agent : str
-        Agent model
-    bayesian : bool
-        True if agent model is bayesian, False otherwise
-    exploring : bool
-        True if agent model is uses exploring strategy, False otherwise
-    model_comps : any
-        Object of class ModelComponents, containing prior, s4_permutations,
-        s4_permutation_indices and likelihood
-    task_object : any
-        Object of class Task
-
     Attributes
     ----------
     agent : str
         Agent model
-    bayesian : bool
+    is_bayesian : bool
         True if agent model is bayesian, False otherwise
-    exploring : bool
+    is_explorative : bool
         True if agent model is uses exploring strategy, False otherwise
     task : any
         Object of class Task
@@ -110,10 +97,10 @@ class Agent:
 
     """
 
-    def __init__(self, agent, bayesian, exploring, model_comps, task_object):
-        self.agent = agent
-        self.bayesian = bayesian
-        self.exploring = exploring
+    def __init__(self, agent_attributes, task_object):
+        self.agent = agent_attributes.agent_model
+        self.is_bayesian = agent_attributes.is_bayesian
+        self.is_explorative = agent_attributes.is_explorative
         self.task = task_object
         self.model = None
 
@@ -135,13 +122,13 @@ class Agent:
         self.marg_s4_prior = np.full(self.task.n_nodes, np.nan)
         self.zero_sum_denominator = 0
 
-        if self.bayesian:
-            # Fetch model components
-            self.s4_perms = model_comps.s4_perms
-            self.s4_perm_node_indices = model_comps.s4_perm_node_indices
-            self.n_s4_perms = model_comps.n_s4_perms
-            self.prior_c0 = model_comps.prior_c0  # ---(Prior, c == 0)---
-            self.lklh = model_comps.lklh
+        if self.is_bayesian:
+            # Unpack bayesian model components
+            self.s4_perms = None
+            self.s4_perm_node_indices = None
+            self.n_s4_perms = None
+            self.prior_c0 = None  # ---(Prior, c == 0)---
+            self.lklh = None
 
             # Initialize posterior object
             # ---(Prior, c != 0)---
@@ -162,6 +149,16 @@ class Agent:
         self.p_o_giv_o = np.nan
         self.kl_giv_a_o = np.nan
         self.virt_b = np.nan
+
+    def Get_bayesian_model_components(self, paths, task_design_params):
+        """Load or create prior, likelihood and permutation lists etc"""
+        bayesian_model_comps = BayesianModelComps(paths, task_design_params)
+        bayesian_model_comps.create_or_load_components()
+        self.s4_perms = bayesian_model_comps.s4_perms
+        self.s4_perm_node_indices = bayesian_model_comps.s4_perm_node_indices
+        self.n_s4_perms = bayesian_model_comps.n_s4_perms
+        self.prior_c0 = bayesian_model_comps.prior_c0  # ---(Prior, c == 0)---
+        self.lklh = bayesian_model_comps.lklh
 
     def eval_prior_subs_rounds(self):
         """Reset belief states for s3 (treasure) based on marginal s4
@@ -234,22 +231,24 @@ class Agent:
 
         return marg_s3_b, marg_s4_b
 
-    def start_new_trial(self):
+    def start_new_trial(self, trial_number):
         """Reset dynamic states to initial values for a new trial"""
         self.moves -= 1
+        self.t = trial_number
         self.v = np.full(5, np.nan)  # decision valences
         self.d = np.full(1, np.nan)  # decision
         self.zero_sum_denominator = 0
 
-    def start_new_round(self):
+    def start_new_round(self, round_number):
         """Reset dynamic states to initial values for a new round"""
         self.moves = cp.deepcopy(self.task.n_trials)
+        self.c = round_number
         # Reset belief states if not first round, if bayesian agent
-        if self.bayesian and self.c > 0:
+        if self.is_bayesian and self.c > 0:
             self.eval_prior_subs_rounds()
 
         # Marginal prior distributions
-        if self.bayesian:
+        if self.is_bayesian:
             if self.c == 0:
                 self.marg_s3_prior, self.marg_s4_prior = \
                     self.eval_marg_b(self.prior_c0)
@@ -259,7 +258,7 @@ class Agent:
 
     def update_belief_state(self):
         """Update belief state self"""
-        if self.bayesian:
+        if self.is_bayesian:
             if self.c == 0 and self.t == 0:
                 self.p_s_giv_o = self.eval_posterior(self.prior_c0, 1,
                                                      self.task.s1_t,
@@ -590,10 +589,10 @@ class Agent:
         self.v = np.full(len(self.a_s1), np.nan)  # Better init. with zeros?
 
         # -------Identify closest nodes with maximum s3 belief values----------
-        if self.bayesian:
+        if self.is_bayesian:
             self.eval_closest_max_s3_b_nodes()
 
-        if self.exploring:
+        if self.is_explorative:
             self.eval_p_o_giv_o()
             self.eval_kl()
 

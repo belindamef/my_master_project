@@ -5,48 +5,24 @@ import os
 from .define_agent_models import define_agent_model
 from .task import Task
 from .agent import Agent
-from .model import Model
+from .modelling import BehavioralModel
 import time
 
 np.set_printoptions(linewidth=500)
 
 
-def start_agent_task_interaction(  # TODO: change input to be dict
-        working_dir,
-        output_dir,
-        data_dir,
-        n_blocks,
-        n_rounds,
-        n_trials,
-        dim,
-        n_hides,
-        agent_models,
-        task_config,
-        model_comps,
-        mode
-):
+def start_agent_task_interaction(paths, task_design_params, agent_models,
+                                 task_configs, model_comps, mode):
     """This function simulates the interaction between
     an agent object and a task object under a behavioral model
-    and writes a tabular file with simulated data to output_dir.
+    and writes a .tsv file with simulated data to output_dir.
 
     Parameters
     ----------
+    task_design_params : object of class TaskDesignParams
     mode : str
         processing mode (TODO)
-    working_dir : str
-        Current working directory
-    output_dir: str
-        Output directory to which simulated data are written to
-    n_blocks : int
-        Number of blocks (i.e. number games with distinct task configurations)
-    n_rounds : int
-        Number of rounds within one block
-    n_trials : int
-        Number of trials within one round
-    dim : int
-        Dimensionality of the gridworld
-    n_hides : int
-        Number of hiding spots
+    paths : object of class Paths
     agent_models : list of str
         List of agent models
     task_configs : dict
@@ -55,7 +31,7 @@ def start_agent_task_interaction(  # TODO: change input to be dict
         Object of class ModelComponents
     """
 
-    n_nodes = dim ** 2  # number of nodes in the gridworld
+    n_nodes = task_design_params.dim ** 2  # number of nodes in the gridworld
 
     # Iterate generating models (for one task configuration)
     for agent_model in agent_models:
@@ -77,7 +53,7 @@ def start_agent_task_interaction(  # TODO: change input to be dict
             else:
                 sub_id = agent_model
 
-            sub_dir = os.path.join(output_dir, f"sub-{sub_id}", "beh")
+            sub_dir = os.path.join(paths.this_sim_out, f"sub-{sub_id}", "beh")
 
             if not os.path.exists(sub_dir):
                 os.makedirs(sub_dir)
@@ -90,7 +66,7 @@ def start_agent_task_interaction(  # TODO: change input to be dict
 
             # -----Start Routine "simulation" ------
 
-            for this_block in range(n_blocks):
+            for this_block in range(task_design_params.n_blocks):
                 print(
                     f"Agent {agent_model} (rep: {repetition} )"
                     f"playing block {this_block + 1} ..."
@@ -102,16 +78,10 @@ def start_agent_task_interaction(  # TODO: change input to be dict
                 sim_dat_b = pd.DataFrame()
 
                 # Instantiate task object
-                task = Task(
-                    working_dir=working_dir,
-                    n_rounds=n_rounds,
-                    n_trials=n_trials,
-                    dim=dim,
-                    n_hides=n_hides,
-                )
+                task = Task(paths.code, task_design_params)
 
                 # Get task configuration and set s_4 accordingly
-                task.hides_loc = task_configs["hides_loc"][this_block]
+                task.hides_loc = task_configs["hides"][this_block]
                 task.eval_s_4()
 
                 # Initialize agent and model object
@@ -123,7 +93,7 @@ def start_agent_task_interaction(  # TODO: change input to be dict
                     task_object=task,
                 )
 
-                model = Model()
+                model = BehavioralModel()
 
                 # Connect interacting models
                 model.agent = agent  # Embed agent object in model init. object
@@ -136,84 +106,84 @@ def start_agent_task_interaction(  # TODO: change input to be dict
 
                 # ------Start Routine "block" -------
 
-                for this_round in range(n_rounds):
+                for this_round in range(task_design_params.n_rounds):
 
                     # ------Prepare Routine "round"-------
 
                     # Fetch task configuration
                     task.s1_t = task_configs["s_1"][this_block, this_round]
-                    task.s3_c = task_configs["s_3_tr_loc"][this_block,
+                    task.s3_c = task_configs["s_3"][this_block,
                                                            this_round]
 
                     # Initialize arrays, objects for trialwise data recording
                     # ---------------------------------------------------------
                     # Task states
-                    s_1_t = np.full(n_trials + 1, np.nan)  # Current position
-                    s_2_node_color_t = np.full((n_trials + 1, n_nodes), np.nan)
+                    s_1_t = np.full(task_design_params.n_trials + 1, np.nan)  # Current position
+                    s_2_node_color_t = np.full((task_design_params.n_trials + 1, n_nodes), np.nan)
 
                     # Variables for computations
-                    tr_disc_t = np.full(n_trials + 1, np.nan)  # tr discovery
-                    n_black_t = np.full(n_trials + 1, np.nan)
-                    n_grey_t = np.full(n_trials + 1, np.nan)
-                    n_blue_t = np.full(n_trials + 1, np.nan)
-                    drill_finding_t = np.full(n_trials + 1, np.nan)
+                    tr_disc_t = np.full(task_design_params.n_trials + 1, np.nan)  # tr discovery
+                    n_black_t = np.full(task_design_params.n_trials + 1, np.nan)
+                    n_grey_t = np.full(task_design_params.n_trials + 1, np.nan)
+                    n_blue_t = np.full(task_design_params.n_trials + 1, np.nan)
+                    drill_finding_t = np.full(task_design_params.n_trials + 1, np.nan)
                     tr_found_on_hide_t = np.full(
-                        n_trials + 1, np.nan
+                        task_design_params.n_trials + 1, np.nan
                     )  # whether tr was found on hide
                     zero_sum_denom_t = np.full(
-                        n_trials + 1, np.nan
+                        task_design_params.n_trials + 1, np.nan
                     )  # whether post belief update denominator sum was zero
 
                     # Observation, marginal beliefs, valence, decision, action
                     o_t = np.full(
-                        n_trials + 1, np.nan
+                        task_design_params.n_trials + 1, np.nan
                     )  # observation of treasure discovery
                     marg_s3_b_t = np.full(
-                        (n_trials + 1, n_nodes), np.nan
+                        (task_design_params.n_trials + 1, n_nodes), np.nan
                     )  # belief state hiding spots
                     marg_s4_b_t = np.full(
-                        (n_trials + 1, n_nodes), np.nan
+                        (task_design_params.n_trials + 1, n_nodes), np.nan
                     )  # belief state hiding spots
                     a_s1_t = np.full(
-                        n_trials + 1, np.nan, dtype=object
+                        task_design_params.n_trials + 1, np.nan, dtype=object
                     )  # state-dependent action set
                     o_s2_t = np.full(
-                        n_trials + 1, np.nan, dtype=object
+                        task_design_params.n_trials + 1, np.nan, dtype=object
                     )  # state-dependent action set
                     v_t = np.full(
-                        n_trials + 1, np.nan, dtype=object
+                        task_design_params.n_trials + 1, np.nan, dtype=object
                     )  # decision valence values in each trial
                     p_a_giv_h_t = np.full(
-                        n_trials + 1, np.nan, dtype=object
+                        task_design_params.n_trials + 1, np.nan, dtype=object
                     )
                     p_a_giv_h_exp_t = np.full(
-                        n_trials + 1, np.nan, dtype=object
+                        task_design_params.n_trials + 1, np.nan, dtype=object
                     )
                     ln_p_a_t = np.full(
-                        n_trials + 1, np.nan, dtype=object
+                        task_design_params.n_trials + 1, np.nan, dtype=object
                     )
                     p_a_giv_h = None  # todo
-                    a_exp_t = np.full(n_trials + 1, np.nan)
-                    d_t = np.full(n_trials + 1, np.nan)  # agent's decision
-                    a_t = np.full(n_trials + 1, np.nan)  # action
+                    a_exp_t = np.full(task_design_params.n_trials + 1, np.nan)
+                    d_t = np.full(task_design_params.n_trials + 1, np.nan)  # agent's decision
+                    a_t = np.full(task_design_params.n_trials + 1, np.nan)  # action
                     p_o_giv_o_t = np.full(
-                        n_trials + 1, np.nan, dtype=object
+                        task_design_params.n_trials + 1, np.nan, dtype=object
                     )  # b-dep posterior predictive distribution
                     kl_giv_a_o = np.full(
-                        n_trials + 1, np.nan, dtype=object
+                        task_design_params.n_trials + 1, np.nan, dtype=object
                     )  # b-dep posterior predictive distribution
                     agent_t = np.full(
-                        (n_trials + 1, 1), np.nan
+                        (task_design_params.n_trials + 1, 1), np.nan
                     )  # Recordings for sanity checks
 
                     # Max belief state computations
-                    max_s3_b_value_t = np.full(n_trials + 1, np.nan)
-                    max_s3_b_nodes_t = np.full(n_trials + 1,
+                    max_s3_b_value_t = np.full(task_design_params.n_trials + 1, np.nan)
+                    max_s3_b_nodes_t = np.full(task_design_params.n_trials + 1,
                                                np.nan,
                                                dtype=object)
-                    shortest_dist_to_max_s3_b_t = np.full(n_trials + 1, np.nan)
+                    shortest_dist_to_max_s3_b_t = np.full(task_design_params.n_trials + 1, np.nan)
                     closest_max_s3_b_nodes_t = np.full(
-                        n_trials + 1, np.nan, dtype=object
+                        task_design_params.n_trials + 1, np.nan, dtype=object
                     )
 
                     # -----Start Routine "round"------------------------
@@ -225,11 +195,11 @@ def start_agent_task_interaction(  # TODO: change input to be dict
                     agent.start_new_round()
 
                     # Record treasure location and marginal priors
-                    s_3_tr_loc = np.full(n_trials + 1, task.s3_c)
+                    s_3_tr_loc = np.full(task_design_params.n_trials + 1, task.s3_c)
                     marg_s3_prior_c = agent.marg_s3_prior
                     marg_s4_prior_c = agent.marg_s4_prior
 
-                    for this_t in range(n_trials):
+                    for this_t in range(task_design_params.n_trials):
 
                         # -----Prepare Routine "trial"-----------
                         # Seems like there is nothing prepare
@@ -266,7 +236,7 @@ def start_agent_task_interaction(  # TODO: change input to be dict
                         elif mode == 'eval_lklh':
                             # Load participant beh data
                             exp_data = pd.read_csv(
-                                os.path.join(data_dir, "rawdata",
+                                os.path.join(paths.data, "rawdata",
                                              "exp", "main",
                                              "sub-01", "beh",
                                              "sub-01_task-th_beh.tsv"),
@@ -335,22 +305,25 @@ def start_agent_task_interaction(  # TODO: change input to be dict
                         closest_max_s3_b_nodes_t[this_t] = \
                             agent.closest_max_s3_b_nodes
                         v_t[this_t] = agent.v  # valences
-                        p_a_giv_h_t[this_t] = p_a_giv_h  # todo
-                        p_a_giv_h_exp_t[this_t] = p_a_giv_h_exp
-                        ln_p_a_t[this_t] = ln_p_a
+
+                        if mode == "eval_lklh":
+                            p_a_giv_h_t[this_t] = p_a_giv_h  # todo
+                            p_a_giv_h_exp_t[this_t] = p_a_giv_h_exp
+                            ln_p_a_t[this_t] = ln_p_a
+                            a_exp_t[this_t] = a_exp
                         d_t[this_t] = agent.d  # decision
                         a_t[this_t] = model.a_t  # action
-                        a_exp_t[this_t] = a_exp
+
                         tr_disc_t[
                             this_t
-                        ] = task.tr_disc_t  # tr. discovery of # this trial
+                        ] = task.r_t  # tr. discovery of # this trial
                         drill_finding_t[this_t] = task.drill_finding
                         tr_found_on_hide_t[this_t] = task.tr_found_on_blue
                         # -----------------------------------------------------
 
                         # End round, if treasure discovered
-                        if task.tr_disc_t == 1 or (mode == 'eval_lklh' and
-                                                   exp_data.loc[
+                        if task.r_t == 1 or (mode == 'eval_lklh' and
+                                             exp_data.loc[
                                                        (exp_data['block'] ==
                                                         this_block + 1)
                                                        & (exp_data[
@@ -384,82 +357,82 @@ def start_agent_task_interaction(  # TODO: change input to be dict
 
                     # ------Ending Routine "round"------
                     sim_dat_c = pd.DataFrame(
-                        index=range(0, n_trials + 1)
+                        index=range(0, task_design_params.n_trials + 1)
                     )  # Create dataframe
                     sim_dat_c["agent"] = f"Agent {agent_model}"
                     sim_dat_c["block"] = this_block + 1
                     sim_dat_c["round"] = this_round + 1
-                    sim_dat_c["trial"] = range(1, n_trials + 2)
+                    sim_dat_c["trial"] = range(1, task_design_params.n_trials + 2)
 
                     sim_dat_c["s1_pos"] = s_1_t  # Current node position
-                    sim_dat_c["s2_node_color"] = np.full(n_trials + 1, np.nan)
+                    sim_dat_c["s2_node_color"] = np.full(task_design_params.n_trials + 1, np.nan)
                     sim_dat_c["s2_node_color"] = sim_dat_c[
                         "s2_node_color"].astype("object")
-                    for trial in range(n_trials + 1):
+                    for trial in range(task_design_params.n_trials + 1):
                         sim_dat_c.at[trial, "s2_node_color"] = \
                             s_2_node_color_t[trial]
                     sim_dat_c["s3_tr_loc"] = s_3_tr_loc  # Treasure location
-                    sim_dat_c["s4_hide_node"] = np.full(n_trials + 1, np.nan)
+                    sim_dat_c["s4_hide_node"] = np.full(task_design_params.n_trials + 1, np.nan)
                     sim_dat_c["s4_hide_node"] = sim_dat_c[
                         "s4_hide_node"].astype("object")
-                    for trial in range(n_trials + 1):
+                    for trial in range(task_design_params.n_trials + 1):
                         sim_dat_c.at[trial, "s4_hide_node"] = s_4_hide_node
 
                     sim_dat_c["o"] = o_t
 
-                    sim_dat_c["a_s1"] = np.full(n_trials + 1, np.nan)
+                    sim_dat_c["a_s1"] = np.full(task_design_params.n_trials + 1, np.nan)
                     sim_dat_c["a_s1"] = sim_dat_c["a_s1"].astype("object")
-                    for t in range(n_trials + 1):
+                    for t in range(task_design_params.n_trials + 1):
                         sim_dat_c.at[t, "a_s1"] = a_s1_t[t]
 
                     sim_dat_c["max_s3_b_value"] = max_s3_b_value_t
 
-                    sim_dat_c["max_s3_b_nodes"] = np.full(n_trials + 1, np.nan)
+                    sim_dat_c["max_s3_b_nodes"] = np.full(task_design_params.n_trials + 1, np.nan)
                     sim_dat_c["max_s3_b_nodes"] = sim_dat_c[
                         "max_s3_b_nodes"].astype("object")
-                    for t in range(n_trials + 1):
+                    for t in range(task_design_params.n_trials + 1):
                         sim_dat_c.at[t, "max_s3_b_nodes"] = max_s3_b_nodes_t[t]
 
                     sim_dat_c["shortest_dist_max_s3_b"] = \
                         shortest_dist_to_max_s3_b_t
 
-                    sim_dat_c["closest_max_s3_b_nodes"] = np.full(n_trials + 1,
+                    sim_dat_c["closest_max_s3_b_nodes"] = np.full(task_design_params.n_trials + 1,
                                                                   np.nan)
                     sim_dat_c["closest_max_s3_b_nodes"] = sim_dat_c[
                         "closest_max_s3_b_nodes"].astype("object")
-                    for t in range(n_trials + 1):
+                    for t in range(task_design_params.n_trials + 1):
                         sim_dat_c.at[t, "closest_max_s3_b_nodes"] = \
                             closest_max_s3_b_nodes_t[t]
 
-                    sim_dat_c["o_s2"] = np.full(n_trials + 1, np.nan)
+                    sim_dat_c["o_s2"] = np.full(task_design_params.n_trials + 1, np.nan)
                     sim_dat_c["o_s2"] = sim_dat_c["o_s2"].astype("object")
-                    for t in range(n_trials + 1):
+                    for t in range(task_design_params.n_trials + 1):
                         sim_dat_c.at[t, "o_s2"] = o_s2_t[t]
 
-                    sim_dat_c["p_o_giv_o"] = np.full(n_trials + 1, np.nan)
+                    sim_dat_c["p_o_giv_o"] = np.full(task_design_params.n_trials + 1, np.nan)
                     sim_dat_c["p_o_giv_o"] = sim_dat_c["p_o_giv_o"].astype(
                         "object")
-                    for t in range(n_trials + 1):
+                    for t in range(task_design_params.n_trials + 1):
                         sim_dat_c.at[t, "p_o_giv_o"] = p_o_giv_o_t[t]
 
-                    sim_dat_c["kl_giv_a_o"] = np.full(n_trials + 1, np.nan)
+                    sim_dat_c["kl_giv_a_o"] = np.full(task_design_params.n_trials + 1, np.nan)
                     sim_dat_c["kl_giv_a_o"] = sim_dat_c[
                         "kl_giv_a_o"].astype("object")
-                    for t in range(n_trials + 1):
+                    for t in range(task_design_params.n_trials + 1):
                         sim_dat_c.at[t, "kl_giv_a_o"] = kl_giv_a_o[t]
 
-                    sim_dat_c["v"] = np.full(n_trials + 1, np.nan)
+                    sim_dat_c["v"] = np.full(task_design_params.n_trials + 1, np.nan)
                     sim_dat_c["v"] = sim_dat_c["v"].astype("object")
-                    for trial in range(n_trials + 1):
+                    for trial in range(task_design_params.n_trials + 1):
                         sim_dat_c.at[trial, "v"] = v_t[trial]
                     sim_dat_c["d"] = d_t
                     sim_dat_c["action"] = a_t
                     if mode == "eval_lklh":
-                        sim_dat_c["p_a_giv_h"] = np.full(n_trials + 1,
+                        sim_dat_c["p_a_giv_h"] = np.full(task_design_params.n_trials + 1,
                                                          np.nan)
                         sim_dat_c["p_a_giv_h"] = sim_dat_c[
                             "p_a_giv_h"].astype("object")
-                        for t in range(n_trials + 1):
+                        for t in range(task_design_params.n_trials + 1):
                             sim_dat_c.at[t, "p_a_giv_h"] = p_a_giv_h_t[t]
 
                         sim_dat_c["p_a_giv_h_exp"] = p_a_giv_h_exp_t
@@ -475,34 +448,34 @@ def start_agent_task_interaction(  # TODO: change input to be dict
                     sim_dat_c["n_grey"] = n_grey_t
                     sim_dat_c["n_blue"] = n_blue_t
 
-                    sim_dat_c["marg_b_s3"] = np.full(n_trials + 1, np.nan)
+                    sim_dat_c["marg_b_s3"] = np.full(task_design_params.n_trials + 1, np.nan)
                     sim_dat_c["marg_b_s3"] = sim_dat_c["marg_b_s3"].astype(
                         "object")
-                    for t in range(n_trials + 1):
+                    for t in range(task_design_params.n_trials + 1):
                         sim_dat_c.at[t, "marg_b_s3"] = marg_s3_b_t[t]
 
-                    sim_dat_c["marg_b_s4"] = np.full(n_trials + 1, np.nan)
+                    sim_dat_c["marg_b_s4"] = np.full(task_design_params.n_trials + 1, np.nan)
                     sim_dat_c["marg_b_s4"] = sim_dat_c["marg_b_s4"].astype(
                         "object")
-                    for t in range(n_trials + 1):
+                    for t in range(task_design_params.n_trials + 1):
                         sim_dat_c.at[t, "marg_b_s4"] = marg_s4_b_t[t]
 
-                    sim_dat_c["hiding_spots"] = np.full(n_trials + 1, np.nan)
+                    sim_dat_c["hiding_spots"] = np.full(task_design_params.n_trials + 1, np.nan)
                     sim_dat_c["hiding_spots"] = sim_dat_c[
                         "hiding_spots"].astype("object")  # hiding spots arrays
-                    for trial in range(n_trials + 1):
+                    for trial in range(task_design_params.n_trials + 1):
                         sim_dat_c.at[trial, "hiding_spots"] = hides_loc_t
 
-                    sim_dat_c["marg_s3_prior"] = np.full(n_trials + 1, np.nan)
+                    sim_dat_c["marg_s3_prior"] = np.full(task_design_params.n_trials + 1, np.nan)
                     sim_dat_c["marg_s3_prior"] = sim_dat_c[
                         "marg_s3_prior"].astype("object")
-                    for trial in range(n_trials + 1):
+                    for trial in range(task_design_params.n_trials + 1):
                         sim_dat_c.at[trial, "marg_s3_prior"] = marg_s3_prior_c
 
-                    sim_dat_c["marg_s4_prior"] = np.full(n_trials + 1, np.nan)
+                    sim_dat_c["marg_s4_prior"] = np.full(task_design_params.n_trials + 1, np.nan)
                     sim_dat_c["marg_s4_prior"] = sim_dat_c[
                         "marg_s4_prior"].astype("object")
-                    for trial in range(n_trials + 1):
+                    for trial in range(task_design_params.n_trials + 1):
                         sim_dat_c.at[trial, "marg_s4_prior"] = marg_s4_prior_c
 
                     sim_dat_c["agent_r_count"] = agent.c
@@ -527,7 +500,8 @@ def start_agent_task_interaction(  # TODO: change input to be dict
 
                 # TODO: quickfix
 
-                log_L_n[this_block + 1] = np.nansum(sim_dat_b[
+                if mode == 'eval_liklh':
+                    log_L_n[this_block + 1] = np.nansum(sim_dat_b[
                                                         "ln_p_a"].values)
 
             print(log_L_n)

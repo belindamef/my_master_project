@@ -4,7 +4,7 @@ experimental parameter and agent models.
 
 Task configurations will be either loaded from existing configuration files
 or sampled at random if not existing for given experimental parameters.
-This script calls the method ./utilities/agent_task_interaction.py which
+This script calls the method ./utilities/simulation_methods.py which
 iterates over the here given set of agents and performs the interactions
 for each agent and task configuration.
 
@@ -12,8 +12,8 @@ Author: Belinda Fleischmann
 """
 
 import os
-from utilities.agent_task_interaction import start_agent_task_interaction
-from utilities.model_comp import ModelComps
+from utilities.simulation_methods import start_agent_task_interaction
+from utilities.model_comp import BayesianModelComps
 from utilities.create_task_config import TaskConfigurator
 
 # Specify directories
@@ -54,7 +54,7 @@ config_files_dir = os.path.join(
 )
 
 # Create or load if existent components
-model_comp = ModelComps(working_dir=working_dir, dim=dim, n_hides=n_hides)
+model_comp = BayesianModelComps(working_dir=working_dir, dim=dim, n_hides=n_hides)
 
 # Create task config (loads config file if existing for given params)
 task_configurator = TaskConfigurator(
