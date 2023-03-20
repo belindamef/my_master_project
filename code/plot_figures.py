@@ -128,7 +128,7 @@ sub_label_sim = [s_dir[(s_dir.find('sub-') + 4):]
 sub_label_beh.sort()
 sub_label_sim.sort()
 
-# Extract task configuration-specific model components
+# Extract task configuration-specific beh_model components
 n_blocks = np.max(exp_ev_all_subs_df['block'])
 n_rounds = np.max(exp_ev_all_subs_df['round'])
 n_trials = np.max(exp_ev_all_subs_df['trial']) - 1

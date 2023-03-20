@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 import copy as cp
 import os
 import time
@@ -6,55 +5,44 @@ import pickle
 import numpy as np
 import more_itertools
 
+from .agent import Agent
+from .config import Paths
 
-@dataclass
+
 class AgentInitObject:
-    agent_model: str
+
     is_bayesian: bool
     is_explorative: bool
     is_deterministic: bool
 
+    def __init__(self, agent_model):
+        self.name = agent_model
 
-def define_agent_attributes(agent_model):
-    """Returns an agent initialization object
+    def def_attributes(self):
+        """Define agent attributes dependent on beh_model
 
-    Parameters
-    ----------
-    agent_model : str
+        Returns
+        -------
+        AgentInitObject
+        """
+        # Control models
+        if self.name in ['C1', 'C2', 'C3']:
+            self.is_bayesian = False
+            self.is_explorative = False
+            self.is_deterministic = False
 
-    Returns
-    -------
-    agent_attributes : AgentInitObject
-        obj with agent attributes
-    """
-    # Control models
-    if agent_model in ['C1', 'C2', 'C3']:
-        agent_attributes = AgentInitObject(agent_model=agent_model,
-                                           is_bayesian=False,
-                                           is_explorative=False,
-                                           is_deterministic=False)
+        # Bayesian models
+        elif self.name == 'A1':
+            self.is_bayesian = True
+            self.is_explorative = False
+            self.is_deterministic = True
 
-    # Bayesian models
-    elif agent_model == 'A1':
-        agent_attributes = AgentInitObject(agent_model=agent_model,
-                                           is_bayesian=True,
-                                           is_explorative=False,
-                                           is_deterministic=True)
-
-    # Bayesian models using explorative strategy
-    elif agent_model in ['A2', 'A3']:
-        agent_attributes = AgentInitObject(agent_model=agent_model,
-                                           is_bayesian=True,
-                                           is_explorative=True,
-                                           is_deterministic=True)
-    else:
-        agent_attributes = AgentInitObject(agent_model=agent_model,
-                                           is_bayesian=False,
-                                           is_explorative=False,
-                                           is_deterministic=False)
-
-    # agent_attributes.bayesian_model_comps = bayesian_model_comps
-    return agent_attributes
+        # Bayesian models using explorative strategy
+        elif self.name in ['A2', 'A3']:
+            self.is_bayesian = True
+            self.is_explorative = True
+            self.is_deterministic = True
+        return self
 
 
 class BayesianModelComps:
@@ -63,14 +51,14 @@ class BayesianModelComps:
 
     TODO
     """
+    paths = Paths()
     s4_perms = []
     s4_perm_node_indices = {}
     n_s4_perms = np.nan
     prior_c0 = np.nan
     lklh = np.nan
 
-    def __init__(self, path, task_design_params):
-        self.paths = path
+    def __init__(self, task_design_params):
         self.task_design_params = task_design_params
 
     def eval_s4_perms(self):
@@ -215,8 +203,9 @@ class BayesianModelComps:
                     # else remain zero
                     self.lklh[1, s1, s2_s1, 3, s1, index] = 1
 
-    def create_or_load_components(self):
-        """Create or load Bayesian model components (prior and likelihood)"""
+    def get_comps(self):
+        """Create or load Bayesian beh_model components (prior and likelihood)
+        """
         # Initialize and evaluate s_4 permutations
         s4_perms_fn_pkl = os.path.join(
             self.paths.code, "utilities",
@@ -313,10 +302,11 @@ class BayesianModelComps:
             print(f" ... saved lkhl, time needed: "
                   f"{round((end - start), ndigits=2)}")
         # start = time.time()
+        return self
 
 
 class BehavioralModel:
-    """A class used to represent the behavioral model
+    """A class used to represent the behavioral beh_model
 
     Attributes
     ----------
@@ -325,15 +315,28 @@ class BehavioralModel:
     a_t : array_like
         Action value in trial t
     """
+    agent: Agent = None
+    p_a_giv_h = None
 
-    def __init__(self):
+    def __init__(self, mode, tau):
         # Initialize empty attribute to embed agent object of class Agent
-        self.agent = None
+        self.tau = tau
+        self.mode = mode
 
         # Initialize action attribute
         self.a_t = np.full(1, np.nan)  # agent action
 
+    def eval_p_a_giv_history(self):
+        """Define probability distribution of actions giv the history of
+        actions and observations TODO: what history precisely?"""
+        self.p_a_giv_h = np.exp((1 / self.tau) * self.agent.v) / sum(
+            np.exp((1 / self.tau) * self.agent.v))
+
     def return_action(self):
         """This function returns the action value given agent's decision."""
         # probability action given decision of 1
-        self.a_t = cp.deepcopy(self.agent.d)
+        if self.mode == "behavior_sim":
+            self.a_t = cp.deepcopy(self.agent.d)
+
+        elif self.mode == "validation":
+            self.a_t = np.random.multinomial(1, self.p_a_giv_h)

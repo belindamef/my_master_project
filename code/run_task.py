@@ -25,7 +25,7 @@ import pandas as pd
 import json
 
 from utilities.config import Paths
-from utilities.create_task_config import TaskConfigurator
+from code.utilities.archive.create_task_config import TaskConfigurator
 from utilities.create_stimuli import StimulusCreation
 from utilities.rowcol_to_xy import rowcol_to_xy
 from utilities.node_to_rowcol import node_to_rowcol
@@ -37,8 +37,8 @@ np.set_printoptions(linewidth=500)
 # -----------------------------------------------------------------------------
 
 # Specify work, stimuli, and data directories
-# working_dir = os.path.dirname(os.path.abspath(__file__))
-# project_dir = os.sep.join(working_dir.split(os.sep)[:4])
+# code_dir = os.path.dirname(os.path.abspath(__file__))
+# project_dir = os.sep.join(code_dir.split(os.sep)[:4])
 # raw_exp_data_dir = os.path.join(project_dir, 'data', 'rawdata', 'exp')
 
 paths = Paths()
@@ -430,7 +430,7 @@ if os.path.exists(config_files_dir):
     print(f'loading task configuration for {exp_label}')
 
 # Create task config (object will load config if existing for
-# task_params and sim_name)
+# params and sim_name)
 task_configurator = TaskConfigurator(task_config_dir=config_files_dir,
                                      n_blocks=exp_blocks, n_rounds=exp_rounds,
                                      dim=dim, n_hides=n_hides)

@@ -1,27 +1,30 @@
 """
-This script evaluates and visualizes model recovery simulations for.
+This script evaluates and visualizes beh_model recovery simulations for.
 
 Author: Belinda Fleischmann
 """
 
-from dataclasses import dataclass, is_dataclass
 import time
-import run_simulation
-from utilities.simulation_methods import DefaultSimulationParameters, Recorder
+from utilities.simulation_methods import Simulator
+from utilities.modelling import AgentInitObject
 
 
+def main():
+    simulator = Simulator(mode="validation")
+    simulator.dir_mgr.create_data_out_dir()
+    simulator.taus = [0, 0.4, 0.8, 1.2, 1.6, 2.0]
 
-@dataclass
-class ValidationParameter:
-    simulation_parameters = DefaultSimulationParameters(n_repetitions=50)
-    pi = [0, 0.1, 0.2, 0.3, 0.4, 0.5]
+    for agent_model in simulator.agent_model_space:
+        agent_attr = AgentInitObject(agent_model).def_attributes()
+
+        for tau in simulator.taus:
+            simulator.tau = tau
+            simulator.simulate(agent_attr)
+
 
 if __name__ == "__main__":
-    validation_parameters = ValidationParameter()
-
     start = time.time()
-    run_simulation.main(mode="validation",
-                        validation_parameters=validation_parameters)
+    main()
     end = time.time()
-    print(f"Total time for model validation: "
+    print(f"Total time for beh_model validation: "
           f"{round((end-start), ndigits=2)} sec.")

@@ -2,29 +2,17 @@ import numpy as np
 import copy as cp
 import os
 import json
+from .config import Paths
 
 
 class Task:
-    """A class used to represent the treasure hunt task model
+    """A class used to represent the treasure hunt task
 
     A task object can interact with an agent object within an
-    agent-based behavioral modelling framework
-
-    Parameters
-    ----------
-    working_dir : str
-        Current working directory
-    n_rounds : int
-        Number of rounds within one block
-    dim : int
-        Dimensionality of the gridworld
-    n_hides : int
-        Number of hiding spots
+    agent-based behavioral modelling framework.
 
     Attributes
     ----------
-    working_dir : str
-        Current working directory
     n_rounds : int
         Number of rounds within one block
     n_trials : int
@@ -35,9 +23,9 @@ class Task:
         Number of nodes in the gridworld
     n_hides : int
         Number of hiding spots
-    model : object
+    behavioral_model : object
         Object of class BehavioralModel, directly linked
-        (i.e. attributes will change, when model attributes change)
+        (i.e. attributes will change, when behavioral_model attributes change)
     s1_t : int
         State s1, scalar denoting the position in trial t
     s2_t : array_like
@@ -97,18 +85,22 @@ class Task:
         Evaluates the action in trial t
     """
 
-    def __init__(self, code_dir, task_design_params):
-        self.working_dir = code_dir
-        self.n_rounds = task_design_params.n_rounds
-        self.n_trials = task_design_params.n_trials
-        self.dim = task_design_params.dim
+    def __init__(self, task_configs):
+        """
+
+        Parameters
+        ----------
+        task_configs: TaskConfigurator
+        """
+        self.task_configs = task_configs
+        self.dim = task_configs.params.dim
         self.n_nodes = self.dim ** 2  # Number of fields
-        self.n_hides = task_design_params.n_hides
+        self.n_hides = task_configs.params.n_hides
 
-        # Initialize empty attribute to embed model object of class BehavioralModel
-        self.model = None
+        # Initialize empty attribute to embed beh_model object of class BehavioralModel
+        self.behavioral_model: object = None
 
-        # Initialize task model components
+        # Initialize task beh_model components
         self.s1_t = np.nan
         self.s2_t = np.full(self.n_nodes, 0)
         self.s3_c = np.full(1, np.nan)
@@ -136,8 +128,9 @@ class Task:
         self.shortest_dist_dic = {}
 
         # Specify path for shortest_distances storage file
+        paths = Paths()
         short_dist_fn = os.path.join(
-            self.working_dir, 'utilities',
+            paths.code, 'utilities',
             f'shortest_dist_dim-{self.dim}.json')
         # Read in json file as dic if existent for given dimensionality
         if os.path.exists(short_dist_fn):
@@ -246,21 +239,22 @@ class Task:
             self.s4[node] = 1
 
 
-    def start_new_block(self, task_config, block_number):
+    def start_new_block(self, block_number):
         """Start new block with new task_configuration
 
         Parameters
         ----------
-        task_config : dict
+        task_config : TaskConfigurator
         """
-        self.hides_loc = task_config["hides"][block_number]
+        self.hides_loc = self.task_configs.states["hides"][block_number]
+        # TODO: not ideal, would be better to index block first, then state?
         self.eval_s_4()
 
-    def start_new_round(self, task_config, block_number, round_number):
+    def start_new_round(self, block_number, round_number):
         """Fetch configuration-specific initial task states and reset
         dynamic states to initial values for a new round"""
-        self.s1_t = task_config["s_1"][block_number, round_number]
-        self.s3_c = task_config["s_3"][block_number, round_number]
+        self.s1_t = self.task_configs.states["s_1"][block_number, round_number]
+        self.s3_c = self.task_configs.states["s_3"][block_number, round_number]
         self.r_t = 0  # reward
         self.tr_found_on_blue = np.nan
 
@@ -293,10 +287,10 @@ class Task:
     def perform_state_transition_f(self):
         """Perform the state transition function f"""
         # Move to new position (transition s_1)
-        self.s1_t += int(self.model.a_t)
+        self.s1_t += int(self.behavioral_model.a_t)
 
         # After informative actions
-        if self.model.a_t == 0:
+        if self.behavioral_model.a_t == 0:
 
             # Change node colors (transition s_2)
             if self.s4[self.s1_t] == 0:  # If s_1 not hiding spot
@@ -331,13 +325,13 @@ class Task:
             self.r_t = 0
 
     def eval_action(self):
-        """Evaluate model action and update affected task states"""
+        """Evaluate beh_model action and update affected task states"""
 
         self.perform_state_transition_f()
 
         # If participant decides to take a step
         # -----------------------------------------------------
-        if self.model.a_t != 0:
+        if self.behavioral_model.a_t != 0:
 
             # Evaluate whether new position is treasure location
             self.eval_whether_treasure()

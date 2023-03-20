@@ -1,10 +1,9 @@
 import numpy as np
 import copy as cp
-from .modelling import BayesianModelComps
 
 
 class Agent:
-    """A class used to represent an agent model.
+    """A class used to represent an agent beh_model.
     An agent object can interact with a task object within an
     agent-based behavioral modelling framework
 
@@ -13,11 +12,11 @@ class Agent:
     Attributes
     ----------
     agent : str
-        Agent model
+        Agent beh_model
     is_bayesian : bool
-        True if agent model is bayesian, False otherwise
+        True if agent beh_model is bayesian, False otherwise
     is_explorative : bool
-        True if agent model is uses exploring strategy, False otherwise
+        True if agent beh_model is uses exploring strategy, False otherwise
     task : any
         Object of class Task
     c : int
@@ -98,20 +97,20 @@ class Agent:
     """
 
     def __init__(self, agent_attributes, task_object):
-        self.agent = agent_attributes.agent_model
+        self.agent = agent_attributes.name
         self.is_bayesian = agent_attributes.is_bayesian
         self.is_explorative = agent_attributes.is_explorative
         self.task = task_object
-        self.model = None
+        self.beh_model = None
 
         # Initialize dynamic agent attributes
         self.c = np.nan  # hunting round counter
         self.t = np.nan  # this_trial counter
-        self.moves = cp.deepcopy(self.task.n_trials)
+        self.moves = cp.deepcopy(self.task.task_configs.params.n_trials)
         self.a_s1 = np.nan  # state-dependent action-set
         self.o_s2 = np.nan  # state-dependent observation-set
 
-        # Initialize arrays for agent's decision valences and decisions
+        # Initialize arrays for agent's decision valences and decisionsn
         self.v = np.full(5, np.nan)  # decision valences
         self.d = np.full(1, np.nan)  # decision
 
@@ -123,7 +122,7 @@ class Agent:
         self.zero_sum_denominator = 0
 
         if self.is_bayesian:
-            # Unpack bayesian model components
+            # Unpack bayesian beh_model components
             self.s4_perms = None
             self.s4_perm_node_indices = None
             self.n_s4_perms = None
@@ -132,9 +131,9 @@ class Agent:
 
             # Initialize posterior object
             # ---(Prior, c != 0)---
-            self.prior_c = np.full((self.task.n_nodes, self.n_s4_perms), 0.)
+            self.prior_c = None
             # ---(Posterior)---
-            self.p_s_giv_o = np.full((self.task.n_nodes, self.n_s4_perms), 0.)
+            self.p_s_giv_o = None
 
         # Initialize closest max s3 node variables for computations
         self.max_s3_b_value = np.nan
@@ -150,22 +149,20 @@ class Agent:
         self.kl_giv_a_o = np.nan
         self.virt_b = np.nan
 
-    def Get_bayesian_model_components(self, paths, task_design_params):
+    def add_bayesian_model_components(self, bayesian_comps):
         """Load or create prior, likelihood and permutation lists etc"""
-        bayesian_model_comps = BayesianModelComps(paths, task_design_params)
-        bayesian_model_comps.create_or_load_components()
-        self.s4_perms = bayesian_model_comps.s4_perms
-        self.s4_perm_node_indices = bayesian_model_comps.s4_perm_node_indices
-        self.n_s4_perms = bayesian_model_comps.n_s4_perms
-        self.prior_c0 = bayesian_model_comps.prior_c0  # ---(Prior, c == 0)---
-        self.lklh = bayesian_model_comps.lklh
+        self.s4_perms = bayesian_comps.s4_perms
+        self.s4_perm_node_indices = bayesian_comps.s4_perm_node_indices
+        self.n_s4_perms = bayesian_comps.n_s4_perms
+        self.prior_c0 = bayesian_comps.prior_c0  # ---(Prior, c == 0)---
+        self.lklh = bayesian_comps.lklh
 
     def eval_prior_subs_rounds(self):
         """Reset belief states for s3 (treasure) based on marginal s4
         (hiding spot) beliefs"""
 
         # Initialize all as zero
-        self.prior_c[:, :] = 0.
+        self.prior_c = np.full((self.task.n_nodes, self.n_s4_perms), 0.)
 
         marg_s4_perm_b = np.full(self.n_s4_perms, np.nan)
         for s4_perm in range(self.n_s4_perms):
@@ -241,7 +238,7 @@ class Agent:
 
     def start_new_round(self, round_number):
         """Reset dynamic states to initial values for a new round"""
-        self.moves = cp.deepcopy(self.task.n_trials)
+        self.moves = cp.deepcopy(self.task.task_configs.params.n_trials)
         self.c = round_number
         # Reset belief states if not first round, if bayesian agent
         if self.is_bayesian and self.c > 0:
@@ -276,7 +273,7 @@ class Agent:
 
             else:
                 self.p_s_giv_o = self.eval_posterior(self.p_s_giv_o,
-                                                     self.model.a_t,
+                                                     self.beh_model.a_t,
                                                      self.task.s1_t,
                                                      self.task.s2_t[
                                                          self.task.s1_t],
@@ -472,7 +469,7 @@ class Agent:
             # Set valence for drill action to zero
             self.v[np.where(self.a_s1 == 0)] = 0
 
-        # 'C3' Valence for 50% random exploit and 50% random explore model
+        # 'C3' Valence for 50% random exploit and 50% random explore beh_model
         # ---------------------------------------------------------------------
         if self.agent == 'C3':
             # Allocate 50% times equal valences for all avail. actions (excl.
@@ -508,7 +505,7 @@ class Agent:
             # self.v[np.where(self.a_s1 == 0)] = -1  # Needed,
             # otherwise A1 will drill in last trials
             # Let agent stop drilling, if node is not black or if last round
-            if self.c == (self.task.n_rounds - 1):
+            if self.c == (self.task.task_configs.params.n_rounds - 1):
                 # or self.task.s_2_node_color[self.task.s_1] != 0:
                 self.v[np.where(self.a_s1 == 0)] = -1
 
@@ -524,7 +521,7 @@ class Agent:
                             self.p_o_giv_o[a, 3] * self.kl_giv_a_o[a, 3]
 
             # Let agent stop drilling, if node is not black or if last round
-            if self.c == (self.task.n_rounds - 1):
+            if self.c == (self.task.task_configs.params.n_rounds - 1):
                 # or self.task.s_2_node_color[self.task.s_1] != 0:
                 self.v[np.where(self.a_s1 == 0)] = -1
 
@@ -561,7 +558,7 @@ class Agent:
                              self.p_o_giv_o[a][3] * self.kl_giv_a_o[a][3]
 
             # Let agent stop drilling, if node is not black or if last round
-            if self.c == (self.task.n_rounds - 1):
+            if self.c == (self.task.task_configs.params.n_rounds - 1):
                 # or self.task.s_2_node_color[self.task.s_1] != 0:
                 self.v[np.where(self.a_s1 == 0)] = -1
 
