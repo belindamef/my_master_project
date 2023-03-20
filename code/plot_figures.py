@@ -9,8 +9,8 @@ import utilities.very_plotter as very_plotter
 """This script plots figure 1"""
 
 # Get task configuration
-exp_label = str(input("Enter exp_label (e.g. 'main' or 'test'): "))
-sim_label = str(input("Enter sim_label (e.g. 'main' or 'test'): "))
+exp_label = str(input("Enter exp_label (e.g. 'exp_msc' or 'test'): "))
+# sim_label = str(input("Enter sim_label (e.g. 'sim_exp_msc' or 'test'): "))
 
 dim = 5
 n_blocks = 3
@@ -22,15 +22,16 @@ data_dir = os.path.join(project_dir, 'data')
 results_dir = os.path.join(project_dir, 'results')
 descr_stats_dir = os.path.join(results_dir, 'descr_stats')
 figures_dir = os.path.join(project_dir, 'figures')
+fig_fn = os.path.join(figures_dir, 'figure_1_test.png')
 
 exp_data_dir = os.path.join(data_dir, 'rawdata', 'exp', f'{exp_label}')
-sim_data_dir = os.path.join(data_dir, 'rawdata', 'sim', f'{exp_label}')
+sim_data_dir = os.path.join(data_dir, 'rawdata', 'sim', f'sim_{exp_label}')
 exp_proc_data_dir = os.path.join(
     data_dir, 'processed_data', 'exp', f'{exp_label}')
 sim_proc_data_dir = os.path.join(
-    data_dir, 'processed_data', 'sim', f'{exp_label}')
+    data_dir, 'processed_data', 'sim', f'sim_{exp_label}')
 sim_100_proc_data_dir = os.path.join(
-    data_dir, 'processed_data', 'sim', f'{exp_label}_sim_100')
+    data_dir, 'processed_data', 'sim', f'sim_100_msc')
 
 ev_exp_fn = os.path.join(exp_proc_data_dir, 'sub-all_task-th_run-all_beh')
 ev_sim_fn = os.path.join(sim_proc_data_dir, 'sub-all_task-th_run-all_beh')
@@ -38,21 +39,22 @@ ev_exp_run_fn = os.path.join(exp_proc_data_dir, 'sub-all_task-th_run-')
 ev_sim_run_fn = os.path.join(sim_proc_data_dir, 'sub-all_task-th_run-')
 
 ds_exp_fn = os.path.join(descr_stats_dir, 'exp', f'{exp_label}', 'descr_stats')
-ds_sim_fn = os.path.join(descr_stats_dir, 'sim', f'{exp_label}', 'descr_stats')
+ds_sim_fn = os.path.join(descr_stats_dir, 'sim', f'sim_{exp_label}',
+                         'descr_stats')
 ds_sim_100_fn = os.path.join(
-    descr_stats_dir, 'sim', f'{exp_label}_sim_100', 'descr_stats')
+    descr_stats_dir, 'sim', f'sim_100_msc', 'descr_stats')
 grp_stats_exp_fn = os.path.join(
     descr_stats_dir, 'exp', f'{exp_label}', 'grp_lvl_stats')
 grp_stats_sim_fn = os.path.join(
-    descr_stats_dir, 'sim', f'{exp_label}', 'grp_lvl_stats')
+    descr_stats_dir, 'sim', f'sim_{exp_label}', 'grp_lvl_stats')
 grp_stats_sim_100_fn = os.path.join(
-    descr_stats_dir, 'sim', f'{exp_label}_sim_100', 'grp_lvl_stats')
+    descr_stats_dir, 'sim', f'sim_100_msc', 'grp_lvl_stats')
 tw_exp_fn = os.path.join(
     descr_stats_dir, 'exp', f'{exp_label}', 't_wise_stats')
 tw_sim_fn = os.path.join(
-    descr_stats_dir, 'sim', f'{exp_label}', 't_wise_stats')
+    descr_stats_dir, 'sim', f'sim_{exp_label}', 't_wise_stats')
 tw_sim_100_fn = os.path.join(
-    descr_stats_dir, 'sim', f'{exp_label}_sim_100', 't_wise_stats')
+    descr_stats_dir, 'sim', f'sim_100_msc', 't_wise_stats')
 
 # ----------------------------------------------------------
 #       Load data
@@ -126,7 +128,7 @@ sub_label_sim = [s_dir[(s_dir.find('sub-') + 4):]
 sub_label_beh.sort()
 sub_label_sim.sort()
 
-# Extract task configuration-specific model components
+# Extract task configuration-specific beh_model components
 n_blocks = np.max(exp_ev_all_subs_df['block'])
 n_rounds = np.max(exp_ev_all_subs_df['round'])
 n_trials = np.max(exp_ev_all_subs_df['trial']) - 1
@@ -134,7 +136,6 @@ n_tr_max = int(n_blocks * n_rounds)
 n_tr_b = n_rounds
 
 # Initialize figure
-fig_fn = os.path.join(figures_dir, 'figure_1.png')
 plt, col_exp, col_A, col_C = very_plotter.get_fig_template(plt)
 ax = {}
 fig = plt.figure(figsize=(16, 10))

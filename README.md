@@ -6,7 +6,7 @@
 ## Table of contents
 - [General Info](#general-info)
 - [Treasure Hunt task](#treasure-hunt-task)
-- [Task Model](#task-model)
+- [Task BehavioralModel](#task-model)
 - [Agent Models](#agent-models)
 - [Simulations](#simulations)
 - [Data Analyses](#data-analyses)
@@ -27,7 +27,7 @@ Script to run the rask: [run_task.py](https://github.com/belindamef/my_master_pr
 
 **a. Task design. b. Trial layout**
 
-## Task Model
+## Task BehavioralModel
 The model of the task is formulated using concepts from the theory of partially observable Markov decision processes (PoMDP) [[1]](#references)
 
 
@@ -35,12 +35,12 @@ The model of the task is formulated using concepts from the theory of partially 
 * Task model class [task.py](code/utilities/task.py)
 ## Agent Models
 * Agent model class: [agent.py](code/utilities/agent.py)
-* Model components (prior and likelihood arrays): [model_comp.py](code/utilities/model_comp.py)
+* BehavioralModel components (prior and likelihood arrays): [model_comp.py](code/utilities/model_comp.py)
 
 ## Simulations
 
 * Script to run simulation [run_simulation.py](code/run_simulation.py)
-* method to simulate agent-task interaction: [agent_task_interaction.py](code/utilities/agent_task_interaction.py)
+* method to simulate agent-task interaction: [agent_task_interaction.py](code/utilities/simulation_methods.py)
 
 <img src="manuscript/graph_model_&_agent_task_interaction.png" width="70%"/>
 

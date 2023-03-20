@@ -97,10 +97,10 @@ class Counts:
     def count_treasures(self):
         """Count number of treasures found over all trials"""
         # ------Count total treasures-----------------
-        self.counts_df['n_tr'] = self.events_df['tr_disc'].sum()
+        self.counts_df['n_tr'] = self.events_df['r'].sum()
 
         # ------Count treasures blockwise-----------------
-        count_tr_blockwise = self.events_df.groupby(['block'])['tr_disc'].sum()
+        count_tr_blockwise = self.events_df.groupby(['block'])['r'].sum()
         cols = []
 
         for block, block_df in self.events_df.groupby(['block']):
@@ -109,7 +109,7 @@ class Counts:
         self.counts_df = pd.concat([self.counts_df, n_tr_b_df], axis=1)
 
         # ------Count treasures roundwise ------(regardless of block)
-        count_tr_roundwise = self.events_df.groupby(['round'])['tr_disc'].sum()
+        count_tr_roundwise = self.events_df.groupby(['round'])['r'].sum()
         cols = []
         for round_, round_df in self.events_df.groupby(['round']):
             cols.append(f'n_tr_r{round_}')
@@ -268,7 +268,7 @@ class ConditionalFrequencies:
         groupby_n_hides = self.events_df.groupby('n_blue')
 
         # Absolute frequency
-        n_tr_giv_n_hides = groupby_n_hides['tr_disc'].sum()
+        n_tr_giv_n_hides = groupby_n_hides['r'].sum()
         cols = []
         for number in n_tr_giv_n_hides.index:
             cols.append(f'n_tr_giv_hides_{int(number)}')
@@ -278,7 +278,7 @@ class ConditionalFrequencies:
             [self.cond_frequ_df, n_tr_giv_n_hides_df], axis=1)
 
         # Relative frequency
-        p_tr_giv_n_hides = groupby_n_hides['tr_disc'].mean()
+        p_tr_giv_n_hides = groupby_n_hides['r'].mean()
         # out: Pandas series with probs grouped by number of hides
         cols = []
         for number in p_tr_giv_n_hides.index:
@@ -297,7 +297,7 @@ class ConditionalFrequencies:
                                     the action to drill was chosen
         """
         groupby_action_type = self.events_df.groupby('action_type')
-        p_unv_giv_drill = groupby_action_type['drill_finding'].mean()
+        p_unv_giv_drill = groupby_action_type['information'].mean()
         # out: Pandas series with prob grouped by action_v type
         cols = []
         for action_type in p_unv_giv_drill.index:
@@ -317,7 +317,7 @@ class ConditionalFrequencies:
         unveiled and visible hiding spot versus
         not unveiled hiding spots
         """
-        groupby_tr_disc = self.events_df.groupby('tr_disc')
+        groupby_tr_disc = self.events_df.groupby('r')
         # group trial in those, where treasure was discovered and those
         # where no treasure was discovered
         p_was_unv_hide_giv_tr_disc = groupby_tr_disc[
