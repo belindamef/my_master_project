@@ -1,3 +1,9 @@
+"""
+This script contains classes and methods to simulate agent behavioral data.
+
+Author Belinda Fleischmann
+"""
+
 import pandas as pd
 import numpy as np
 import time
@@ -32,7 +38,8 @@ class Recorder:
         self.out_var_list = [
             "s1", "s2", "s3", "s4",
             "o", "a_giv_s1", "o_giv_s2", "p_o_giv_o", "kl_giv_a_o",
-            "v", "d", "a", "r", "information", "tr_found_on_blue",
+            "v", "d", "a", "log_p_a_giv_h", "r", "information",
+            "tr_found_on_blue",
             "marg_s3_posterior", "marg_s3_prior_t0",
             "marg_s4_posterior", "marg_s4_prior_t0",
             "max_s3_belief", "argsmax_s3_belief",
@@ -85,6 +92,7 @@ class Recorder:
         self.data_one_round["v"][trial] = sim_obj.agent.v
         self.data_one_round["d"][trial] = sim_obj.agent.d
         self.data_one_round["a"][trial] = sim_obj.beh_model.a_t
+        self.data_one_round["log_p_a_giv_h"][trial] = sim_obj.beh_model.log_L
         self.data_one_round["r"][trial] = sim_obj.task.r_t
         self.data_one_round["information"][trial] = sim_obj.task.drill_finding
         self.data_one_round["tr_found_on_blue"] = sim_obj.task.tr_found_on_blue
@@ -117,7 +125,8 @@ class Recorder:
         sim_data_this_round = pd.DataFrame(self.data_one_round)
         sim_data_this_round.insert(0, "trial", pd.Series(  # add trial column
             range(1, self.task_design_params.n_trials + 2)))
-        sim_data_this_round.insert(0, "round", this_round + 1)  # add round col
+        sim_data_this_round.insert(0, "round_", this_round + 1)  # add round
+        # col
         self.sim_data_this_block = pd.concat(
             [self.sim_data_this_block, sim_data_this_round],
             ignore_index=True)
@@ -134,15 +143,19 @@ class Recorder:
         self.sim_data = pd.concat([self.sim_data, self.sim_data_this_block],
                                   ignore_index=True)
 
-    def save_data_to_tsv(self, paths, agent_model):
+    def wrap_up_data(self, tau, agent_model):
+        """Finalize data set by adding columns for agent and tau parameter"""
+        self.sim_data.insert(0, "tau", tau)
+        self.sim_data.insert(0, "agent", agent_model)
+
+    def save_data_to_tsv(self, paths):
         """Safe dataframe to tsv file
 
         Parameters
         ----------
-        agent_model: str
         paths: Paths
         """
-        self.sim_data.insert(0, "agent", agent_model)
+
         # Save data
         with open(f"{paths.out_filename}.tsv", "w", encoding="utf8") as \
                 tsv_file:
@@ -155,23 +168,24 @@ class Timer:
     start_of_block: float
     end_of_block: float
 
-    def __init__(self, this_block, this_repetition, agent_model):
+    def __init__(self, sim_obj, block):
         """
         Parameters
         ----------
-        this_block: int
-        this_repetition: int
-        agent_model: str
+        sim_obj: Simulator
         """
-        self.this_block = this_block
-        self.this_repetition = this_repetition
-        self.agent_model = agent_model
+        self.this_block = block
+        self.this_repetition = sim_obj.this_rep
+        self.agent_model = sim_obj.agent_attr.name
+        self.tau = sim_obj.tau
+        self.participant = sim_obj.this_part
 
     def start(self):
         self.start_of_block = time.time()
         print(f"Starting simulation for agent {self.agent_model}, "
-              f"repetition no. {self.this_repetition + 1} of "
-              f"block {self.this_block + 1}")
+              f"participant {self.participant} "
+              f"repetition no. {self.this_repetition} with "
+              f"tau: {self.tau}")
         return self
 
     def end(self):
@@ -187,20 +201,27 @@ class Simulator:
     dir_mgr = DirectoryManager()
     task_configs = TaskConfigurator(dir_mgr.paths).get_config()
     bayesian_comps = BayesianModelComps(task_configs.params).get_comps()
-    n_repetitions: int = 50  # no. of simulation repetitions for stochastic
-    agent_model_space = ["C1", "C2", "C3", "A1", "A2", "A3"]
+    n_participants: int = 1  # no. of simulated participants per agent
+    n_repetitions: int = 1  # no. of simulation repetitions for stochastic
+    this_part: int = 1
+    this_rep: int = 1
 
-    taus: list = None  # post-decision noise parameter
-    tau: float = None
+    agent_model_space = ["C1", "C2", "C3", "A1", "A2", "A3"]
+    agent_attr = None
+
+    taus: np.ndarray = None  # post-decision noise parameter
+    tau: float = np.nan
 
     agent: Agent = None
     task: Task = None
     beh_model: BehavioralModel = None
 
+    data: pd.DataFrame = None
+
     def __init__(self, mode):
         self.mode = mode
 
-    def create_interacting_objects(self, this_block, agent_attributes):
+    def create_interacting_objects(self, this_block):
         """Create beh_model objects that interact in each trial
 
         Parameters
@@ -210,8 +231,8 @@ class Simulator:
         """
         self.task = Task(self.task_configs)
         self.task.start_new_block(this_block)
-        self.agent = Agent(agent_attributes, self.task)
-        if agent_attributes.is_bayesian:
+        self.agent = Agent(self.agent_attr, self.task)
+        if self.agent_attr.is_bayesian:
             self.agent.add_bayesian_model_components(self.bayesian_comps)
         self.beh_model = BehavioralModel(self.mode, self.tau)
 
@@ -241,37 +262,103 @@ class Simulator:
         self.beh_model.return_action()
         self.task.eval_action()
 
-    def simulate(self, agent_attr):
+    def simulate_beh(self):
 
-        for rep in range(self.n_repetitions):
-            self.dir_mgr.prepare_output(agent_attr.name, rep)
-            recorder = Recorder(self.task_configs.params)
+        self.dir_mgr.prepare_output(self)
+        recorder = Recorder(self.task_configs.params)
 
-            for block in range(self.task_configs.params.n_blocks):
-                timer = Timer(block, rep, agent_attr.name).start()
-                recorder.create_rec_df_one_block()
-                self.create_interacting_objects(block, agent_attr)
+        for block in range(self.task_configs.params.n_blocks):
+            timer = Timer(self, block).start()
+            recorder.create_rec_df_one_block()
+            self.create_interacting_objects(block)
 
-                for round_ in range(self.task_configs.params.n_rounds):
-                    recorder.create_rec_arrays_thisround()
-                    self.task.start_new_round(block, round_)
-                    self.agent.start_new_round(round_)
+            for round_ in range(self.task_configs.params.n_rounds):
+                recorder.create_rec_arrays_thisround()
+                self.task.start_new_round(block, round_)
+                self.agent.start_new_round(round_)
 
-                    for trial in range(self.task_configs.params.n_trials):
-                        self.simulate_trial_start(trial)
-                        recorder.record_trial_start(trial, self.task)
-                        self.simulate_trial_interaction()
-                        recorder.record_trial_ending(trial, self)
+                for trial in range(self.task_configs.params.n_trials):
+                    self.simulate_trial_start(trial)
+                    recorder.record_trial_start(trial, self.task)
+                    self.simulate_trial_interaction()
+                    # if self.mode == "validation":  # TODO: maybe overhead
+                    #     self.beh_model.eval_p_a_giv_h_this_action()
+                    recorder.record_trial_ending(trial, self)
 
-                        # End round, if treasure discovered
-                        if self.task.r_t == 1:
-                            # Evaluate observation and belief update for t + 1
-                            self.task.return_observation()
-                            self.agent.update_belief_state()
-                            recorder.record_trial_start(trial + 1, self.task)
-                            break
+                    # End round, if treasure discovered
+                    if self.task.r_t == 1:
+                        # Evaluate observation and belief update for t + 1
+                        self.task.return_observation()
+                        self.agent.update_belief_state()
+                        recorder.record_trial_start(trial + 1, self.task)
+                        break
 
-                    recorder.append_this_round_to_block_df(round_)
-                recorder.append_this_block_to_simdata_df(block)
-                timer.end()
-            recorder.save_data_to_tsv(self.dir_mgr.paths, agent_attr.name)
+                recorder.append_this_round_to_block_df(round_)
+            recorder.append_this_block_to_simdata_df(block)
+            timer.end()
+        recorder.wrap_up_data(self.tau, self.agent_attr.name)
+        if self.mode == "behavior_sim":
+            recorder.save_data_to_tsv(self.dir_mgr.paths)
+        elif self.mode == "validation":
+            self.data = recorder.sim_data
+
+    def sim_interaction_for_llh(self):
+        """Function to simulate trialwise interactions between agent and task
+        to evaluate the likelihood function for a given tau and given (i.e.
+        already) simulated data
+
+        Returns
+        -------
+        sum_llh
+        """
+        llh_allblocks = np.full((self.task_configs.params.n_blocks,1), np.nan)
+        for block in range(self.task_configs.params.n_blocks):
+            self.create_interacting_objects(block)
+
+            llh_allrounds = np.full((self.task_configs.params.n_rounds, 1),
+                                    np.nan)
+            for round_ in range(self.task_configs.params.n_rounds):
+
+                llh_alltrials = np.full(
+                    (self.task_configs.params.n_trials, 1), np.nan)
+
+                data_this_round = self.data[(
+                            self.data.block == block + 1) & (
+                            self.data.round_ == round_ + 1)]
+
+                for trial in range(self.task_configs.params.n_trials):
+                    # self.simulate_trial_start(trial)
+                    # self.simulate_trial_interaction()
+
+                    # Fetch agent valence function from simulated data
+                    data_this_trial = data_this_round.query(
+                        'trial == (@trial + 1)')
+
+                    self.agent.v = data_this_trial.v.item()
+
+                    # Evaluate conditional llh function for different
+                    # actions given this tau
+                    self.beh_model.eval_p_a_giv_history()
+
+                    # fetch action from simulated datat
+                    self.beh_model.a_t = data_this_trial.a.item()
+
+                    self.agent.a_s1 = data_this_trial.a_giv_s1.item()
+                    # evaluate conditional llh of that action given this tau
+                    self.beh_model.eval_p_a_giv_h_this_action()
+
+                    self.task.r_t = data_this_trial.r.item()
+                    # End round, if treasure discovered
+                    if self.task.r_t == 1:
+                        break
+                    llh_alltrials[trial] = self.beh_model.log_L
+
+                llh_allrounds[round_] = np.nansum(llh_alltrials)
+            llh_allblocks[block] = np.nansum(llh_allrounds)
+
+            sum_llh = np.nansum(llh_allblocks)
+
+            # Return negative log likelihood
+            return -sum_llh
+
+

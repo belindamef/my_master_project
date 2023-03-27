@@ -52,7 +52,7 @@ class Paths:
 class DirectoryManager:
     """Class of methods to create or check for directories"""
 
-    paths = Paths
+    paths = Paths()
     sub_id: str
 
     def create_data_out_dir(self):
@@ -67,10 +67,22 @@ class DirectoryManager:
                 print(f'Simulation output directory with this name already '
                       f'exists.')
 
-    def create_agent_id(self, agent_model, repetition_number):
+    def create_agent_id(self, sim_obj):
         """Create id for this subject. More than one subject id per agent
-        possible if >1 repetition per agent"""
-        self.sub_id = f"{agent_model}_{repetition_number + 1}"
+        possible if >1 repetition per agent
+
+        Parameters
+        ----------
+        sim_obj: Simulator
+        """
+        if np.isnan(sim_obj.tau):  # if no tau defined
+            self.sub_id = f"{sim_obj.agent_attr.name}" \
+                          f"-{sim_obj.this_part}_" \
+                          f"{sim_obj.this_rep + 1}"
+        else:
+            tau_index = np.where(sim_obj.taus == sim_obj.tau)[0][0]
+            self.sub_id = f"{sim_obj.agent_attr.name}-{sim_obj.this_part}_" \
+                          f"{sim_obj.this_rep  + 1}_{tau_index}"
         # TODO: change output creation to only one directory per sub
         # TODO: BUT! adapt stats scripts first
 
@@ -87,8 +99,8 @@ class DirectoryManager:
             self.paths.sub_dir,
             f"sub-{self.sub_id}_task-th_beh")
 
-    def prepare_output(self, agent_model, this_repetition):
-        self.create_agent_id(agent_model, this_repetition)
+    def prepare_output(self, sim_object):
+        self.create_agent_id(sim_object)
         self.define_and_make_sub_dir()
         self.define_out_filename()
 
