@@ -55,17 +55,23 @@ class DirectoryManager:
     paths = Paths()
     sub_id: str
 
-    def create_data_out_dir(self):
-        while True:
-            try:
-                sim_name = input("Enter label for data output directory: ")
-                self.paths.this_sim_out_dir = os.path.join(self.paths.sim_data,
-                                                           sim_name)
-                os.makedirs(self.paths.this_sim_out_dir)
-                break
-            except FileExistsError:
-                print(f'Simulation output directory with this name already '
-                      f'exists.')
+    def create_data_out_dir(self, out_dir_label=None):
+        if not out_dir_label:
+            while True:
+                try:
+                    sim_name = input("Enter label for data output directory: ")
+                    self.paths.this_sim_out_dir = os.path.join(self.paths.sim_data,
+                                                               sim_name)
+                    os.makedirs(self.paths.this_sim_out_dir)
+                    break
+                except FileExistsError:
+                    print(f'Simulation output directory with this name already '
+                          f'exists.')
+        else:
+            sim_name = out_dir_label
+            self.paths.this_sim_out_dir = os.path.join(self.paths.sim_data,
+                                                       sim_name)
+            os.makedirs(self.paths.this_sim_out_dir)
 
     def create_agent_id(self, sim_obj):
         """Create id for this subject. More than one subject id per agent
@@ -287,7 +293,12 @@ class TaskConfigurator:
 
     def get_config(self):
         """Create or load task configuration according to user input"""
-        new_config_is_needed, config_label, n_blocks = self.get_user_input()
+        #new_config_is_needed, config_label, n_blocks = self.get_user_input()
+
+        # TODO: hardcoded is temporary solution!!
+        config_label = "exp_msc"
+        new_config_is_needed = False
+        n_blocks = 3
         self.add_config_paths(config_label)
         if new_config_is_needed:
             self.params.n_blocks = n_blocks

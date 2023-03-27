@@ -4,6 +4,7 @@ This script evaluates and visualizes beh_model recovery simulations for.
 Author: Belinda Fleischmann
 """
 import os.path
+import sys
 import time
 
 import pandas as pd
@@ -12,7 +13,7 @@ from utilities.simulation_methods import Simulator
 from utilities.modelling import AgentInitObject
 from utilities.estimation_methods import ParameterEstimator
 import numpy as np
-import xarray as xr
+#import xarray as xr
 import pickle
 
 
@@ -32,14 +33,14 @@ def save_llh(llh_array, sim_out_path):
 #  simulation and estimation, e.g. bayesian components, and after simulation
 #  the data set etc.
 
-def main():
+def main(out_dir_label="test"):
     simulator = Simulator(mode="validation")
-    simulator.dir_mgr.create_data_out_dir()
+    simulator.dir_mgr.create_data_out_dir(out_dir_label)
     simulator.taus = np.arange(0.5, 2.5, 0.1)
     #simulator.taus = np.linspace(0.25,2.5,50)
     simulator.n_participants =  50
     simulator.agent_model_space = ["C2", "C3", "A1", "A2", "A3"]
-    simulator.agent_model_space = ["A1"]
+    #simulator.agent_model_space = ["A1"]
 
     # FOR QUICK_TESTS
     # simulator.agent_model_space = ["C1", "A1"]
@@ -112,7 +113,10 @@ def main():
 
 if __name__ == "__main__":
     start = time.time()
-    main()
+    if len(sys.argv) > 1:
+        main(sys.argv[1])
+    else:
+        main()
     end = time.time()
     print(f"Total time for beh_model validation: "
           f"{round((end-start), ndigits=2)} sec.")
