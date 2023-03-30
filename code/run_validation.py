@@ -15,6 +15,9 @@ from utilities.estimation_methods import ParameterEstimator
 import numpy as np
 #import xarray as xr
 import pickle
+import argparse
+import click
+
 
 
 
@@ -33,13 +36,17 @@ def save_llh(llh_array, sim_out_path):
 #  simulation and estimation, e.g. bayesian components, and after simulation
 #  the data set etc.
 
-def main(out_dir_label="test"):
+@click.command()
+@click.option('--subject', type=int, required=True, help='The subject number to process.')
+@click.option('--tau', type=int, required=True, help='This is my tau.')
+def main(subject, tau, out_dir_label="test"):
     simulator = Simulator(mode="validation")
     simulator.dir_mgr.create_data_out_dir(out_dir_label)
-    simulator.taus = np.arange(0.5, 2.5, 0.1)
-    #simulator.taus = np.linspace(0.25,2.5,50)
-    simulator.n_participants =  50
+    #simulator.taus = np.arange(0.5, 2.5, 0.1)
+    simulator.taus = np.linspace(0.25,2,10)
+    simulator.n_participants =  10
     simulator.agent_model_space = ["C2", "C3", "A1", "A2", "A3"]
+    simulator.task_configs.params.n_blocks = 1
     #simulator.agent_model_space = ["A1"]
 
     # FOR QUICK_TESTS
@@ -109,6 +116,15 @@ def main(out_dir_label="test"):
 
 
     #save_llh(llh, simulator.dir_mgr.paths.this_sim_out_dir)
+
+def get_arguments():
+    #parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='Run my analysis.')
+    # type checks that the input type is correct and converts it to int, otherwise it is a string
+    # requires makes the subject argument mandatory, otherwise it can be script and is set to None by default
+    parser.add_argument('--subject', type=int, required=True, help='The subject number to process')
+    args = parser.parse_args()
+    return args
 
 
 if __name__ == "__main__":

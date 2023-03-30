@@ -41,6 +41,7 @@ class Paths:
     code = os.path.join(project, "code")
     task_configs = os.path.join(code, "task_config")  # all configurations
     data = os.path.join(project, "data")
+    figures = os.path.join(project, "figures")
     sim_data = os.path.join(data, "rawdata", "sim")
     exp_data = os.path.join(data, "rawdata", "exp")
     this_config: str = None  # the particular config used in this simulation
@@ -107,7 +108,8 @@ class DirectoryManager:
 
     def prepare_output(self, sim_object):
         self.create_agent_id(sim_object)
-        self.define_and_make_sub_dir()
+        if sim_object.mode == "simulation":
+            self.define_and_make_sub_dir()
         self.define_out_filename()
 
 

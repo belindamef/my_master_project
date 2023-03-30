@@ -51,7 +51,7 @@ class ParameterEstimator:
         """
         #tau_space = np.linspace(0.01, 2.5, 50)
         tau_space = np.arange(0.5, 2.5, 0.1)
-        # tau_space = np.linspace(0.25,2.5,5)
+        tau_space = np.linspace(0.25,2,10)
         loglikelihood_function = np.full(len(tau_space), np.nan)
 
         for i, tau_i in np.ndenumerate(tau_space):  # candidate set iteration
