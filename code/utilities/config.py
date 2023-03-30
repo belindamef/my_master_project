@@ -41,6 +41,7 @@ class Paths:
     code = os.path.join(project, "code")
     task_configs = os.path.join(code, "task_config")  # all configurations
     data = os.path.join(project, "data")
+    figures = os.path.join(project, "figures")
     sim_data = os.path.join(data, "rawdata", "sim")
     exp_data = os.path.join(data, "rawdata", "exp")
     this_config: str = None  # the particular config used in this simulation
@@ -52,25 +53,43 @@ class Paths:
 class DirectoryManager:
     """Class of methods to create or check for directories"""
 
-    paths = Paths
+    paths = Paths()
     sub_id: str
 
-    def create_data_out_dir(self):
-        while True:
-            try:
-                sim_name = input("Enter label for data output directory: ")
-                self.paths.this_sim_out_dir = os.path.join(self.paths.sim_data,
-                                                           sim_name)
-                os.makedirs(self.paths.this_sim_out_dir)
-                break
-            except FileExistsError:
-                print(f'Simulation output directory with this name already '
-                      f'exists.')
+    def create_data_out_dir(self, out_dir_label=None):
+        if not out_dir_label:
+            while True:
+                try:
+                    sim_name = input("Enter label for data output directory: ")
+                    self.paths.this_sim_out_dir = os.path.join(self.paths.sim_data,
+                                                               sim_name)
+                    os.makedirs(self.paths.this_sim_out_dir)
+                    break
+                except FileExistsError:
+                    print(f'Simulation output directory with this name already '
+                          f'exists.')
+        else:
+            sim_name = out_dir_label
+            self.paths.this_sim_out_dir = os.path.join(self.paths.sim_data,
+                                                       sim_name)
+            os.makedirs(self.paths.this_sim_out_dir)
 
-    def create_agent_id(self, agent_model, repetition_number):
+    def create_agent_id(self, sim_obj):
         """Create id for this subject. More than one subject id per agent
-        possible if >1 repetition per agent"""
-        self.sub_id = f"{agent_model}_{repetition_number + 1}"
+        possible if >1 repetition per agent
+
+        Parameters
+        ----------
+        sim_obj: Simulator
+        """
+        if np.isnan(sim_obj.tau):  # if no tau defined
+            self.sub_id = f"{sim_obj.agent_attr.name}" \
+                          f"-{sim_obj.this_part}_" \
+                          f"{sim_obj.this_rep + 1}"
+        else:
+            tau_index = np.where(sim_obj.taus == sim_obj.tau)[0][0]
+            self.sub_id = f"{sim_obj.agent_attr.name}-{sim_obj.this_part}_" \
+                          f"{sim_obj.this_rep  + 1}_{tau_index}"
         # TODO: change output creation to only one directory per sub
         # TODO: BUT! adapt stats scripts first
 
@@ -87,9 +106,10 @@ class DirectoryManager:
             self.paths.sub_dir,
             f"sub-{self.sub_id}_task-th_beh")
 
-    def prepare_output(self, agent_model, this_repetition):
-        self.create_agent_id(agent_model, this_repetition)
-        self.define_and_make_sub_dir()
+    def prepare_output(self, sim_object):
+        self.create_agent_id(sim_object)
+        if sim_object.mode == "simulation":
+            self.define_and_make_sub_dir()
         self.define_out_filename()
 
 
@@ -275,7 +295,12 @@ class TaskConfigurator:
 
     def get_config(self):
         """Create or load task configuration according to user input"""
-        new_config_is_needed, config_label, n_blocks = self.get_user_input()
+        #new_config_is_needed, config_label, n_blocks = self.get_user_input()
+
+        # TODO: hardcoded is temporary solution!!
+        config_label = "exp_msc"
+        new_config_is_needed = False
+        n_blocks = 3
         self.add_config_paths(config_label)
         if new_config_is_needed:
             self.params.n_blocks = n_blocks

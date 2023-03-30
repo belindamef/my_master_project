@@ -106,7 +106,7 @@ class Agent:
         # Initialize dynamic agent attributes
         self.c = np.nan  # hunting round counter
         self.t = np.nan  # this_trial counter
-        self.moves = cp.deepcopy(self.task.task_configs.params.n_trials)
+        self.moves = self.task.task_configs.params.n_trials
         self.a_s1 = np.nan  # state-dependent action-set
         self.o_s2 = np.nan  # state-dependent observation-set
 
@@ -164,27 +164,32 @@ class Agent:
         # Initialize all as zero
         self.prior_c = np.full((self.task.n_nodes, self.n_s4_perms), 0.)
 
-        marg_s4_perm_b = np.full(self.n_s4_perms, np.nan)
-        for s4_perm in range(self.n_s4_perms):
-            marg_s4_perm_b[s4_perm] = self.p_s_giv_o[:, s4_perm].sum()
-        # sum_prob_s4_perm = marg_s4_perm_b[:].sum()
+        # marg_s4_perm_b = np.full(self.n_s4_perms, np.nan)
+        # for s4_perm in range(self.n_s4_perms):
+        #     marg_s4_perm_b[s4_perm] = self.p_s_giv_o[:, s4_perm].sum()
+
+        marg_s4_perm_b = self.p_s_giv_o.sum(axis=0)
+        sum_prob_s4_perm = marg_s4_perm_b[:].sum()
+
+
 
         for s3 in range(self.task.n_nodes):
             self.prior_c[s3, self.s4_perm_node_indices[s3]] = \
                 marg_s4_perm_b[self.s4_perm_node_indices[s3]] \
                 * (1 / self.task.n_hides)
 
-        # Evaluate marginal treasure distribution
-        marg_s3_b = np.full(self.task.n_nodes, np.nan)
-        for s3 in range(self.task.n_nodes):
-            marg_s3_b[s3] = self.prior_c[s3, :].sum()
-        # sum_prob_tr = marg_s3_b[:].sum()
-
-        # Evaluate marginal hiding spot distribution
-        marg_s4_b = np.full(self.task.n_nodes, np.nan)
-        for node in range(self.task.n_nodes):
-            marg_s4_b[node] = self.prior_c[:, self.s4_perm_node_indices[
-                                                  node]].sum()
+        # TODO: uncomment for DEBUGGING
+        # # Evaluate marginal treasure distribution
+        # marg_s3_b = np.full(self.task.n_nodes, np.nan)
+        # for s3 in range(self.task.n_nodes):
+        #     marg_s3_b[s3] = self.prior_c[s3, :].sum()
+        # # sum_prob_tr = marg_s3_b[:].sum()
+        #
+        # # Evaluate marginal hiding spot distribution
+        # marg_s4_b = np.full(self.task.n_nodes, np.nan)
+        # for node in range(self.task.n_nodes):
+        #     marg_s4_b[node] = self.prior_c[:, self.s4_perm_node_indices[
+        #                                           node]].sum()
         # sum_prob_hides = marg_s4_b[:].sum()
         # debug = 'here'
 
@@ -244,14 +249,15 @@ class Agent:
         if self.is_bayesian and self.c > 0:
             self.eval_prior_subs_rounds()
 
-        # Marginal prior distributions
-        if self.is_bayesian:
-            if self.c == 0:
-                self.marg_s3_prior, self.marg_s4_prior = \
-                    self.eval_marg_b(self.prior_c0)
-            else:
-                self.marg_s3_prior, self.marg_s4_prior = \
-                    self.eval_marg_b(self.prior_c)
+        # TODO: uncomment for debugg
+        # # Marginal prior distributions
+        # if self.is_bayesian:
+        #     if self.c == 0:
+        #         self.marg_s3_prior, self.marg_s4_prior = \
+        #             self.eval_marg_b(self.prior_c0)
+        #     else:
+        #         self.marg_s3_prior, self.marg_s4_prior = \
+        #             self.eval_marg_b(self.prior_c)
 
     def update_belief_state(self):
         """Update belief state self"""
@@ -574,7 +580,6 @@ class Agent:
         # ---------------------------------------------------------------------
         if self.agent in ['A1', 'A2', 'A3', 'A4']:
             self.d = self.a_s1[np.argmax(self.v)]
-            # TODO: will always choose first value...??
 
     def make_decision(self):
         """Let agent make decision"""

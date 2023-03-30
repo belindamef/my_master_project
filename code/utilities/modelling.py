@@ -316,21 +316,29 @@ class BehavioralModel:
         Action value in trial t
     """
     agent: Agent = None
-    p_a_giv_h = None
+    p_a_giv_h: np.ndarray = None  # likelihood of action giv history
 
     def __init__(self, mode, tau):
         # Initialize empty attribute to embed agent object of class Agent
+        self.rvs = None
+        self.log_L: float = np.nan
         self.tau = tau
         self.mode = mode
 
         # Initialize action attribute
-        self.a_t = np.full(1, np.nan)  # agent action
+        self.a_t = np.nan  # agent action
 
     def eval_p_a_giv_history(self):
         """Define probability distribution of actions giv the history of
         actions and observations TODO: what history precisely?"""
         self.p_a_giv_h = np.exp((1 / self.tau) * self.agent.v) / sum(
             np.exp((1 / self.tau) * self.agent.v))
+
+    def eval_rvs(self):
+        """eval action according to sample from multinomial distribution
+        TODO what does rvs stand for"""
+        rng = np.random.default_rng()
+        self.rvs = rng.multinomial(1, self.p_a_giv_h)
 
     def return_action(self):
         """This function returns the action value given agent's decision."""
@@ -339,4 +347,13 @@ class BehavioralModel:
             self.a_t = cp.deepcopy(self.agent.d)
 
         elif self.mode == "validation":
-            self.a_t = np.random.multinomial(1, self.p_a_giv_h)
+            self.eval_p_a_giv_history()
+            self.eval_rvs()
+            action_index = self.rvs.argmax()
+            self.a_t = self.agent.a_s1[action_index]
+
+    def eval_p_a_giv_h_this_action(self):
+        """Evaluate the conditional log likelihood of this specific action"""
+        self.log_L = np.log(
+            self.p_a_giv_h[np.where(self.agent.a_s1 == self.a_t)[0][0]]
+        )

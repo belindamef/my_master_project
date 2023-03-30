@@ -22,11 +22,13 @@ def main():
     simulator.dir_mgr.create_data_out_dir()
 
     for agent_model in simulator.agent_model_space:
-        agent_attr = AgentInitObject(agent_model).def_attributes()
-        if agent_attr.is_deterministic:
-            simulator.n_repetitions = 1
+        simulator.agent_attr = AgentInitObject(agent_model).def_attributes()
+        if not simulator.agent_attr.is_deterministic:
+            simulator.n_participants = 50
 
-        simulator.simulate(agent_attr)
+        for participant in range(simulator.n_participants):
+            simulator.this_part = participant
+            simulator.simulate_beh()
 
 
 if __name__ == "__main__":
