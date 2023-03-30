@@ -23,7 +23,7 @@ The Treasure Hunt task is behavioral paradigm that presents a spatial search pro
 Script to run the rask: [run_task.py](https://github.com/belindamef/my_master_project/blob/main/code/run_task.py)
 
 
-<img src="manuscript/task_design_trial_layout.png" width="70%"/>
+<img src="manuscript/task-design.png" width="70%"/>
 
 **a. Task design. b. Trial layout**
 
@@ -49,7 +49,7 @@ The model of the task is formulated using concepts from the theory of partially 
 ## Data Analyses
 
 * Scrip to run stats: [run_descriptives.py](code/run_descriptives.py)
-* Script to plot figures: [plot_figures.py](code/plot_figures.py)
+* Script to plot figures: [plot_figures.py](code/plot_figure_1.py)
 
 <img src="figures/figure_1.png" width="70%"/>
 
