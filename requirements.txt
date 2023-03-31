@@ -8,3 +8,4 @@ pip
 PsychoPy==2020.2.8
 wesanderson
 Pillow
+click
