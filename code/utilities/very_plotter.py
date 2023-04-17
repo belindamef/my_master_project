@@ -43,33 +43,34 @@ def get_fig_template(plt):
         for list_ in [viridis_20[4], viridis_20[1]]]
     col_A = [
         [value / 255 for value in list_]
-        for list_ in [viridis_20[15], viridis_20[18], viridis_20[9]]]
+        for list_ in [viridis_20[18], viridis_20[14], viridis_20[9]]]
     return plt, col_exp, col_A, col_C  # , col_A, reds
 
 
 def config_axes(ax, y_label=None, y_lim=None, title=None, x_label=None,
                 x_lim=None, xticks=None, xticklabels=None, yticks=None,
-                ytickslabels=None):
+                ytickslabels=None, title_font=18, ticksize=13,
+                axix_label_size=14):
     """Set basic setting for plot axes"""
     ax.grid(True, axis='y', linewidth=.3, color=[.9, .9, .9])
     if title is not None:
-        ax.set_title(title, size=18)
+        ax.set_title(title, size=title_font)
     if y_label is not None:
-        ax.set_ylabel(y_label, fontsize=14, loc='center')
+        ax.set_ylabel(y_label, fontsize=axix_label_size, loc='center')
     if y_lim is not None:
         ax.set_ylim(y_lim)
     if x_label is not None:
-        ax.set_xlabel(x_label, fontsize=14)
+        ax.set_xlabel(x_label, fontsize=axix_label_size)
     if x_lim is not None:
         ax.set_xlim(x_lim)
     if xticks is not None:
         ax.set_xticks(xticks)
     if xticklabels is not None:
-        ax.set_xticklabels(xticklabels, fontsize=13)
+        ax.set_xticklabels(xticklabels, fontsize=ticksize)
     if yticks is not None:
         ax.set_yticks(yticks)
     if ytickslabels is not None:
-        ax.set_yticklabels(ytickslabels, fontsize=13)
+        ax.set_yticklabels(ytickslabels, fontsize=ticksize)
 
 
 def plot_bar(ax, x, height, colors, bar_width=0.6, errorbar_size=10,
