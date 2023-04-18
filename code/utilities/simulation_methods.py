@@ -177,7 +177,7 @@ class Timer:
         self.this_block = block
         self.this_repetition = sim_obj.this_rep
         self.agent_model = sim_obj.agent_attr.name
-        self.tau = sim_obj.tau
+        self.tau = sim_obj.tau_gen
         self.participant = sim_obj.this_part
 
     def start(self):
@@ -209,8 +209,8 @@ class Simulator:
     agent_model_space = ["C1", "C2", "C3", "A1", "A2", "A3"]
     agent_attr = None
 
-    taus: np.ndarray = None  # post-decision noise parameter
-    tau: float = np.nan
+    taus_analize: np.ndarray = None  # post-decision noise parameter
+    tau_gen: float = np.nan  # data generating parameter value
 
     agent: Agent = None
     task: Task = None
@@ -234,7 +234,7 @@ class Simulator:
         self.agent = Agent(self.agent_attr, self.task)
         if self.agent_attr.is_bayesian:
             self.agent.add_bayesian_model_components(self.bayesian_comps)
-        self.beh_model = BehavioralModel(self.mode, self.tau)
+        self.beh_model = BehavioralModel(self.mode, self.tau_gen)
 
         # Connect interacting models
         self.beh_model.agent = self.agent
@@ -263,8 +263,8 @@ class Simulator:
         self.task.eval_action()
 
     def simulate_beh(self):
-
-        self.dir_mgr.prepare_output(self)
+        if self.mode == "behavior_sim":
+            self.dir_mgr.prepare_output(self)
         recorder = Recorder(self.task_configs.params)
 
         for block in range(self.task_configs.params.n_blocks):
@@ -296,7 +296,7 @@ class Simulator:
                 recorder.append_this_round_to_block_df(round_)
             recorder.append_this_block_to_simdata_df(block)
             timer.end()
-        recorder.wrap_up_data(self.tau, self.agent_attr.name)
+        recorder.wrap_up_data(self.tau_gen, self.agent_attr.name)
         if self.mode == "behavior_sim":
             recorder.save_data_to_tsv(self.dir_mgr.paths)
         elif self.mode == "validation":
@@ -314,6 +314,9 @@ class Simulator:
         llh_allblocks = np.full((self.task_configs.params.n_blocks,1), np.nan)
         for block in range(self.task_configs.params.n_blocks):
             self.create_interacting_objects(block)
+
+            # TODO: delete again, after separated sim and estimator
+            self.beh_model.tau = self.tau
 
             llh_allrounds = np.full((self.task_configs.params.n_rounds, 1),
                                     np.nan)

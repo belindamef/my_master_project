@@ -3,8 +3,10 @@ estimations of model parameters
 
 Author: Belinda Fleischmann
 """
+import time
 from .simulation_methods import Simulator
 import numpy as np
+
 
 class ParameterEstimator:
     """A class to evaluate Maximum Likelihood estimations of model parameter"""
@@ -18,7 +20,6 @@ class ParameterEstimator:
         """
         self.sim_object = sim_object
 
-
     def eval_llh(self, given_tau):
         """Evaluate log_likelihood functions for given simulated dataset and
         tau parameter (decision noise)
@@ -28,6 +29,7 @@ class ParameterEstimator:
         given_tau: float
         """
         self.sim_object.tau = given_tau
+        self.sim_object.beh_model.tau = given_tau
         sum_llh = self.sim_object.sim_interaction_for_llh()  # block log
         # likelihood evaluation
 
@@ -40,8 +42,7 @@ class ParameterEstimator:
         # output specification
         return sum_llh
 
-
-    def brute_force_est(self):
+    def brute_force_est(self) -> float:
         """Evaluate the maximum likelihood estimation of the decision noise
         parameter based on dataset of one participant.
 
@@ -49,10 +50,13 @@ class ParameterEstimator:
         -------
         ml_estimate: float
         """
-        #tau_space = np.linspace(0.01, 2.5, 50)
-        tau_space = np.arange(0.5, 2.5, 0.1)
-        tau_space = np.linspace(0.25,2,10)
+        # tau_space = np.linspace(0.01, 2.5, 50)
+        # tau_space = np.arange(0.5, 2.5, 0.1)
+        tau_space = np.linspace(0.25, 2, 10)
         loglikelihood_function = np.full(len(tau_space), np.nan)
+
+        print("Starting brute-force estimation")
+        start_est_total = time.time()
 
         for i, tau_i in np.ndenumerate(tau_space):  # candidate set iteration
             # tau_i = np.asarray([tau_i])  # array conversion #TODO: necessary?
@@ -62,5 +66,6 @@ class ParameterEstimator:
         #  --> min vs. max
         ml_estimate = tau_space[np.argmin(loglikelihood_function)]  # MLE estimate
         llh_value = np.asarray([np.min(loglikelihood_function)])  # minimized negative log likelihood function value
-
+        end_est_total = time.time()
+        print(f"Finined estimation in {round(end_est_total - start_est_total, ndigits=2)} sec.")
         return ml_estimate
