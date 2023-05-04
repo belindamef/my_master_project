@@ -345,3 +345,370 @@ class Simulator:
 
             # Return negative log likelihood
             return -sum_llh
+"""
+This script contains classes and methods to simulate agent behavioral data.
+
+Author Belinda Fleischmann
+"""
+
+import pandas as pd
+import numpy as np
+import time
+from .config import DirectoryManager, TaskConfigurator
+from .task import Task
+from .agent import Agent
+from .modelling import AgentInitObject, BehavioralModel, BayesianModelComps
+np.set_printoptions(linewidth=500)
+
+
+class Recorder:
+    """A class to store and iteratively add trial-wise simulation data"""
+
+    out_var_list = []
+    data_one_round = {}
+
+    def __init__(self, task_design_params, *args):
+        self.sim_data = pd.DataFrame()
+        self.sim_data_this_block = None
+        self.define_sim_out_list(*args)
+        self.task_design_params = task_design_params
+
+    def define_sim_out_list(self, *args: str):
+        """Define a list of variables that are saved to output data
+        Parameters
+        ----------
+        *args : Variable length of input arguments
+        Returns
+        -------
+        out_va_list : list
+        """
+        self.out_var_list = [
+            "s1", "s2", "s3", "s4",
+            "o", "a_giv_s1", "o_giv_s2", "p_o_giv_o", "kl_giv_a_o",
+            "v", "d", "a", "log_p_a_giv_h", "r", "information",
+            "tr_found_on_blue",
+            "marg_s3_posterior", "marg_s3_prior_t0",
+            "marg_s4_posterior", "marg_s4_prior_t0",
+            "max_s3_belief", "argsmax_s3_belief",
+            "min_dist_argsmax_s3_belief", "closest_argsmax_s3_belief",
+            "hiding_spots", "n_black", "n_grey", "n_blue"]
+        self.out_var_list += [*args]
+
+    def create_rec_df_one_block(self):
+        """Create new empty dataframe for this rounds data"""
+        self.sim_data_this_block = pd.DataFrame()
+
+    def create_rec_arrays_thisround(self):
+        """Create a dictionary with recording arrays for one round
+
+        Returns
+        -------
+        rec_arrays : dict
+            dictionary storing all recording arrays
+        """
+        for var in self.out_var_list:
+            self.data_one_round[var] = np.full(
+                self.task_design_params.n_trials + 1, np.nan, dtype=object)
+
+    def record_trial_start(self, trial, task):
+        """Record all states and observations before agent makes decision,
+        beh_model returns action and task evaluates state transition
+
+        Parameters
+        ----------
+        trial: int
+        task: obj
+        """
+        self.data_one_round["s1"][trial] = task.s1_t
+        self.data_one_round["s2"][trial] = task.s2_t
+        self.data_one_round["s3"][trial] = task.s3_c
+        self.data_one_round["s4"][trial] = task.s4
+        self.data_one_round["n_black"][trial] = task.n_black
+        self.data_one_round["n_grey"][trial] = task.n_grey
+        self.data_one_round["n_blue"][trial] = task.n_blue
+        self.data_one_round["o"][trial] = task.o_t
+
+    def record_trial_ending(self, trial, sim_obj):
+        """Record all states and agent beh_model values after agent made
+        decision, beh_model returned action and task evaluated state
+        transition"""
+        self.data_one_round["a_giv_s1"][trial] = sim_obj.agent.a_s1
+        self.data_one_round["o_giv_s2"][trial] = sim_obj.agent.o_s2
+        self.data_one_round["p_o_giv_o"][trial] = sim_obj.agent.p_o_giv_o
+        self.data_one_round["kl_giv_a_o"][trial] = sim_obj.agent.kl_giv_a_o
+        self.data_one_round["v"][trial] = sim_obj.agent.v
+        self.data_one_round["d"][trial] = sim_obj.agent.d
+        self.data_one_round["a"][trial] = sim_obj.beh_model.a_t
+        self.data_one_round["log_p_a_giv_h"][trial] = sim_obj.beh_model.log_L
+        self.data_one_round["r"][trial] = sim_obj.task.r_t
+        self.data_one_round["information"][trial] = sim_obj.task.drill_finding
+        self.data_one_round["tr_found_on_blue"] = sim_obj.task.tr_found_on_blue
+        self.data_one_round["marg_s3_posterior"][trial] = \
+            sim_obj.agent.marg_s3_b
+        self.data_one_round["marg_s3_prior_t0"][trial] = \
+            sim_obj.agent.marg_s3_prior
+        self.data_one_round["marg_s4_posterior"][trial] = \
+            sim_obj.agent.marg_s4_b
+        self.data_one_round["marg_s4_prior_t0"][trial] = \
+            sim_obj.agent.marg_s4_prior
+        self.data_one_round["max_s3_belief"][trial] = \
+            sim_obj.agent.max_s3_b_value
+        self.data_one_round["argsmax_s3_belief"][trial] = \
+            sim_obj.agent.max_s3_b_nodes
+        self.data_one_round["min_dist_argsmax_s3_belief"][trial] = \
+            sim_obj.agent.shortest_dist_to_max_s3_b
+        self.data_one_round["closest_argsmax_s3_belief"][trial] = \
+            sim_obj.agent.closest_max_s3_b_nodes
+        self.data_one_round["hiding_spots"][trial] = sim_obj.task.hides_loc
+
+    def append_this_round_to_block_df(self, this_round):
+        """Append this round's dataframe to this block's dataframe
+
+        Parameters
+        ----------
+        this_round: int
+        """
+        # Create a dataframe from recording array dictionary
+        sim_data_this_round = pd.DataFrame(self.data_one_round)
+        sim_data_this_round.insert(0, "trial", pd.Series(  # add trial column
+            range(1, self.task_design_params.n_trials + 2)))
+        sim_data_this_round.insert(0, "round_", this_round + 1)  # add round
+        # col
+        self.sim_data_this_block = pd.concat(
+            [self.sim_data_this_block, sim_data_this_round],
+            ignore_index=True)
+
+    def append_this_block_to_simdata_df(self, this_block):
+        """Append this block's dataframe to the overall dataframe for this
+        agent and this repetition
+
+        Parameters
+        ----------
+        this_block: int
+        """
+        self.sim_data_this_block.insert(0, "block", this_block + 1)
+        self.sim_data = pd.concat([self.sim_data, self.sim_data_this_block],
+                                  ignore_index=True)
+
+    def wrap_up_data(self, tau, agent_model):
+        """Finalize data set by adding columns for agent and tau parameter"""
+        self.sim_data.insert(0, "tau", tau)
+        self.sim_data.insert(0, "agent", agent_model)
+
+    def save_data_to_tsv(self, paths):
+        """Safe dataframe to tsv file
+
+        Parameters
+        ----------
+        paths: Paths
+        """
+
+        # Save data
+        with open(f"{paths.out_filename}.tsv", "w", encoding="utf8") as \
+                tsv_file:
+            tsv_file.write(self.sim_data.to_csv(sep="\t", na_rep=np.NaN,
+                                                index=False))
+
+
+class Timer:
+
+    start_of_block: float
+    end_of_block: float
+
+    def __init__(self, sim_obj, block):
+        """
+        Parameters
+        ----------
+        sim_obj: Simulator
+        """
+        self.this_block = block
+        self.this_repetition = sim_obj.this_rep
+        self.agent_model = sim_obj.agent_attr.name
+        self.tau = sim_obj.tau_gen
+        self.participant = sim_obj.this_part
+
+    def start(self):
+        self.start_of_block = time.time()
+        print(f"Starting simulation for agent {self.agent_model}, "
+              f"participant {self.participant} "
+              f"repetition no. {self.this_repetition} with "
+              f"tau: {self.tau}")
+        return self
+
+    def end(self):
+        self.end_of_block = time.time()
+        time_this_block = self.end_of_block - self.start_of_block
+        print(f"agent {self.agent_model} finished block "
+              f"{self.this_block + 1} in"
+              f" {round(time_this_block, ndigits=2)} sec")
+
+
+class Simulator:
+
+    dir_mgr = DirectoryManager()
+    task_configs = TaskConfigurator(dir_mgr.paths).get_config()
+    bayesian_comps = BayesianModelComps(task_configs.params).get_comps()
+    n_participants: int = 1  # no. of simulated participants per agent
+    n_repetitions: int = 1  # no. of simulation repetitions for stochastic
+    this_part: int = 1
+    this_rep: int = 1
+
+    agent_model_space = ["C1", "C2", "C3", "A1", "A2", "A3"]
+    agent_attr = None
+
+    taus_analize: np.ndarray = None  # post-decision noise parameter
+    tau_gen: float = np.nan  # data generating parameter value
+
+    agent: Agent = None
+    task: Task = None
+    beh_model: BehavioralModel = None
+
+    data: pd.DataFrame = None
+
+    def __init__(self, mode):
+        self.mode = mode
+
+    def create_interacting_objects(self, this_block):
+        """Create beh_model objects that interact in each trial
+
+        Parameters
+        ----------
+        this_block: int
+        agent_attributes: AgentInitObject
+        """
+        self.task = Task(self.task_configs)
+        self.task.start_new_block(this_block)
+        self.agent = Agent(self.agent_attr, self.task)
+        if self.agent_attr.is_bayesian:
+            self.agent.add_bayesian_model_components(self.bayesian_comps)
+        self.beh_model = BehavioralModel(self.mode, self.tau_gen)
+
+        # Connect interacting models
+        self.beh_model.agent = self.agent
+        self.task.behavioral_model = self.beh_model
+        self.agent.beh_model = self.beh_model
+
+    def simulate_trial_start(self, this_trial):
+        """Simulate the beginning of a trial, when an
+        initial observation is made, but before decision is made
+
+        Parameters
+        ----------
+        this_trial: int
+        """
+        self.task.start_new_trial(this_trial)
+        self.agent.start_new_trial(this_trial)
+        self.task.return_observation()
+        self.agent.update_belief_state()
+
+    def simulate_trial_interaction(self):
+        """Simulate the agent-task interaction, i.e. agent decision, resulting
+        action, and task state transition
+        """
+        self.agent.make_decision()
+        self.beh_model.return_action()
+        self.task.eval_action()
+
+    def simulate_beh(self):
+        if self.mode == "behavior_sim":
+            self.dir_mgr.prepare_output(self)
+        recorder = Recorder(self.task_configs.params)
+
+        for block in range(self.task_configs.params.n_blocks):
+            timer = Timer(self, block).start()
+            recorder.create_rec_df_one_block()
+            self.create_interacting_objects(block)
+
+            for round_ in range(self.task_configs.params.n_rounds):
+                recorder.create_rec_arrays_thisround()
+                self.task.start_new_round(block, round_)
+                self.agent.start_new_round(round_)
+
+                for trial in range(self.task_configs.params.n_trials):
+                    self.simulate_trial_start(trial)
+                    recorder.record_trial_start(trial, self.task)
+                    self.simulate_trial_interaction()
+                    # if self.mode == "validation":  # TODO: maybe overhead
+                    #     self.beh_model.eval_p_a_giv_h_this_action()
+                    recorder.record_trial_ending(trial, self)
+
+                    # End round, if treasure discovered
+                    if self.task.r_t == 1:
+                        # Evaluate observation and belief update for t + 1
+                        self.task.return_observation()
+                        self.agent.update_belief_state()
+                        recorder.record_trial_start(trial + 1, self.task)
+                        break
+
+                recorder.append_this_round_to_block_df(round_)
+            recorder.append_this_block_to_simdata_df(block)
+            timer.end()
+        recorder.wrap_up_data(self.tau_gen, self.agent_attr.name)
+        if self.mode == "behavior_sim":
+            recorder.save_data_to_tsv(self.dir_mgr.paths)
+        elif self.mode == "validation":
+            self.data = recorder.sim_data
+
+    def sim_interaction_for_llh(self):
+        """Function to simulate trialwise interactions between agent and task
+        to evaluate the likelihood function for a given tau and given (i.e.
+        already) simulated data
+
+        Returns
+        -------
+        sum_llh
+        """
+        llh_allblocks = np.full((self.task_configs.params.n_blocks,1), np.nan)
+        for block in range(self.task_configs.params.n_blocks):
+            self.create_interacting_objects(block)
+
+            # TODO: delete again, after separated sim and estimator
+            self.beh_model.tau = self.tau
+
+            llh_allrounds = np.full((self.task_configs.params.n_rounds, 1),
+                                    np.nan)
+            for round_ in range(self.task_configs.params.n_rounds):
+
+                llh_alltrials = np.full(
+                    (self.task_configs.params.n_trials, 1), np.nan)
+
+                data_this_round = self.data[(
+                            self.data.block == block + 1) & (
+                            self.data.round_ == round_ + 1)]
+
+                for trial in range(self.task_configs.params.n_trials):
+                    # self.simulate_trial_start(trial)
+                    # self.simulate_trial_interaction()
+
+                    # Fetch agent valence function from simulated data
+                    data_this_trial = data_this_round.query(
+                        'trial == (@trial + 1)')
+
+                    self.agent.v = data_this_trial.v.item()
+
+                    # Evaluate conditional llh function for different
+                    # actions given this tau
+                    self.beh_model.eval_p_a_giv_history()
+
+                    # fetch action from simulated datat
+                    self.beh_model.a_t = data_this_trial.a.item()
+
+                    self.agent.a_s1 = data_this_trial.a_giv_s1.item()
+                    # evaluate conditional llh of that action given this tau
+                    self.beh_model.eval_p_a_giv_h_this_action()
+
+                    self.task.r_t = data_this_trial.r.item()
+                    # End round, if treasure discovered
+                    if self.task.r_t == 1:
+                        break
+                    llh_alltrials[trial] = self.beh_model.log_L
+
+                llh_allrounds[round_] = np.nansum(llh_alltrials)
+            llh_allblocks[block] = np.nansum(llh_allrounds)
+
+            sum_llh = np.nansum(llh_allblocks)
+
+            # Return negative log likelihood
+            return -sum_llh
+
+
