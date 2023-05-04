@@ -9,7 +9,7 @@ import time
 import pickle
 import argparse
 from utilities.config import DirectoryManager, TaskConfigurator
-from utilities.simulation_methods import Simulator, CurrentParameters
+from utilities.simulation_methods import Simulator, CurrentParameters, SimulationParameters
 from utilities.modelling import AgentInitObject, BayesianModelComps
 from utilities.estimation_methods import ParameterEstimator
 import numpy as np
@@ -31,12 +31,23 @@ def get_arguments():
     """Get arguments from environment, if script is executed from command line
     or with a bash jobwrapper."""
     parser = argparse.ArgumentParser(description='Run model validation.')
-    parser.add_argument('--repetition', type=int, required=True)
-    parser.add_argument('--agent_model', type=str, required=True)
-    parser.add_argument('--tau_value', type=float, required=True)
-    parser.add_argument('--participant', type=str, required=True)
+    parser.add_argument('--repetition', type=int, default=range(10), nargs='+')
+    parser.add_argument('--agent_model', type=str, nargs='+',
+                        default=["C1", "C2", "C3", "A1", "A2", "A3"])
+    parser.add_argument('--tau_value', type=float, nargs='+',
+                        default=np.linspace(0.25, 2, 10))
+    parser.add_argument('--participant', type=int, nargs='+',
+                        default=range(1))
     args = parser.parse_args()
     return args
+
+
+def sort_sim_params(args) -> SimulationParameters:
+    sim_params = SimulationParameters()
+    sim_params.n_repetitions = args.repetition
+    sim_params.agents_space_gen = args.agent_model
+    sim_params.tau_space_gen = args.tau_value
+    return sim_params
 
 
 def main(args):
@@ -81,11 +92,6 @@ def main(args):
                     simulator.this_part = this_part + 1
                     simulator.tau_gen = tau_gen
                     simulator.simulate_beh()
-
-                    # llh.loc[dict(agent=agent_model, tau=tau,
-                    #              participant=participant + 1,
-                    #              repetition=repetition + 1)
-                    # ] = np.nansum(simulator.data["log_p_a_giv_h"])
 
                     estimator = ParameterEstimator(simulator)
 
