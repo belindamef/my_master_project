@@ -1,0 +1,11 @@
+flake8-for-pycharm
+matplotlib
+more-itertools
+numpy
+palettable
+pandas
+pip
+PsychoPy==2020.2.8
+wesanderson
+Pillow
+click
