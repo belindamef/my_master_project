@@ -20,19 +20,20 @@ from utilities.modelling import AgentInitObject, BayesianModelComps
 
 def main():
 
-    n_participants = 1  # TODO: redundant, if there is always a noise function?
+    n_participants = 1
     agent_model_space = ["C1", "C2", "C3", "A1", "A2", "A3"]
 
     # Create all objects needed to cofigure, perform and record simulation
     dir_mgr = DirectoryManager()
     dir_mgr.create_beh_data_out_dir()
-    task_configs = TaskConfigurator(dir_mgr.paths).get_config()
-    bayesian_comps = BayesianModelComps(task_configs.params).get_comps()
+    task_configs = TaskConfigurator(dir_mgr.paths).get_config(
+        config_label="exp_msc")
+    bayesian_comps = BayesianModelComps(task_configs.task_params).get_comps()
     simulator = Simulator(mode="behavior_sim",
                           task_configs=task_configs,
                           bayesian_comps=bayesian_comps)
     current_params = CurrentParameters()
-    simulator.current_params = current_params  # TODO: check, if permalink!
+    simulator.current_params = current_params
 
     for agent_model in agent_model_space:
         current_params.agent_attr = AgentInitObject(

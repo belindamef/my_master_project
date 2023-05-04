@@ -58,4 +58,7 @@ The model of the task is formulated using concepts from the theory of partially 
 ## References
 [1] Bertsekas, D. P. (2005)._Dynamic Programming and Optimal Control_.Belmont, Mass: AthenaScientific, 3rd edition
 
+## TODO
 
+* change output creation to only one directory per sub
+    * BUT! adapt stats scripts first

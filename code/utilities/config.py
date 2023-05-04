@@ -18,7 +18,7 @@ def get_user_yes_no(question):
         else:
             print('Invalid answer. Please answer with (Y/N). ')
             return get_user_yes_no(question)
-    except Exception as error:
+    except TypeError as error:
         print("Please enter valid inputs")
         print(error)
         return get_user_yes_no(question)
@@ -40,8 +40,6 @@ class Paths:
     utils = os.path.dirname(os.path.abspath(__file__))
     code = os.path.dirname(utils)
     project = os.path.dirname(code)
-    # project = os.sep.join(os.path.dirname(os.path.abspath(__file__)).split(os.sep)[:])
-    # code = os.path.join(project, "code")
     task_configs = os.path.join(code, "task_config")  # all configurations
     data = os.path.join(project, "data")
     figures = os.path.join(project, "figures")
@@ -113,11 +111,11 @@ class DirectoryManager:
                           f"-{sim_params.this_part}_" \
                           f"{sim_params.this_rep + 1}"
         else:
-            tau_index = np.where(sim_params.taus_analize == sim_params.tau_gen)[0][0]
-            self.sub_id = f"{sim_params.agent_attr.name}-{sim_params.this_part}_" \
+            tau_index = np.where(
+                sim_params.taus_analize == sim_params.tau_gen)[0][0]
+            self.sub_id = f"{sim_params.agent_attr.name}" \
+                          f"-{sim_params.this_part}_" \
                           f"{sim_params.this_rep  + 1}_{tau_index}"
-        # TODO: change output creation to only one directory per sub
-        # TODO: BUT! adapt stats scripts first
 
     def define_and_make_sub_beh_out_dir(self):
         """Define paths to subject specific output directory and make
@@ -133,11 +131,11 @@ class DirectoryManager:
             f"sub-{self.sub_id}_task-th_beh")
 
     def define_out_single_val_filename(self, rep, agent, tau, part):
-        fn = os.path.join(
+        filename = os.path.join(
             self.paths.this_val_out_dir,
             f"rep-{rep}_agent-{agent}_tau-{int(round(tau * 1000, ndigits=4))}_"
             f"part-{part}")
-        return fn
+        return filename
 
     def prepare_beh_output(self, sim_params):
         self.create_sub_id(sim_params)
@@ -207,7 +205,7 @@ class TaskConfigurator:
     config_label = None
     # Initialize task states
     states = {}
-    params = TaskDesignParameters()
+    task_params = TaskDesignParameters()
 
     def __init__(self, path):
         """
@@ -254,33 +252,33 @@ class TaskConfigurator:
     def sample_hiding_spots(self):
         """Sample hiding spots from a discrete uniform distribution over
          all nodes (without replacement)"""
-        hides_loc = np.empty((self.params.n_blocks,
-                             self.params.n_hides), dtype=int)
-        for block in range(self.params.n_blocks):
+        hides_loc = np.empty((self.task_params.n_blocks,
+                             self.task_params.n_hides), dtype=int)
+        for block in range(self.task_params.n_blocks):
             hides_loc[block] = np.random.choice(
-                self.params.n_nodes,
-                self.params.n_hides,
+                self.task_params.n_nodes,
+                self.task_params.n_hides,
                 replace=False)
         self.states['hides'] = hides_loc
 
     def sample_start_pos(self):
         """Sample the starting position from a discrete uniform distribution
         over all nodes"""
-        s_1 = np.full((self.params.n_blocks,
-                       self.params.n_rounds), np.nan)
-        for block in range(self.params.n_blocks):
-            for round_ in range(self.params.n_rounds):
+        s_1 = np.full((self.task_params.n_blocks,
+                       self.task_params.n_rounds), np.nan)
+        for block in range(self.task_params.n_blocks):
+            for round_ in range(self.task_params.n_rounds):
                 s_1[block, round_] = np.random.choice(
-                    self.params.n_nodes, 1)
+                    self.task_params.n_nodes, 1)
         self.states['s_1'] = s_1
 
     def sample_treasure_loc(self):
         """Sample the tr location from a discrete uniform distribution over all
         hiding spots"""
-        s_3 = np.full((self.params.n_blocks,
-                       self.params.n_rounds), np.nan)
-        for block in range(self.params.n_blocks):
-            for round_ in range(self.params.n_rounds):
+        s_3 = np.full((self.task_params.n_blocks,
+                       self.task_params.n_rounds), np.nan)
+        for block in range(self.task_params.n_blocks):
+            for round_ in range(self.task_params.n_rounds):
                 # Set treasure to equal start position
                 s_3[block, round_] = cp.deepcopy(
                     self.states['s_1'][block, round_])
@@ -299,19 +297,18 @@ class TaskConfigurator:
         config_df_fn = os.path.join(self.paths.this_config,
                                     'config_params.tsv')
         all_block_df = pd.DataFrame()
-        for block_ in range(self.params.n_blocks):
-            # TODO: refine
+        for block_ in range(self.task_params.n_blocks):
             this_block_df = pd.DataFrame(
-                index=range(0, self.params.n_rounds))
+                index=range(0, self.task_params.n_rounds))
             this_block_df['block'] = block_ + 1
             this_block_df['round'] = range(1,
-                                           self.params.n_rounds
+                                           self.task_params.n_rounds
                                            + 1)
             this_block_df['hides'] = np.full(
-                self.params.n_rounds, np.nan)
+                self.task_params.n_rounds, np.nan)
             this_block_df['hides'] = this_block_df[
                 'hides'].astype('object')
-            for round_ in range(self.params.n_rounds):
+            for round_ in range(self.task_params.n_rounds):
                 this_block_df.at[
                     round_, 'hides'] = self.states['hides'][block_]
             this_block_df['s1'] = self.states['s_1'][block_]
@@ -337,21 +334,18 @@ class TaskConfigurator:
             self.states[item] = np.load(
                 os.path.join(self.paths.this_config, f'{item}.npy'))
 
-    def get_config(self):
+    def get_config(self, config_label):
         """Create or load task configuration according to user input"""
-        # new_config_is_needed, config_label, n_blocks = self.get_user_input()
 
-        # TODO: hardcoded is temporary solution!!
-        config_label = "exp_msc"
         new_config_is_needed = False
         n_blocks = 3
         self.add_config_paths(config_label)
         if new_config_is_needed:
-            self.params.n_blocks = n_blocks
+            self.task_params.n_blocks = n_blocks
             self.sample_task_config()
         else:
             self.load_task_config()
-            self.params.n_blocks = list(
+            self.task_params.n_blocks = list(
                 self.states.values())[0].shape[0]
 
         return self

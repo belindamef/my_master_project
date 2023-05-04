@@ -37,14 +37,14 @@ def get_arguments():
     parser.add_argument('--participant', type=str, required=True)
     args = parser.parse_args()
     return args
-    # TODO: possible to make it not required and then hard code sim params
 
 
 def main(args):
     dir_mgr = DirectoryManager()
     dir_mgr.create_val_out_dir(out_dir_label="tests")
-    task_configs = TaskConfigurator(dir_mgr.paths).get_config()
-    bayesian_comps = BayesianModelComps(task_configs.params).get_comps()
+    task_configs = TaskConfigurator(dir_mgr.paths).get_config(
+        config_label="exp_msc")
+    bayesian_comps = BayesianModelComps(task_configs.task_params).get_comps()
     simulator = Simulator(mode="validation",
                           task_configs=task_configs,
                           bayesian_comps=bayesian_comps)
@@ -55,19 +55,20 @@ def main(args):
         args.agent_model).def_attributes()
     current_params.this_tau_gen = args.tau_value
     current_params.this_part = args.participant
-    simulator.current_params = current_params  # TODO: check if permalink!
+    simulator.current_params = current_params
 
     simulator.tau_gen = args.tau_value
-    simulator.n_participants = len(args.participant)
-    simulator.task_configs.params.n_blocks = 1  # TODO: change to 3
+    n_participants = 1  # TODO: find better way to automatize loop
+    n_repetitions = 1
+    simulator.task_configs.task_params.n_blocks = 1
 
-    for repetition in range(simulator.n_repetitions):
+    for repetition in range(n_repetitions):
 
         simulator.this_rep = repetition + 1
 
         mle_recorder = {"agent": [], "tau_gen": [], "participant": [],
                         "mle": []}
-        for agent_i, agent_model in enumerate([args.agent_model]):
+        for agent_model in [args.agent_model]:
             mle_recorder["agent"].append(agent_model)
             simulator.agent_attr = AgentInitObject(
                 agent_model).def_attributes()
@@ -75,7 +76,7 @@ def main(args):
             for tau_gen in [simulator.tau_gen]:
                 mle_recorder["tau_gen"].append(tau_gen)
 
-                for this_part in range(simulator.n_participants):
+                for this_part in range(n_participants):
                     mle_recorder["participant"].append(this_part + 1)
                     simulator.this_part = this_part + 1
                     simulator.tau_gen = tau_gen
@@ -91,8 +92,7 @@ def main(args):
                     mle_recorder["mle"].append(estimator.brute_force_est())
 
         mle_group_av_df = pd.DataFrame(mle_recorder)
-        # TODO: what would be a good filename???!
-        out_fn = simulator.dir_mgr.define_out_single_val_filename(
+        out_fn = dir_mgr.define_out_single_val_filename(
                 args.repetition, args.agent_model, args.tau_value,
                 args.participant)
 
@@ -109,7 +109,6 @@ def main(args):
             #     f"{out_fn}.tsv", "w", encoding="utf8") as tsv_file:
             #     tsv_file.write(str(ml_estimate_this_part))
 
-            # TODO: or better as .txt file?
             # np.savetxt(
             # "../data/test2.txt", x, fmt="%2.3f", delimiter=",")
 
