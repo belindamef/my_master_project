@@ -40,7 +40,7 @@ for repetition in $(seq 1 ${n_repetition}); do
                 for participant in $(seq 1 ${n_participants}); do
 
                     # Create a job for each subject file
-                    printf "arguments = --repetition ${repetition} --agent_model ${agent_model} --tau_value ${tau_value} --participant ${participant}\n"
+                    printf "arguments = --parallel_computing --repetition ${repetition} --agent_model ${agent_model} --tau_value ${tau_value} --participant ${participant}\n"
                     printf "log       = ${logs_dir}/\$(Cluster).\$(Process)_rep-${repetition}_sub-${agent_model}_tau-${tau_value}_p-${participant}.log\n"
                     printf "output    = ${logs_dir}/\$(Cluster).\$(Process)_rep-${repetition}_sub-${agent_model}_tau-${tau_value}_p-${participant}.out\n"
                     printf "error     = ${logs_dir}/\$(Cluster).\$(Process)_rep-${repetition}_sub-${agent_model}_tau-${tau_value}_p-${participant}.err\n"

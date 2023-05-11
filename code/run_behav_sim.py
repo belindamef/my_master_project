@@ -14,7 +14,7 @@ Author: Belinda Fleischmann
 
 import time
 from utilities.config import DirectoryManager, TaskConfigurator
-from utilities.simulation_methods import Simulator, CurrentParameters
+from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.modelling import AgentInitObject, BayesianModelComps
 
 
@@ -28,23 +28,22 @@ def main():
     dir_mgr.create_beh_data_out_dir()
     task_configs = TaskConfigurator(dir_mgr.paths).get_config(
         config_label="exp_msc")
-    bayesian_comps = BayesianModelComps(task_configs.task_params).get_comps()
-    simulator = Simulator(mode="behavior_sim",
-                          task_configs=task_configs,
+    bayesian_comps = BayesianModelComps(task_configs.params).get_comps()
+    simulator = Simulator(task_configs=task_configs,
                           bayesian_comps=bayesian_comps)
-    current_params = CurrentParameters()
-    simulator.current_params = current_params
+    sim_params = SimulationParameters()
+    simulator.sim_params = sim_params
 
     for agent_model in agent_model_space:
-        current_params.agent_attr = AgentInitObject(
+        sim_params.agent_attr = AgentInitObject(
             agent_model).def_attributes()
-        if not current_params.agent_attr.is_deterministic:
+        if not sim_params.agent_attr.is_deterministic:
             n_participants = 50
 
         for participant in range(n_participants):
-            current_params.this_part = participant
-            dir_mgr.prepare_beh_output(current_params)
-            simulator.simulate_beh()
+            sim_params.this_part = participant
+            dir_mgr.prepare_beh_output(sim_params)
+            simulator.simulate_beh_data()
             dir_mgr.save_data_to_tsv(simulator.data)
 
 

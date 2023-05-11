@@ -457,7 +457,7 @@ class Agent:
                 self.kl_giv_a_o[a, o] = self.kl(self.virt_b[a][o],
                                                 self.p_s_giv_o)
 
-    def evaluate_phi(self):
+    def evaluate_action_valences(self):
         """Evaluate action valences"""
 
         # 'C1' Valence for random choice agent
@@ -600,7 +600,7 @@ class Agent:
 
         # -------Evaluate valence and decision function----------
         # start = time.time()
-        self.evaluate_phi()
+        self.evaluate_action_valences()
         # end = time.time()
         # print(f'Evaluate phi: {end - start}')
         self.evaluate_delta()

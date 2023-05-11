@@ -316,21 +316,21 @@ class BehavioralModel:
         Action value in trial t
     """
     agent: Agent = None
-    p_a_giv_h: np.ndarray = None  # likelihood of action giv history
+    p_a_giv_h: np.ndarray = None  # likelihood of action giv history and tau
 
-    def __init__(self, mode, tau):
+    def __init__(self, tau):
         # Initialize empty attribute to embed agent object of class Agent
         self.rvs = None
-        self.log_L: float = np.nan
-        self.tau = tau
-        self.mode = mode
+        self.log_likelihood: float = np.nan
+        self.tau = tau  # decision noice parameter
 
         # Initialize action attribute
         self.a_t = np.nan  # agent action
 
-    def eval_p_a_giv_history(self):
-        """Define probability distribution of actions giv the history of
-        actions and observations TODO: what history precisely?"""
+    def eval_p_a_giv_tau(self):
+        """Evaluate conditional probability distribution of actions given the
+        history of actions and observations and tau
+        aka. likehood of this tau"""
         self.p_a_giv_h = np.exp((1 / self.tau) * self.agent.v) / sum(
             np.exp((1 / self.tau) * self.agent.v))
 
@@ -343,17 +343,19 @@ class BehavioralModel:
     def return_action(self):
         """This function returns the action value given agent's decision."""
         # probability action given decision of 1
-        if self.mode == "behavior_sim":
+        if self.tau is None:
             self.a_t = cp.deepcopy(self.agent.d)
 
-        elif self.mode == "validation":
-            self.eval_p_a_giv_history()
+        else:
+            self.eval_p_a_giv_tau()
             self.eval_rvs()
             action_index = self.rvs.argmax()
             self.a_t = self.agent.a_s1[action_index]
 
-    def eval_p_a_giv_h_this_action(self):
-        """Evaluate the conditional log likelihood of this specific action"""
-        self.log_L = np.log(
-            self.p_a_giv_h[np.where(self.agent.a_s1 == self.a_t)[0][0]]
+    def eval_p_a_giv_h_this_action(self, this_action):
+        """Evaluate the conditional probability distribution of this action
+        given the history of actions and observations and tau
+        aka. log likelihood of this tau"""
+        self.log_likelihood = np.log(
+            self.p_a_giv_h[np.where(self.agent.a_s1 == this_action)[0][0]]
         )
