@@ -9,7 +9,7 @@ from utilities.simulation_methods import Simulator
 
 
 class ParameterEstimator:
-    """A class to evaluate Maximum Likelihood estimations of model parameter"""
+    """A class to evaluate Maximum Likelihood estimations parameters"""
 
     def __init__(self, exp_data, task_configs, bayesian_comps):
         """
@@ -27,9 +27,9 @@ class ParameterEstimator:
         """
 
         loglikelihood_function = np.full(len(parameter_space), np.nan)
-        
+
         for i, tau_i in np.ndenumerate(parameter_space):
-            
+
             this_tau_s_llh = self.sim_object.sim_interaction_to_eval_llh(tau_i)
 
             loglikelihood_function[i] = this_tau_s_llh
@@ -60,6 +60,5 @@ class ParameterEstimator:
 
         if method == "brute_force":
             tau_estimate = self.eval_brute_force_est()
-        
-        return tau_estimate
 
+        return tau_estimate

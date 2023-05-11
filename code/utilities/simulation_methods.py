@@ -4,7 +4,7 @@ This script contains classes and methods to simulate agent behavioral data.
 Author: Belinda Fleischmann
 """
 
-from dataclasses import dataclass
+# from dataclasses import dataclass
 import time
 import pandas as pd
 import numpy as np
@@ -155,7 +155,7 @@ class SimulationParameters:
     n_participants: int = 1
     repetition_numbers = range(n_repetitions)
     #agent_space_gen = ["C1", "C2", "C3", "A1", "A2", "A3"]
-    agent_space_gen = ["C2"]
+    agent_space_gen = ["A1"]
     tau_space_gen = np.linspace(0.1, 2., 10)
     participant_numbers = range(n_participants)
     current_rep: int = None
@@ -220,7 +220,7 @@ class Simulator:
         self.task_configs = task_configs
         self.bayesian_comps = bayesian_comps
 
-    def create_interacting_objects(self, this_block):
+    def create_interacting_objects(self, this_block, current_tau_of_interest):
         """Create beh_model objects that interact in each trial
 
         Parameters
@@ -233,7 +233,7 @@ class Simulator:
         self.agent = Agent(self.sim_params.current_agent_attributes, self.task)
         if self.sim_params.current_agent_attributes.is_bayesian:
             self.agent.add_bayesian_model_components(self.bayesian_comps)
-        self.beh_model = BehavioralModel(self.sim_params.current_tau_gen)
+        self.beh_model = BehavioralModel(current_tau_of_interest)
 
         # Connect interacting models
         self.beh_model.agent = self.agent
@@ -267,7 +267,8 @@ class Simulator:
         for block in range(self.task_configs.params.n_blocks):
             timer = Timer(self.sim_params, block).start()
             recorder.create_rec_df_one_block()
-            self.create_interacting_objects(block)
+            self.create_interacting_objects(block, 
+                                            self.sim_params.current_tau_gen)
 
             for round_ in range(self.task_configs.params.n_rounds):
                 recorder.create_rec_arrays_thisround()
@@ -300,13 +301,15 @@ class Simulator:
         the llh function value for a given tau and given data as sum over all 
         trials
         """
-        # TODO: hier weiter: alle sim und task parameters aus Datensatz lesen?
+        self.sim_params.current_tau_analyse = tau
+
+        # TODO: alle sim und task parameters aus Datensatz lesen?
         llhs_all_blocks = np.full(
             (self.task_configs.params.n_blocks, 1), np.nan)
 
         for block in range(self.task_configs.params.n_blocks):
-            self.sim_params.current_tau_analyse = tau
-            self.create_interacting_objects(block)
+            self.create_interacting_objects(
+                block, self.sim_params.current_tau_analyse)
             llhs_all_rounds = np.full(
                 (self.task_configs.params.n_rounds, 1), np.nan)
 
@@ -330,28 +333,34 @@ class Simulator:
 
                     self.simulate_trial_start(trial)
 
-                    # TODO: this is part of simulate_trial_interaction() Find more elegant way
+                    # TODO: this is a part of simulate_trial_interaction() 
+                    # Find more elegant way
                     # ----------------------------------
-                    # Let agent evaluate valence function. 
+                    # Let agent evaluate valence function.
                     # TODO: resulting decision value is redundant
                     self.agent.make_decision()
                     # fetch action from simulated data
-                    data_action = data_this_trial.a.item()
-                    # Evaluate conditional probability distribution of actions given tau
+                    data_action_t = data_this_trial.a.item()
+                    # Evaluate conditional probability distribution of actions
+                    # given tau, aka likeholood of this tau
                     self.beh_model.eval_p_a_giv_tau()
-                    # Evaluate conditional probability of data action (aka liklihood of tau)
-                    self.beh_model.eval_p_a_giv_h_this_action(data_action)
+                    # Evaluate conditional probability of data action given
+                    # this tau, (aka likelihood of this tau)
+                    self.beh_model.eval_p_a_giv_h_this_action(data_action_t)
 
-
-                    # Embedd data action in behavioral and task model, so that next iteraton in trial
-                    # simulation has same state as is data
-                    self.beh_model.a_t = data_action
+                    # Embedd data action in behavioral and task model, so that
+                    # next iteraton in trial simulation has same state as is
+                    # data
+                    self.beh_model.a_t = data_action_t
                     self.task.eval_action()
 
                     # TODO: check if task reward now matches with data
                     # self.task.r_t = data_this_trial.r.item()
                     # End round, if treasure discovered
                     if self.task.r_t == 1:
+                        # Evaluate observation and belief update for t + 1
+                        self.task.return_observation()
+                        self.agent.update_belief_state()
                         break
 
                     llhs_all_trials[trial] = self.beh_model.log_likelihood

@@ -90,9 +90,12 @@ def main():
                         bayesian_comps=bayesian_comps
                         )
                     estimator.sim_object.sim_params = sim_params
-                    mle_estimate = estimator.estimate_tau(method="brute_force")
+                    # Embedd simulated data in estimation object
+                    estimator.sim_object.data = simulator.data
+                    mle_tau_estimate = estimator.estimate_tau(
+                        method="brute_force")
 
-                    mle_recorder["mle"].append(mle_estimate)
+                    mle_recorder["mle"].append(mle_tau_estimate)
                     # mle_recorder["mle"].append(estimator.brute_force_est())
 
         mle_group_av_df = pd.DataFrame(mle_recorder)
