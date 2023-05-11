@@ -154,15 +154,18 @@ class SimulationParameters:
     n_repetitions: int = 1
     n_participants: int = 1
     repetition_numbers = range(n_repetitions)
-    #agent_space_gen = ["C1", "C2", "C3", "A1", "A2", "A3"]
+    # agent_space_gen = ["C1", "C2", "C3", "A1", "A2", "A3"]
     agent_space_gen = ["A1"]
     tau_space_gen = np.linspace(0.1, 2., 10)
+    lambda_space_gen = np.linspace(0.1, 0.9, 9)
     participant_numbers = range(n_participants)
     current_rep: int = None
     current_agent_attributes: object = None
     current_tau_gen: float = None
+    current_lambda_gen: float = None
     current_part: int = None
-    current_tau_analyse: float = None
+    current_tau_analyze: float = None
+    current_lambda_analyze: float = None
 
     def get_params_from_args(self, args):
         self.n_repetitions = 1
@@ -301,7 +304,7 @@ class Simulator:
         the llh function value for a given tau and given data as sum over all 
         trials
         """
-        self.sim_params.current_tau_analyse = tau
+        self.sim_params.current_tau_analyze = tau
 
         # TODO: alle sim und task parameters aus Datensatz lesen?
         llhs_all_blocks = np.full(
@@ -309,7 +312,7 @@ class Simulator:
 
         for block in range(self.task_configs.params.n_blocks):
             self.create_interacting_objects(
-                block, self.sim_params.current_tau_analyse)
+                block, self.sim_params.current_tau_analyze)
             llhs_all_rounds = np.full(
                 (self.task_configs.params.n_rounds, 1), np.nan)
 

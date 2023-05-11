@@ -130,11 +130,11 @@ class DirectoryManager:
             self.paths.sub_dir,
             f"sub-{self.sub_id}_task-th_beh")
 
-    def define_out_single_val_filename(self, rep, agent, tau, part):
+    def define_out_single_val_filename(self, rep, agent, tau, lambda_, part):
         filename = os.path.join(
             self.paths.this_val_out_dir,
             f"rep-{rep}_agent-{agent}_tau-{int(round(tau * 1000, ndigits=4))}_"
-            f"part-{part}")
+            f"lambda-{int(round(lambda_ * 1000, ndigits=4))}_part-{part}")
         return filename
 
     def prepare_beh_output(self, sim_params):

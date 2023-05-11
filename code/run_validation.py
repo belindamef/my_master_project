@@ -64,45 +64,70 @@ def main():
         sim_params.current_rep = repetition + 1
 
         mle_recorder = {
-            "agent": [], "tau_gen": [], "participant": [], "mle": []}
+            "agent": [], "participant": [],
+            "tau_gen": [], "tau_mle": [],
+            "lambda_gen": [], "lambda_mle": []}
 
         for agent_model in sim_params.agent_space_gen:
             sim_params.current_agent_attributes = AgentInitObject(
                 agent_model).def_attributes()
             mle_recorder["agent"].extend(
                 [agent_model for tau in sim_params.tau_space_gen])
+            
+            # Define lambda generating parameter space
+            if agent_model == "A3":
+                sim
 
             for tau_gen in sim_params.tau_space_gen:
                 sim_params.current_tau_gen = tau_gen
                 mle_recorder["tau_gen"].extend(
-                    [tau_gen for partic in sim_params.participant_numbers]
+                    [tau_gen for part in sim_params.participant_numbers]
                     )
 
-                for participant in sim_params.participant_numbers:
-                    sim_params.current_part = participant + 1
-                    mle_recorder["participant"].append(participant + 1)
+                for lambda_gen in sim_params.lambda_space_gen:
+                    sim_params.current_lambda_gen = lambda_gen
+                    mle_recorder["lambda_gen"].extend(
+                        [lambda_gen for part in sim_params.participant_numbers]
+                    )
 
-                    simulator.simulate_beh_data()
+                    for participant in sim_params.participant_numbers:
+                        sim_params.current_part = participant + 1
+                        mle_recorder["participant"].append(participant + 1)
 
-                    estimator = ParameterEstimator(
-                        exp_data=simulator.data,
-                        task_configs=task_configs,
-                        bayesian_comps=bayesian_comps
-                        )
-                    estimator.sim_object.sim_params = sim_params
-                    # Embedd simulated data in estimation object
-                    estimator.sim_object.data = simulator.data
-                    mle_tau_estimate = estimator.estimate_tau(
-                        method="brute_force")
+                        simulator.simulate_beh_data()
 
-                    mle_recorder["mle"].append(mle_tau_estimate)
-                    # mle_recorder["mle"].append(estimator.brute_force_est())
+                        estimator = ParameterEstimator(
+                            exp_data=simulator.data,
+                            task_configs=task_configs,
+                            bayesian_comps=bayesian_comps
+                            )
+                        
+                        # Embed simulation parameters in simulation object
+                        estimator.sim_object.sim_params = sim_params
+
+                        # Embedd simulated data in estimation object
+                        estimator.sim_object.data = simulator.data
+
+                        # Estimate tau
+                        mle_tau_estimate = estimator.estimate_tau(
+                            method="brute_force")
+                        mle_recorder["tau_mle"].append(mle_tau_estimate)
+                        # mle_recorder["mle"].append(estimator.brute_force_est())
+
+                        # Estimate lambda, if appliclabe
+                        if agent_model == "A3":
+                            mle_lambda_estimate = estimator.estimate_lambda(
+                                method="brute_force"
+                            )
+                            mle_recorder["lambda_mle"].append(
+                                mle_lambda_estimate)
 
         mle_group_av_df = pd.DataFrame(mle_recorder)
         out_fn = dir_mgr.define_out_single_val_filename(
                 repetition,
                 agent_model,
                 tau_gen,
+                lambda_gen,
                 participant)
 
         with open(f"{out_fn}.tsv", "w", encoding="utf8") as tsv_file:
