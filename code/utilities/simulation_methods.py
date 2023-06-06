@@ -92,7 +92,8 @@ class Recorder:
         self.data_one_round["v"][trial] = sim_obj.agent.v
         self.data_one_round["d"][trial] = sim_obj.agent.d
         self.data_one_round["a"][trial] = sim_obj.beh_model.a_t
-        self.data_one_round["log_p_a_giv_h"][trial] = sim_obj.beh_model.log_likelihood
+        self.data_one_round["log_p_a_giv_h"][
+            trial] = sim_obj.beh_model.log_likelihood
         self.data_one_round["r"][trial] = sim_obj.task.r_t
         self.data_one_round["information"][trial] = sim_obj.task.drill_finding
         self.data_one_round["tr_found_on_blue"] = sim_obj.task.tr_found_on_blue
@@ -154,10 +155,10 @@ class SimulationParameters:
     n_repetitions: int = 1
     n_participants: int = 1
     repetition_numbers = range(n_repetitions)
-    # agent_space_gen = ["C1", "C2", "C3", "A1", "A2", "A3"]
-    agent_space_gen = ["A1"]
-    tau_space_gen = np.linspace(0.1, 2., 10)
-    lambda_space_gen = np.linspace(0.1, 0.9, 9)
+    agent_space_gen = ["C1", "C2", "C3", "A1", "A2", "A3"]
+    tau_gen_space = np.linspace(0.1, 2., 9)
+    tau_gen_space_if_fixed = [0.1]
+    lambda_gen_space = np.linspace(0.1, 0.9, 9)
     participant_numbers = range(n_participants)
     current_rep: int = None
     current_agent_attributes: object = None
@@ -172,7 +173,7 @@ class SimulationParameters:
         self.n_participants = 1
         self.repetition_numbers = args.repetition
         self.agent_space_gen = args.agent_model
-        self.tau_space_gen = args.tau_value
+        self.tau_gen_space = args.tau_value
         self.participant_numbers = args.participant
         return self
 
@@ -197,7 +198,7 @@ class Timer:
     def start(self):
         self.start_of_block = time.time()
         print(f"Starting simulation for agent {self.agent_model}, "
-              f"participant {self.participant} "
+              f"participant {self.participant}, "
               f"repetition no. {self.this_repetition} with "
               f"tau: {self.tau_gen}")
         return self
@@ -223,7 +224,8 @@ class Simulator:
         self.task_configs = task_configs
         self.bayesian_comps = bayesian_comps
 
-    def create_interacting_objects(self, this_block, current_tau_of_interest):
+    def create_interacting_objects(self, this_block, current_tau_of_interest,
+                                   current_lambda_of_interest):
         """Create beh_model objects that interact in each trial
 
         Parameters
@@ -233,7 +235,8 @@ class Simulator:
         """
         self.task = Task(self.task_configs)
         self.task.start_new_block(this_block)
-        self.agent = Agent(self.sim_params.current_agent_attributes, self.task)
+        self.agent = Agent(self.sim_params.current_agent_attributes, self.task,
+                           current_lambda_of_interest)
         if self.sim_params.current_agent_attributes.is_bayesian:
             self.agent.add_bayesian_model_components(self.bayesian_comps)
         self.beh_model = BehavioralModel(current_tau_of_interest)
@@ -270,8 +273,9 @@ class Simulator:
         for block in range(self.task_configs.params.n_blocks):
             timer = Timer(self.sim_params, block).start()
             recorder.create_rec_df_one_block()
-            self.create_interacting_objects(block, 
-                                            self.sim_params.current_tau_gen)
+            self.create_interacting_objects(block,
+                                            self.sim_params.current_tau_gen,
+                                            self.sim_params.current_lambda_gen)
 
             for round_ in range(self.task_configs.params.n_rounds):
                 recorder.create_rec_arrays_thisround()
@@ -299,12 +303,13 @@ class Simulator:
                               self.sim_params.current_agent_attributes.name)
         self.data = recorder.sim_data
 
-    def sim_interaction_to_eval_llh(self, tau) -> float:
-        """Simulate trialwise interactions between agent and task to evaluate 
-        the llh function value for a given tau and given data as sum over all 
+    def sim_to_eval_llh(self, tau, lambda_) -> float:
+        """Simulate trialwise interactions between agent and task to evaluate
+        the llh function value for a given tau and given data as sum over all
         trials
         """
         self.sim_params.current_tau_analyze = tau
+        self.sim_params.current_lambda_analyze = lambda_
 
         # TODO: alle sim und task parameters aus Datensatz lesen?
         llhs_all_blocks = np.full(
@@ -312,7 +317,8 @@ class Simulator:
 
         for block in range(self.task_configs.params.n_blocks):
             self.create_interacting_objects(
-                block, self.sim_params.current_tau_analyze)
+                block, self.sim_params.current_tau_analyze,
+                self.sim_params.current_lambda_analyze)
             llhs_all_rounds = np.full(
                 (self.task_configs.params.n_rounds, 1), np.nan)
 
@@ -321,11 +327,10 @@ class Simulator:
                 llhs_all_trials = np.full(
                     (self.task_configs.params.n_trials, 1), np.nan)
 
-                # TODO: hier weiter: data embedden
                 data_this_round = self.data[(
                             self.data.block == block + 1) & (
                             self.data.round_ == round_ + 1)]
-                
+
                 self.task.start_new_round(block, round_)
                 self.agent.start_new_round(round_)
 
@@ -336,7 +341,7 @@ class Simulator:
 
                     self.simulate_trial_start(trial)
 
-                    # TODO: this is a part of simulate_trial_interaction() 
+                    # TODO: this is a part of simulate_trial_interaction()
                     # Find more elegant way
                     # ----------------------------------
                     # Let agent evaluate valence function.
@@ -367,7 +372,6 @@ class Simulator:
                         break
 
                     llhs_all_trials[trial] = self.beh_model.log_likelihood
-
                 llhs_all_rounds[round_] = np.nansum(llhs_all_trials)
             llhs_all_blocks[block] = np.nansum(llhs_all_rounds)
 

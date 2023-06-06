@@ -24,8 +24,8 @@ export LC_NUMERIC="en_US.UTF-8"
 declare -a agent_models=(C2 C3 A1 A2 A3)
 #declare -a agent_models=(A2 A3)
 n_repetitions=1
-tau_resolution_step=0.5
-n_participants=50
+tau_resolution_step=0.4
+n_participants=5
 
 # Iterate over repetitions
 for repetition in $(seq 1 ${n_repetition}); do
@@ -37,7 +37,7 @@ for repetition in $(seq 1 ${n_repetition}); do
             for tau_value in $(seq .5 ${tau_resolution_step} 2.0); do
 
             # Iterate over participants
-                for participant in $(seq 1 ${n_participants}); do
+                for participant in $(seq 0 ${n_participants}); do
 
                     # Create a job for each subject file
                     printf "arguments = --parallel_computing --repetition ${repetition} --agent_model ${agent_model} --tau_value ${tau_value} --participant ${participant}\n"

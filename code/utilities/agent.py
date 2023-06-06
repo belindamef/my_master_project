@@ -1,5 +1,5 @@
-import numpy as np
 import copy as cp
+import numpy as np
 
 
 class Agent:
@@ -96,12 +96,13 @@ class Agent:
 
     """
 
-    def __init__(self, agent_attributes, task_object):
+    def __init__(self, agent_attributes, task_object, lambda_of_interest):
         self.agent = agent_attributes.name
         self.is_bayesian = agent_attributes.is_bayesian
         self.is_explorative = agent_attributes.is_explorative
         self.task = task_object
         self.beh_model = None
+        self.lambda_ = lambda_of_interest
 
         # Initialize dynamic agent attributes
         self.c = np.nan  # hunting round counter
@@ -169,16 +170,13 @@ class Agent:
         #     marg_s4_perm_b[s4_perm] = self.p_s_giv_o[:, s4_perm].sum()
 
         marg_s4_perm_b = self.p_s_giv_o.sum(axis=0)
-        sum_prob_s4_perm = marg_s4_perm_b[:].sum()
-
-
+        # sum_prob_s4_perm = marg_s4_perm_b[:].sum()
 
         for s3 in range(self.task.n_nodes):
-            self.prior_c[s3, self.s4_perm_node_indices[s3]] = \
-                marg_s4_perm_b[self.s4_perm_node_indices[s3]] \
-                * (1 / self.task.n_hides)
+            self.prior_c[s3, self.s4_perm_node_indices[s3]] = marg_s4_perm_b[
+                self.s4_perm_node_indices[s3]] * (1 / self.task.n_hides)
 
-        # TODO: uncomment for DEBUGGING
+        # uncomment for DEBUGGING
         # # Evaluate marginal treasure distribution
         # marg_s3_b = np.full(self.task.n_nodes, np.nan)
         # for s3 in range(self.task.n_nodes):
@@ -249,7 +247,7 @@ class Agent:
         if self.is_bayesian and self.c > 0:
             self.eval_prior_subs_rounds()
 
-        # TODO: uncomment for debugg
+        # Uncomment for debugg
         # # Marginal prior distributions
         # if self.is_bayesian:
         #     if self.c == 0:
@@ -414,8 +412,8 @@ class Agent:
         else:
             # start = time.time()
             # diffs = np.where(p_x != q_x)
-            kl_mask = np.sum(p_x * np.ma.masked_invalid(np.log(p_x / q_x)))
-            # TODO: fix RuntimeWarning
+            with np.errstate(divide="ignore", invalid="ignore"):
+                kl_mask = np.sum(p_x * np.ma.masked_invalid(np.log(p_x / q_x)))
             # end = time.time()
             # print(f'Using ma.masked all_in_one: {end - start}')
 
@@ -440,7 +438,7 @@ class Agent:
             if action != 0:
                 action = 1
 
-            self.virt_b[a] = {0: 0.}  # , 1: 0., 2: 0., 3: 0.}  # TODO: solved?
+            self.virt_b[a] = {0: 0.}
 
             # Identify possible observations
             self.identify_o_giv_s2_marg_s3(new_s1, action)
@@ -492,9 +490,9 @@ class Agent:
             self.v[:] = 0
 
             # Iterate over possible actions (i.e. state-dependent actions)
-            for index, action in np.ndenumerate(self.a_s1):
+            for index, action_i in np.ndenumerate(self.a_s1):
                 # Anticipate new possible new position
-                new_s1 = self.task.s1_t + action
+                new_s1 = self.task.s1_t + action_i
 
                 for close_max_s3_node in self.closest_max_s3_b_nodes:
                     current_dist_to_max_belief = self.task.shortest_dist_dic[
@@ -520,11 +518,11 @@ class Agent:
         if self.agent == 'A2':
 
             # Iterate over possible actions (i.e. state-dependent actions)
-            for a, action in np.ndenumerate(self.a_s1):
-                self.v[a] = self.p_o_giv_o[a, 0] * self.kl_giv_a_o[a, 0] + \
-                            self.p_o_giv_o[a, 1] * self.kl_giv_a_o[a, 1] + \
-                            self.p_o_giv_o[a, 2] * self.kl_giv_a_o[a, 2] + \
-                            self.p_o_giv_o[a, 3] * self.kl_giv_a_o[a, 3]
+            for i, action_i in np.ndenumerate(self.a_s1):
+                self.v[i] = self.p_o_giv_o[i, 0] * self.kl_giv_a_o[i, 0] + \
+                            self.p_o_giv_o[i, 1] * self.kl_giv_a_o[i, 1] + \
+                            self.p_o_giv_o[i, 2] * self.kl_giv_a_o[i, 2] + \
+                            self.p_o_giv_o[i, 3] * self.kl_giv_a_o[i, 3]
 
             # Let agent stop drilling, if node is not black or if last round
             if self.c == (self.task.task_configs.params.n_rounds - 1):
@@ -538,9 +536,9 @@ class Agent:
             self.v[:] = 0
 
             # Iterate over possible actions (i.e. state-dependent actions)
-            for a, action in np.ndenumerate(self.a_s1):
+            for i, action_i in np.ndenumerate(self.a_s1):
                 # Anticipate new possible new position
-                new_s1 = self.task.s1_t + action
+                new_s1 = self.task.s1_t + action_i
 
                 for close_max_s3_node in self.closest_max_s3_b_nodes:
                     current_dist_to_max_belief = self.task.shortest_dist_dic[
@@ -550,18 +548,20 @@ class Agent:
                             f'{int(new_s1)}_to_{close_max_s3_node}']
                     if self.moves >= new_dist_to_closest_max_beliefs \
                             < current_dist_to_max_belief:
-                        self.v[a] += self.marg_s3_b[close_max_s3_node]
+                        self.v[i] += self.lambda_ * self.marg_s3_b[
+                            close_max_s3_node]
 
             # Add information value
-            for a, action in np.ndenumerate(self.a_s1):
+            for i, action_i in np.ndenumerate(self.a_s1):
                 # Move to next loop, if a == 0, i.e. i == 0,
                 # because p_o[0] is already filled
                 # if action == 0:
                 #     continue
-                self.v[a] += self.p_o_giv_o[a][0] * self.kl_giv_a_o[a][0] + \
-                             self.p_o_giv_o[a][1] * self.kl_giv_a_o[a][1] + \
-                             self.p_o_giv_o[a][2] * self.kl_giv_a_o[a][2] + \
-                             self.p_o_giv_o[a][3] * self.kl_giv_a_o[a][3]
+                self.v[i] += (1 - self.lambda_) * (
+                    self.p_o_giv_o[i][0] * self.kl_giv_a_o[i][0] +
+                    self.p_o_giv_o[i][1] * self.kl_giv_a_o[i][1] +
+                    self.p_o_giv_o[i][2] * self.kl_giv_a_o[i][2] +
+                    self.p_o_giv_o[i][3] * self.kl_giv_a_o[i][3])
 
             # Let agent stop drilling, if node is not black or if last round
             if self.c == (self.task.task_configs.params.n_rounds - 1):

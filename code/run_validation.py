@@ -43,7 +43,21 @@ def define_simulation_parameters() -> SimulationParameters:
     sim_parameters = SimulationParameters()
     if arguments.parallel_computing:
         sim_parameters.get_params_from_args(arguments)
+    else:  # Define parameters for local tests
+        sim_parameters.agent_space_gen = ["A3"]
+        sim_parameters.tau_gen_space = np.linspace(0.1, 2., 5)
+        sim_parameters.tau_gen_space_if_fixed = [0.1]
+        sim_parameters.lambda_gen_space = np.linspace(0.1, 0.9, 5)
+        sim_parameters.n_participants = 10
     return sim_parameters
+
+
+def define_lambda_gen_space(agent_model: str, tau_gen: float):
+    if (agent_model == "A3" and
+            tau_gen in sim_params.tau_gen_space_if_fixed):
+        pass
+    else:
+        sim_params.lambda_gen_space = [np.nan]
 
 
 def main():
@@ -58,9 +72,10 @@ def main():
     simulator.sim_params = sim_params  # link sim_params to simulation instance
 
     task_configs.params.n_blocks = 1  # TODO: for testing only
+    # task_configs.params.n_rounds = 1
+    # task_configs.params.n_trials = 1
 
     for repetition in sim_params.repetition_numbers:
-
         sim_params.current_rep = repetition + 1
 
         mle_recorder = {
@@ -71,24 +86,25 @@ def main():
         for agent_model in sim_params.agent_space_gen:
             sim_params.current_agent_attributes = AgentInitObject(
                 agent_model).def_attributes()
-            mle_recorder["agent"].extend(
-                [agent_model for tau in sim_params.tau_space_gen])
-            
-            # Define lambda generating parameter space
-            if agent_model == "A3":
-                sim
 
-            for tau_gen in sim_params.tau_space_gen:
+            for tau_gen in sim_params.tau_gen_space:
                 sim_params.current_tau_gen = tau_gen
-                mle_recorder["tau_gen"].extend(
-                    [tau_gen for part in sim_params.participant_numbers]
-                    )
 
-                for lambda_gen in sim_params.lambda_space_gen:
+                define_lambda_gen_space(agent_model, tau_gen)
+
+                for lambda_gen in sim_params.lambda_gen_space:
+
                     sim_params.current_lambda_gen = lambda_gen
                     mle_recorder["lambda_gen"].extend(
                         [lambda_gen for part in sim_params.participant_numbers]
                     )
+
+                    mle_recorder["agent"].extend(
+                        [agent_model for part in sim_params.participant_numbers
+                         ])
+                    mle_recorder["tau_gen"].extend(
+                        [tau_gen for part in sim_params.participant_numbers]
+                        )
 
                     for participant in sim_params.participant_numbers:
                         sim_params.current_part = participant + 1
@@ -96,43 +112,45 @@ def main():
 
                         simulator.simulate_beh_data()
 
-                        estimator = ParameterEstimator(
+                        estimator = ParameterEstimator()
+
+                        estimator.instantiate_sim_obj(
                             exp_data=simulator.data,
                             task_configs=task_configs,
                             bayesian_comps=bayesian_comps
                             )
-                        
+
                         # Embed simulation parameters in simulation object
                         estimator.sim_object.sim_params = sim_params
-
-                        # Embedd simulated data in estimation object
-                        estimator.sim_object.data = simulator.data
 
                         # Estimate tau
                         mle_tau_estimate = estimator.estimate_tau(
                             method="brute_force")
                         mle_recorder["tau_mle"].append(mle_tau_estimate)
-                        # mle_recorder["mle"].append(estimator.brute_force_est())
 
                         # Estimate lambda, if appliclabe
-                        if agent_model == "A3":
+                        if np.isnan(lambda_gen):
+                            mle_recorder["lambda_mle"].append(np.nan)
+                        else:
                             mle_lambda_estimate = estimator.estimate_lambda(
                                 method="brute_force"
                             )
                             mle_recorder["lambda_mle"].append(
                                 mle_lambda_estimate)
 
-        mle_group_av_df = pd.DataFrame(mle_recorder)
-        out_fn = dir_mgr.define_out_single_val_filename(
-                repetition,
-                agent_model,
-                tau_gen,
-                lambda_gen,
-                participant)
+                        out_fn = dir_mgr.define_out_single_val_filename(
+                                repetition,
+                                agent_model,
+                                tau_gen,
+                                lambda_gen,
+                                participant)
 
-        with open(f"{out_fn}.tsv", "w", encoding="utf8") as tsv_file:
-            tsv_file.write(mle_group_av_df.to_csv(sep="\t", na_rep=np.NaN,
-                                                  index=False))
+                        mle_df = pd.DataFrame(mle_recorder)
+
+                        with open(f"{out_fn}.tsv", "w",
+                                  encoding="utf8") as tsv_file:
+                            tsv_file.write(mle_df.to_csv(
+                                sep="\t", na_rep=np.NaN, index=False))
 
 
 if __name__ == "__main__":
@@ -140,7 +158,7 @@ if __name__ == "__main__":
     arguments = get_arguments()
     sim_params = define_simulation_parameters()
     sim_params.task_config_label = "exp_msc"
-    sim_params.out_dir_label = "tests"
+    sim_params.out_dir_label = "tests_local"
     main()
     end = time.time()
     print(f"Total time for beh_model validation: "
