@@ -34,7 +34,7 @@ for repetition in $(seq 1 ${n_repetition}); do
     for agent_model in ${agent_models[@]}; do
 
         # Iterate over data generating tau parameter values
-            for tau_value in $(seq .5 ${tau_resolution_step} 2.0); do
+            for tau_value in $(seq .1 ${tau_resolution_step} 2.0); do
 
             # Iterate over participants
                 for participant in $(seq 0 ${n_participants}); do

@@ -6,6 +6,7 @@ import os
 import copy as cp
 import numpy as np
 import pandas as pd
+from datetime import datetime
 
 
 def get_user_yes_no(question):
@@ -92,7 +93,8 @@ class DirectoryManager:
                     print('Validation output directory with this name already '
                           'exists.')
         else:
-            dir_name = out_dir_label
+            time_stamp = datetime.now().strftime("%y%m%d%H%M%S")
+            dir_name = f"{out_dir_label}_{time_stamp}"
             self.paths.this_val_out_dir = os.path.join(
                 self.paths.val_out, dir_name)
             if not os.path.exists(self.paths.this_val_out_dir):

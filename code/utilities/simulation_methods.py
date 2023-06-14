@@ -144,8 +144,9 @@ class Recorder:
         self.sim_data = pd.concat([self.sim_data, self.sim_data_this_block],
                                   ignore_index=True)
 
-    def wrap_up_data(self, tau, agent_model):
+    def wrap_up_data(self, tau, lambda_, agent_model):
         """Finalize data set by adding columns for agent and tau parameter"""
+        self.sim_data.insert(0, "lambda", lambda_)
         self.sim_data.insert(0, "tau", tau)
         self.sim_data.insert(0, "agent", agent_model)
 
@@ -156,17 +157,15 @@ class SimulationParameters:
     n_participants: int = 1
     repetition_numbers = range(n_repetitions)
     agent_space_gen = ["C1", "C2", "C3", "A1", "A2", "A3"]
-    tau_gen_space = np.linspace(0.1, 2., 9)
+    tau_gen_space = np.linspace(0.1, 2., 2)
     tau_gen_space_if_fixed = [0.1]
-    lambda_gen_space = np.linspace(0.1, 0.9, 9)
+    lambda_gen_space = np.linspace(0.1, 0.9, 5)
     participant_numbers = range(n_participants)
     current_rep: int = None
     current_agent_attributes: object = None
     current_tau_gen: float = None
     current_lambda_gen: float = None
     current_part: int = None
-    current_tau_analyze: float = None
-    current_lambda_analyze: float = None
 
     def get_params_from_args(self, args):
         self.n_repetitions = 1
@@ -300,16 +299,16 @@ class Simulator:
             recorder.append_this_block_to_simdata_df(block)
             timer.end()
         recorder.wrap_up_data(self.sim_params.current_tau_gen,
+                              self.sim_params.current_lambda_gen,
                               self.sim_params.current_agent_attributes.name)
         self.data = recorder.sim_data
 
-    def sim_to_eval_llh(self, tau, lambda_) -> float:
+    def sim_to_eval_llh(self, current_tau_analyze,
+                        current_lambda_analyze) -> float:
         """Simulate trialwise interactions between agent and task to evaluate
-        the llh function value for a given tau and given data as sum over all
-        trials
+        the llh function value for a given tau and lambda and given data,
+        as sum over all trials
         """
-        self.sim_params.current_tau_analyze = tau
-        self.sim_params.current_lambda_analyze = lambda_
 
         # TODO: alle sim und task parameters aus Datensatz lesen?
         llhs_all_blocks = np.full(
@@ -317,8 +316,7 @@ class Simulator:
 
         for block in range(self.task_configs.params.n_blocks):
             self.create_interacting_objects(
-                block, self.sim_params.current_tau_analyze,
-                self.sim_params.current_lambda_analyze)
+                block, current_tau_analyze, current_lambda_analyze)
             llhs_all_rounds = np.full(
                 (self.task_configs.params.n_rounds, 1), np.nan)
 

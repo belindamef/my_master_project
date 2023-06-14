@@ -11,7 +11,7 @@ import argparse
 from utilities.config import DirectoryManager, TaskConfigurator
 from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.modelling import AgentInitObject, BayesianModelComps
-from utilities.estimation_methods import ParameterEstimator
+from utilities.estimation_methods import ParameterEstimator, EstimationParams
 import numpy as np
 import pandas as pd
 
@@ -43,7 +43,7 @@ def define_simulation_parameters() -> SimulationParameters:
     sim_parameters = SimulationParameters()
     if arguments.parallel_computing:
         sim_parameters.get_params_from_args(arguments)
-    else:  # Define parameters for local tests
+    else:  # Define parameters for local tests, i.e. not parallel computing
         sim_parameters.agent_space_gen = ["A3"]
         sim_parameters.tau_gen_space = np.linspace(0.1, 2., 5)
         sim_parameters.tau_gen_space_if_fixed = [0.1]
@@ -52,36 +52,37 @@ def define_simulation_parameters() -> SimulationParameters:
     return sim_parameters
 
 
+def define_estimation_parameters() -> EstimationParams:
+    estimation_params = EstimationParams()
+    return estimation_params
+
+
 def define_lambda_gen_space(agent_model: str, tau_gen: float):
     if (agent_model == "A3" and
             tau_gen in sim_params.tau_gen_space_if_fixed):
-        pass
+        sim_params.lambda_gen_space = [0.1, 0.5, 0.9]
     else:
         sim_params.lambda_gen_space = [np.nan]
 
 
 def main():
     dir_mgr = DirectoryManager()
-    dir_mgr.create_val_out_dir(out_dir_label=sim_params.out_dir_label)
+    dir_mgr.create_val_out_dir(out_dir_label=OUT_DIR_LABEL)
     task_configs = TaskConfigurator(dir_mgr.paths).get_config(
         config_label=sim_params.task_config_label)
     bayesian_comps = BayesianModelComps(task_configs.params).get_comps()
     simulator = Simulator(task_configs=task_configs,
                           bayesian_comps=bayesian_comps)
 
-    simulator.sim_params = sim_params  # link sim_params to simulation instance
+    simulator.sim_params = sim_params  # link sim_params to simulator instance
 
     task_configs.params.n_blocks = 1  # TODO: for testing only
-    # task_configs.params.n_rounds = 1
-    # task_configs.params.n_trials = 1
+    task_configs.params.n_rounds = 2
+    task_configs.params.n_trials = 2
 
     for repetition in sim_params.repetition_numbers:
         sim_params.current_rep = repetition + 1
 
-        mle_recorder = {
-            "agent": [], "participant": [],
-            "tau_gen": [], "tau_mle": [],
-            "lambda_gen": [], "lambda_mle": []}
 
         for agent_model in sim_params.agent_space_gen:
             sim_params.current_agent_attributes = AgentInitObject(
@@ -93,6 +94,10 @@ def main():
                 define_lambda_gen_space(agent_model, tau_gen)
 
                 for lambda_gen in sim_params.lambda_gen_space:
+                    mle_recorder = {
+                        "agent": [], "participant": [],
+                        "tau_gen": [], "tau_mle": [],
+                        "lambda_gen": [], "lambda_mle": []}
 
                     sim_params.current_lambda_gen = lambda_gen
                     mle_recorder["lambda_gen"].extend(
@@ -120,10 +125,15 @@ def main():
                             bayesian_comps=bayesian_comps
                             )
 
-                        # Embed simulation parameters in simulation object
+                        # Embed simulation params in estimator sim object
                         estimator.sim_object.sim_params = sim_params
+                        # TODO: leave this or change, ask Dirk
+                        estimator.est_params.current_lambda_analyze = \
+                            sim_params.current_lambda_gen
 
                         # Estimate tau
+                        print("Starting brute-force estimation for tau",
+                              f"tau_gen: {tau_gen}")
                         mle_tau_estimate = estimator.estimate_tau(
                             method="brute_force")
                         mle_recorder["tau_mle"].append(mle_tau_estimate)
@@ -158,7 +168,8 @@ if __name__ == "__main__":
     arguments = get_arguments()
     sim_params = define_simulation_parameters()
     sim_params.task_config_label = "exp_msc"
-    sim_params.out_dir_label = "tests_local"
+    OUT_DIR_LABEL = "tests"
+    est_params = define_estimation_parameters()
     main()
     end = time.time()
     print(f"Total time for beh_model validation: "
