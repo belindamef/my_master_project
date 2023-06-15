@@ -9,7 +9,6 @@ from utilities.simulation_methods import Simulator
 
 
 class EstimationParams:
-
     tau_bf_cand_space = np.arange(0.1, 2., 0.4)
     lambda_bf_cand_space = np.linspace(0.1, 0.9, 5)
     current_tau_analyze: float = None

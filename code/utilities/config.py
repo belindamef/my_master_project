@@ -23,6 +23,11 @@ def get_user_yes_no(question):
         print("Please enter valid inputs")
         print(error)
         return get_user_yes_no(question)
+    
+
+def extract_number(f):
+    s = re.findall("\d+$",f)
+    return (int(s[0]) if s else -1, f)
 
 
 @dataclass
@@ -79,7 +84,7 @@ class DirectoryManager:
                 self.paths.sim_data, dir_name)
             os.makedirs(self.paths.this_sim_out_dir)
 
-    def create_val_out_dir(self, out_dir_label=None):
+    def create_val_out_dir(self, out_dir_label=None, version=1):
         if not out_dir_label:
             while True:
                 try:
@@ -93,10 +98,17 @@ class DirectoryManager:
                     print('Validation output directory with this name already '
                           'exists.')
         else:
-            time_stamp = datetime.now().strftime("%y%m%d%H%M%S")
-            dir_name = f"{out_dir_label}_{time_stamp}"
+            #time_stamp = datetime.now().strftime("%y%m%d%H%M%S")
+            #dir_name = f"{out_dir_label}_1"
+            # VERSION_NUMBER = 1
+            # while os.path.exists(os.path.join(
+            #         self.paths.val_out, f"{out_dir_label}_{VERSION_NUMBER}")):
+            #     VERSION_NUMBER += 1
+            # self.paths.this_val_out_dir = os.path.join(
+            #     self.paths.val_out, f"{out_dir_label}_{VERSION_NUMBER}")
+
             self.paths.this_val_out_dir = os.path.join(
-                self.paths.val_out, dir_name)
+                self.paths.val_out, f"{out_dir_label}_{version}")
             if not os.path.exists(self.paths.this_val_out_dir):
                 os.makedirs(self.paths.this_val_out_dir)
 

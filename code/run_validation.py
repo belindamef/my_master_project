@@ -62,12 +62,12 @@ def define_lambda_gen_space(agent_model: str, tau_gen: float):
             tau_gen in sim_params.tau_gen_space_if_fixed):
         sim_params.lambda_gen_space = [0.1, 0.5, 0.9]
     else:
-        sim_params.lambda_gen_space = [np.nan]
+        sim_params.lambda_gen_space = [0.5]
 
 
 def main():
     dir_mgr = DirectoryManager()
-    dir_mgr.create_val_out_dir(out_dir_label=OUT_DIR_LABEL)
+    dir_mgr.create_val_out_dir(out_dir_label=OUT_DIR_LABEL, version=VERSION_NO)
     task_configs = TaskConfigurator(dir_mgr.paths).get_config(
         config_label=sim_params.task_config_label)
     bayesian_comps = BayesianModelComps(task_configs.params).get_comps()
@@ -82,7 +82,6 @@ def main():
 
     for repetition in sim_params.repetition_numbers:
         sim_params.current_rep = repetition + 1
-
 
         for agent_model in sim_params.agent_space_gen:
             sim_params.current_agent_attributes = AgentInitObject(
@@ -169,6 +168,7 @@ if __name__ == "__main__":
     sim_params = define_simulation_parameters()
     sim_params.task_config_label = "exp_msc"
     OUT_DIR_LABEL = "tests"
+    VERSION_NO = 1
     est_params = define_estimation_parameters()
     main()
     end = time.time()

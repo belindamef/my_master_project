@@ -36,7 +36,7 @@ mle_df = pd.concat(
 agent_models = mle_df.agent.unique().tolist()
 agent_models.sort()
 mle_group_averages = mle_df.groupby(
-    ["agent", "tau_gen", "lambda_gen"])[["tau_mle", "lambda_mle"]].agg(
+    ["agent", "tau_gen"])[["tau_mle", "lambda_mle"]].agg(
         ["mean", "std"])
 
 # # Load data
@@ -58,7 +58,9 @@ agent_colors = col_A + col_C  # Specify agent colors
 # ------Trial-by-trial/round-wise average choice rates------------------
 
 # Select group averages for fixed lambda to 0.5
-mle_group_averages_fixed_lambda = mle_group_averages.loc[:, :, 0.5]
+# TODO: Choose to either select it here or during data generation
+# mle_group_averages_fixed_lambda = mle_group_averages.loc[:, :, 0.5]
+mle_group_averages_fixed_lambda = mle_group_averages
 
 for i, gen_model in enumerate(agent_models):
     ax[i] = plt.subplot(gs[0, (i*2):(i*2+2)])
@@ -68,7 +70,7 @@ for i, gen_model in enumerate(agent_models):
     e = mle_group_averages_fixed_lambda.loc[gen_model]["tau_mle"]["std"].values
     ax[i].errorbar(x, y, alpha=0.7, markersize=4, color=agent_colors[i+1],
                    fmt='o', linestyle=None, clip_on=False,
-                   label=f"{gen_model}", yerr=e)
+                   label=f"{gen_model}, lambda = 0.5", yerr=e)
     ax[i].legend(loc='upper right')
     very_plotter.config_axes(ax[i], y_label="tau_est", x_label="tau_gen",
                              xticks=np.linspace(0.25, 2, 10),
@@ -77,7 +79,11 @@ for i, gen_model in enumerate(agent_models):
 
 
 # Select group averages for fixed tau to 0.1
-mle_group_averages_fixed_tau = mle_group_averages.loc[:, 0.1, :]
+mle_group_averages_diff_lambda = mle_df.groupby(
+    ["agent", "tau_gen", "lambda_gen"])[["tau_mle", "lambda_mle"]].agg(
+        ["mean", "std"])  # TODO: dirty naming
+
+mle_group_averages_fixed_tau = mle_group_averages_diff_lambda.loc[:, 0.1, :]  # TODO: dirty naming
 
 if "A3" in agent_models:
     tau_values = mle_group_averages.loc["A3"].index.unique(
@@ -90,11 +96,11 @@ if "A3" in agent_models:
     taus_for_plt = tau_values[idx]
 
     for i, tau_i in enumerate(tau_values):
-        ax[i] = plt.subplot(gs[0, i])
-        x = mle_df.lambda_gen.unique().tolist()
+        ax[i] = plt.subplot(gs[1, i*2:(i*2+2)])
+        x = mle_group_averages_diff_lambda.loc["A3", tau_i, :].index.values.tolist()  # TODO: more elegant way!
         # x.sort()
-        y = mle_group_averages.loc["A3"]["lambda_mle"]["mean"].values
-        e = mle_group_averages.loc["A3"]["lambda_mle"]["std"].values
+        y = mle_group_averages_diff_lambda.loc["A3", tau_i]["lambda_mle"]["mean"].values
+        e = mle_group_averages_diff_lambda.loc["A3", tau_i]["lambda_mle"]["std"].values
         ax[i].errorbar(x, y, alpha=0.7, markersize=4, color=agent_colors[i+1],
                        fmt='o', linestyle=None, clip_on=False,
                        label=f"A3, tau = {tau_i}", yerr=e)
