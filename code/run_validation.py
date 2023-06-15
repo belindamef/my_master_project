@@ -60,7 +60,7 @@ def define_estimation_parameters() -> EstimationParams:
 def define_lambda_gen_space(agent_model: str, tau_gen: float):
     if (agent_model == "A3" and
             tau_gen in sim_params.tau_gen_space_if_fixed):
-        sim_params.lambda_gen_space = [0.1, 0.5, 0.9]
+        sim_params.lambda_gen_space = np.linspace(0.1, 0.9, 5)
     else:
         sim_params.lambda_gen_space = [0.5]
 
@@ -77,8 +77,8 @@ def main():
     simulator.sim_params = sim_params  # link sim_params to simulator instance
 
     task_configs.params.n_blocks = 1  # TODO: for testing only
-    task_configs.params.n_rounds = 2
-    task_configs.params.n_trials = 2
+    # task_configs.params.n_rounds = 2
+    # task_configs.params.n_trials = 2
 
     for repetition in sim_params.repetition_numbers:
         sim_params.current_rep = repetition + 1
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     sim_params = define_simulation_parameters()
     sim_params.task_config_label = "exp_msc"
     OUT_DIR_LABEL = "tests"
-    VERSION_NO = 1
+    VERSION_NO = 2
     est_params = define_estimation_parameters()
     main()
     end = time.time()

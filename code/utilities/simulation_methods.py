@@ -158,7 +158,7 @@ class SimulationParameters:
     repetition_numbers = range(n_repetitions)
     agent_space_gen = ["C1", "C2", "C3", "A1", "A2", "A3"]
     tau_gen_space = np.linspace(0.1, 2., 2)
-    tau_gen_space_if_fixed = [0.1]
+    tau_gen_space_if_fixed = np.arange(0.1, 2., 0.4)
     lambda_gen_space = np.linspace(0.1, 0.9, 5)
     participant_numbers = range(n_participants)
     current_rep: int = None
