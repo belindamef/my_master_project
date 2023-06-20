@@ -34,17 +34,28 @@ for repetition in $(seq 1 ${n_repetition}); do
     for agent_model in ${agent_models[@]}; do
 
         # Iterate over data generating tau parameter values
-            for tau_value in $(seq .1 ${tau_resolution_step} 2.0); do
+        for tau_value in $(seq .1 ${tau_resolution_step} 2.0); do
 
-            # Iterate over participants
+            # Define lambda space
+            if [ ${agent_model} = A3 ]; then
+                lambda_gen_space=$(seq 0.1 0.2 0.9)
+            else
+                lambda_gen_space=(0.5)
+            fi
+
+            # Iterate over data generating lambda parameter values
+            for lambda_value in ${lambda_gen_space}; do
+
+                # Iterate over participants
                 for participant in $(seq 0 ${n_participants}); do
 
                     # Create a job for each subject file
-                    printf "arguments = --parallel_computing --repetition ${repetition} --agent_model ${agent_model} --tau_value ${tau_value} --participant ${participant}\n"
-                    printf "log       = ${logs_dir}/\$(Cluster).\$(Process)_rep-${repetition}_sub-${agent_model}_tau-${tau_value}_p-${participant}.log\n"
-                    printf "output    = ${logs_dir}/\$(Cluster).\$(Process)_rep-${repetition}_sub-${agent_model}_tau-${tau_value}_p-${participant}.out\n"
-                    printf "error     = ${logs_dir}/\$(Cluster).\$(Process)_rep-${repetition}_sub-${agent_model}_tau-${tau_value}_p-${participant}.err\n"
+                    printf "arguments = --parallel_computing --repetition ${repetition} --agent_model ${agent_model} --tau_value ${tau_value} --lambda_value ${lambda_value} --participant ${participant}\n"
+                    printf "log       = ${logs_dir}/\$(Cluster).\$(Process)_rep-${repetition}_sub-${agent_model}_tau-${tau_value}_lambda-${lambda_value}_p-${participant}.log\n"
+                    printf "output    = ${logs_dir}/\$(Cluster).\$(Process)_rep-${repetition}_sub-${agent_model}_tau-${tau_value}_lambda-${lambda_value}_p-${participant}.out\n"
+                    printf "error     = ${logs_dir}/\$(Cluster).\$(Process)_rep-${repetition}_sub-${agent_model}_tau-${tau_value}_lambda-${lambda_value}_p-${participant}.err\n"
                     printf "Queue\n\n"
+                done
             done
         done
     done

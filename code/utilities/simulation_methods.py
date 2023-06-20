@@ -173,6 +173,7 @@ class SimulationParameters:
         self.repetition_numbers = args.repetition
         self.agent_space_gen = args.agent_model
         self.tau_gen_space = args.tau_value
+        self.lambda_gen_space = args.lambda_value
         self.participant_numbers = args.participant
         return self
 

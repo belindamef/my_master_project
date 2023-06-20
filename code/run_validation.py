@@ -34,6 +34,7 @@ def get_arguments():
     parser.add_argument('--repetition', type=int, nargs='+')
     parser.add_argument('--agent_model', type=str, nargs='+')
     parser.add_argument('--tau_value', type=float, nargs='+')
+    parser.add_argument('--lambda_value', type=float, nargs='+')
     parser.add_argument('--participant', type=int, nargs='+')
     args = parser.parse_args()
     return args
@@ -90,7 +91,7 @@ def main():
             for tau_gen in sim_params.tau_gen_space:
                 sim_params.current_tau_gen = tau_gen
 
-                define_lambda_gen_space(agent_model, tau_gen)
+                # define_lambda_gen_space(agent_model, tau_gen)
 
                 for lambda_gen in sim_params.lambda_gen_space:
                     mle_recorder = {
