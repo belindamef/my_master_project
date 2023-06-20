@@ -59,8 +59,8 @@ def define_estimation_parameters() -> EstimationParams:
 
 
 def define_lambda_gen_space(agent_model: str, tau_gen: float):
-    if (agent_model == "A3" and
-            tau_gen in sim_params.tau_gen_space_if_fixed):
+    if (agent_model == "A3"):  # and
+        # tau_gen in sim_params.tau_gen_space_if_fixed):
         sim_params.lambda_gen_space = np.linspace(0.1, 0.9, 5)
     else:
         sim_params.lambda_gen_space = [0.5]
