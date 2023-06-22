@@ -55,11 +55,8 @@ class Validator:
 
         mle_df = pd.DataFrame(self.data_dic)
 
-        with open(f"{out_fn}.tsv", "w",
-                    encoding="utf8") as tsv_file:
-            tsv_file.write(mle_df.to_csv(
-                sep="\t", na_rep=np.NaN, index=False))
-
+        with open(f"{out_fn}.tsv", "w", encoding="utf8") as tsv_file:
+            tsv_file.write(mle_df.to_csv(sep="\t", na_rep=np.NaN, index=False))
 
     def iterate_participants(self):
         for participant in self.sim_params.participant_numbers:
@@ -79,7 +76,7 @@ class Validator:
             estimator.sim_object.sim_params = self.sim_params
 
             print("Starting brute-force estimation for tau",
-                    f"tau_gen: {self.sim_params.current_tau_gen}")
+                  f"tau_gen: {self.sim_params.current_tau_gen}")
 
             mle_tau_estimate = estimator.estimate_tau(method="brute_force")
             self.record_tau_estimate(mle_tau_estimate)
@@ -120,5 +117,5 @@ class Validator:
             self.sim_params.current_rep = repetition + 1
             self.iterate_data_generating_agent_model_space()
 
-    def start_simulation_and_estimation_routine(self):
+    def run_simulation_and_estimation_routine(self):
         self.iterate_repetitions()

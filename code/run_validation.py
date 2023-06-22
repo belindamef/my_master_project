@@ -4,7 +4,6 @@ This script evaluates and visualizes beh_model recovery simulations.
 Author: Belinda Fleischmann
 """
 
-import os.path
 import time
 import argparse
 from utilities.config import DirectoryManager, TaskConfigurator
@@ -44,7 +43,7 @@ def define_simulation_parameters() -> SimulationParameters:
     return sim_parameters
 
 
-def decrease_total_trial_numbers(task_configuration_object: object):
+def adjust_total_trial_numbers(task_configuration_object: object):
     task_configuration_object.params.n_blocks = TEST_N_BLOCKS
     task_configuration_object.params.n_rounds = TEST_N_ROUNDS
     task_configuration_object.params.n_trials = TEST_N_TRIALS
@@ -60,12 +59,11 @@ def main():
     sim_params = define_simulation_parameters()
     simulator = Simulator(task_config, bayesian_comps, sim_params)
 
-    if QUICK_TEST:
-        decrease_total_trial_numbers(task_config)
+    if IS_QUICK_TEST:
+        adjust_total_trial_numbers(task_config)
 
     validator = Validator(sim_params, simulator, dir_mgr)
-
-    validator.start_simulation_and_estimation_routine()
+    validator.run_simulation_and_estimation_routine()
 
 
 if __name__ == "__main__":
@@ -73,13 +71,13 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     TASK_CONFIG_LABEL = "exp_msc"
-    OUT_DIR_LABEL = "tests_Test"
+    OUT_DIR_LABEL = "test_new_val_struct"
     VERSION_NO = "1"
 
-    QUICK_TEST = True
+    IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1
-    TEST_N_ROUNDS = 2
-    TEST_N_TRIALS = 4
+    TEST_N_ROUNDS = 10
+    TEST_N_TRIALS = 12
 
     main()
     end = time.time()
