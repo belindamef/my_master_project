@@ -11,7 +11,7 @@ import utilities.config as config
 
 
 def extract_number(f):
-    s = re.findall("\d+$",f)
+    s = re.findall("\d+$", f)
     return (int(s[0]) if s else -1, f)
 
 
@@ -23,7 +23,7 @@ def find_most_recent_data_dir(val_results_paths: str) -> str:
 
 # Specify directories and filenames
 paths = config.Paths()
-fig_fn = os.path.join(paths.figures, 'figure_tau_recov_test_new.png')
+fig_fn = os.path.join(paths.figures, 'figure_param_recov_test.png')
 
 
 data_dir = find_most_recent_data_dir(paths.val_out)
@@ -49,7 +49,7 @@ mle_group_averages = mle_df.groupby(
 
 # Initialize figure
 plt, col_exp, col_A, col_C = very_plotter.get_fig_template(plt)
-fig = plt.figure(figsize=(20, 12))
+fig = plt.figure(figsize=(25, 10))
 gs = gridspec.GridSpec(2, 10)
 ax = {}
 SHAPE_SIZE = 14
@@ -107,9 +107,9 @@ if "A3" in agent_models:
         ax[i].legend(loc='upper right')
         very_plotter.config_axes(ax[i], y_label="lambda_est",
                                  x_label="lambda_gen",
-                                 xticks=np.linspace(0.1, 0.9, 9),
-                                 yticks=np.round(np.linspace(0.1, 0.9, 9), 1))
-        ax[i].set_xticklabels(np.round(np.linspace(0.1, 0.9, 9), 1),
+                                 xticks=np.linspace(0.1, 1, 10),
+                                 yticks=np.round(np.linspace(0.1, 1, 10), 1))
+        ax[i].set_xticklabels(np.round(np.linspace(0.1, 1, 10), 1),
                               fontsize=10)
 
 # Print subject level descriptive figure

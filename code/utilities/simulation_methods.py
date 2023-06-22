@@ -155,27 +155,33 @@ class SimulationParameters:
 
     n_repetitions: int = 1
     n_participants: int = 1
-    repetition_numbers = range(n_repetitions)
+    repetitions = range(n_repetitions)
     agent_space_gen = ["C1", "C2", "C3", "A1", "A2", "A3"]
-    tau_gen_space = np.linspace(0.1, 2., 2)
-    tau_gen_space_if_fixed = np.arange(0.1, 2., 0.4)
+    tau_space_gen = np.linspace(0.1, 2., 2)
+    tau_gen_space_if_fixed = np.arange(0.1, 2., 0.4)  # TODO: only for plots?
     lambda_gen_space = np.linspace(0.1, 0.9, 5)
     participant_numbers = range(n_participants)
     current_rep: int = None
     current_agent_attributes: object = None
+    current_agent_model: str = None
     current_tau_gen: float = None
     current_lambda_gen: float = None
     current_part: int = None
 
     def get_params_from_args(self, args):
-        self.n_repetitions = 1
-        self.n_participants = 1
-        self.repetition_numbers = args.repetition
+        self.repetitions = args.repetition
         self.agent_space_gen = args.agent_model
-        self.tau_gen_space = args.tau_value
+        self.tau_space_gen = args.tau_value
         self.lambda_gen_space = args.lambda_value
         self.participant_numbers = args.participant
         return self
+
+    def define_lambda_gen_space(self):
+        if self.current_agent_attributes.name == "A3":  # and
+            # tau_gen in sim_params.tau_gen_space_if_fixed):
+            self.lambda_gen_space = np.linspace(0.1, 0.9, 5)
+        else:
+            self.lambda_gen_space = [0.5]
 
 
 class Timer:
@@ -212,17 +218,17 @@ class Timer:
 
 
 class Simulator:
-    sim_params: SimulationParameters = SimulationParameters()
 
     agent: Agent = None
     task: Task = None
     beh_model: BehavioralModel = None
-
     data: pd.DataFrame = None
 
-    def __init__(self, task_configs, bayesian_comps):
+    def __init__(self, task_configs, bayesian_comps,
+                 sim_params=SimulationParameters()):
         self.task_configs = task_configs
         self.bayesian_comps = bayesian_comps
+        self.sim_params = sim_params
 
     def create_interacting_objects(self, this_block, current_tau_of_interest,
                                    current_lambda_of_interest):

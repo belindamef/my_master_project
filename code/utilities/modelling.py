@@ -17,6 +17,7 @@ class AgentInitObject:
 
     def __init__(self, agent_model):
         self.name = agent_model
+        self.def_attributes()
 
     def def_attributes(self):
         """Define agent attributes dependent on beh_model

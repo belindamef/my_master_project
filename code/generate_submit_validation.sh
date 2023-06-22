@@ -22,10 +22,10 @@ export LC_NUMERIC="en_US.UTF-8"
 
 # Define simulation parameter spaces
 declare -a agent_models=(C2 C3 A1 A2 A3)
-#declare -a agent_models=(A2 A3)
+#declare -a agent_models=(A3)
 n_repetitions=1
 tau_resolution_step=0.4
-n_participants=5
+n_participants=2
 
 # Iterate over repetitions
 for repetition in $(seq 1 ${n_repetition}); do

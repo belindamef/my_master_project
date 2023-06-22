@@ -357,7 +357,7 @@ class TaskConfigurator:
             self.states[item] = np.load(
                 os.path.join(self.paths.this_config, f'{item}.npy'))
 
-    def get_config(self, config_label):
+    def get_config(self, config_label:str):
         """Create or load task configuration according to user input"""
 
         new_config_is_needed = False
