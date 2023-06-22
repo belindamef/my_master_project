@@ -1,12 +1,13 @@
+"""This script plots figure 1"""
+
+import os
+import glob
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import pandas as pd
-import os
-import glob
-import utilities.very_plotter as very_plotter
+import from utilities.very_plotter as very_plotter
 
-"""This script plots figure 1"""
 
 # Get task configuration
 exp_label = str(input("Enter exp_label (e.g. 'exp_msc' or 'test'): "))

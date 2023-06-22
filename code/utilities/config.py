@@ -23,7 +23,7 @@ def get_user_yes_no(question):
         print("Please enter valid inputs")
         print(error)
         return get_user_yes_no(question)
-    
+
 
 def extract_number(f):
     s = re.findall("\d+$",f)
