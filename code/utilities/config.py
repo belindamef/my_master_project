@@ -43,14 +43,17 @@ class Paths:
     project = os.path.dirname(code)
     task_configs = os.path.join(code, "task_config")  # all configurations
     data = os.path.join(project, "data")
+    exp_data: str = None
     figures = os.path.join(project, "figures")
     sim_data = os.path.join(data, "rawdata", "sim")
     exp_data = os.path.join(data, "rawdata", "exp")
     results = os.path.join(project, "results")
+    descr_stats = os.path.join(results, 'descr_stats')
     val_out = os.path.join(results, "validation")
     this_config: str = None  # the particular config used in this simulation
     sub_dir: str = None
-    this_sim_out_dir: str = None
+    this_sim_rawdata_dir: str = None
+    this_exp_rawdata_dir: str = None
     this_val_out_dir: str = None
     beh_out_filename: str = None
 
@@ -61,23 +64,46 @@ class DirectoryManager:
     paths = Paths()
     sub_id: str
 
-    def create_beh_data_out_dir(self, out_dir_label=None):
-        if not out_dir_label:
-            while True:
-                try:
-                    sim_name = input("Enter label for data output directory: ")
-                    self.paths.this_sim_out_dir = os.path.join(
-                        self.paths.sim_data, sim_name)
-                    os.makedirs(self.paths.this_sim_out_dir)
-                    break
-                except FileExistsError:
-                    print('Simulation output directory with this name already '
-                          'exists.')
+    def create_raw_beh_data_out_dir(self, data_type: str,
+                                    out_dir_label:str=None,
+                                    make_dir:bool=True,):
+        """
+        Create paths variable for output directoy containing behavioral data
+
+        Parameters
+        ----------
+        is_simulation: bool
+          if True, creates path variable with "sim" as parent directory
+        make_dir: bool
+          if False, creates path variable (str) only without creating physical
+          directory
+        """
+
+        if data_type == "sim":
+            data_directory = self.paths.sim_data
         else:
-            dir_name = out_dir_label
-            self.paths.this_sim_out_dir = os.path.join(
-                self.paths.sim_data, dir_name)
-            os.makedirs(self.paths.this_sim_out_dir)
+            data_directory = self.paths.exp_data
+
+        while not out_dir_label:
+            out_dir_label = input(
+                "Enter label for raw behav. data output directory: ")
+            if os.path.exists(os.path.join(data_directory, out_dir_label)):
+                print("A directory with this name already exists. "
+                      "Please choose a different name.")
+                out_dir_label = None
+
+        out_data_path = os.path.join(data_directory, out_dir_label)
+
+        if make_dir:
+            if not os.path.exists(out_data_path):
+                os.makedirs(out_data_path)
+            else:
+                print('Output directory with this name alreadyexists.')
+
+        if data_type == "sim":
+            self.paths.this_sim_rawdata_dir = out_data_path
+        else:
+            self.paths.this_exp_rawdata_dir = out_data_path
 
     def create_val_out_dir(self, out_dir_label=None, version=1):
         if not out_dir_label:
@@ -93,21 +119,12 @@ class DirectoryManager:
                     print('Validation output directory with this name already '
                           'exists.')
         else:
-            #time_stamp = datetime.now().strftime("%y%m%d%H%M%S")
-            #dir_name = f"{out_dir_label}_1"
-            # VERSION_NUMBER = 1
-            # while os.path.exists(os.path.join(
-            #         self.paths.val_out, f"{out_dir_label}_{VERSION_NUMBER}")):
-            #     VERSION_NUMBER += 1
-            # self.paths.this_val_out_dir = os.path.join(
-            #     self.paths.val_out, f"{out_dir_label}_{VERSION_NUMBER}")
-
             self.paths.this_val_out_dir = os.path.join(
                 self.paths.val_out, f"{out_dir_label}_{version}")
             if not os.path.exists(self.paths.this_val_out_dir):
                 os.makedirs(self.paths.this_val_out_dir)
 
-    def create_sub_id(self, sim_params):
+    def create_agent_sub_id(self, sim_params):
         """Create id for this subject. More than one subject id per agent
         possible if >1 repetition per agent
 
@@ -115,22 +132,16 @@ class DirectoryManager:
         ----------
         sim_obj: Simulator
         """
-        if np.isnan(sim_params.current_tau_gen):  # if no tau defined
-            self.sub_id = f"{sim_params.agent_attr.name}" \
-                          f"-{sim_params.this_part}_" \
-                          f"{sim_params.this_rep + 1}"
-        else:
-            tau_index = np.where(
-                sim_params.taus_analize == sim_params.tau_gen)[0][0]
-            self.sub_id = f"{sim_params.agent_attr.name}" \
-                          f"-{sim_params.this_part}_" \
-                          f"{sim_params.this_rep  + 1}_{tau_index}"
+        self.sub_id = f"{sim_params.current_agent_attributes.name}_" \
+                        f"rep-{sim_params.current_rep}_" \
+                        f"part-{sim_params.current_part}"
+
 
     def define_and_make_sub_beh_out_dir(self):
         """Define paths to subject specific output directory and make
         directory if not existent"""
         self.paths.sub_dir = os.path.join(
-            self.paths.this_sim_out_dir, f"sub-{self.sub_id}", "beh")
+            self.paths.this_sim_rawdata_dir, f"sub-{self.sub_id}", "beh")
         if not os.path.exists(self.paths.sub_dir):
             os.makedirs(self.paths.sub_dir)
 
@@ -156,11 +167,11 @@ class DirectoryManager:
         return filename
 
     def prepare_beh_output(self, sim_params):
-        self.create_sub_id(sim_params)
+        self.create_agent_sub_id(sim_params)
         self.define_and_make_sub_beh_out_dir()
         self.define_beh_out_filename()
 
-    def save_data_to_tsv(self, data):
+    def save_data_to_tsv(self, data, current_tau_gen=None):
         """Safe dataframe to a .tsv file
 
         Parameters
@@ -168,6 +179,9 @@ class DirectoryManager:
         data: pd.Dataframe
             dataframe containting simulated behavioral data
         """
+        if current_tau_gen is not None:
+            self.paths.beh_out_filename = f"{self.paths.beh_out_filename}_" \
+                                          f"tau-{current_tau_gen}"
         with open(f"{self.paths.beh_out_filename}.tsv", "w",
                   encoding="utf8") as tsv_file:
             tsv_file.write(data.to_csv(sep="\t", na_rep=np.NaN, index=False))
@@ -352,7 +366,7 @@ class TaskConfigurator:
             self.states[item] = np.load(
                 os.path.join(self.paths.this_config, f'{item}.npy'))
 
-    def get_config(self, config_label:str):
+    def get_config(self, config_label: str):
         """Create or load task configuration according to user input"""
 
         new_config_is_needed = False

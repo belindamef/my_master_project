@@ -70,7 +70,7 @@ class Data:
     def map_action_types(self):
         """Rename action with verbose expressions and group into action
         types """
-        self.events_df['action_v'] = self.events_df['a'].replace(
+        self.events_df['action_v'] = self.events_df['action'].replace(
             [0, -self.dim, 1, self.dim, -1, 999],
             ['drill', 'up', 'right', 'down', 'left', 'esc'])
         self.events_df['action_type'] = self.events_df[
