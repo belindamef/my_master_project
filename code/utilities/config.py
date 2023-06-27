@@ -51,11 +51,11 @@ class Paths:
     descr_stats = os.path.join(results, 'descr_stats')
     val_out = os.path.join(results, "validation")
     this_config: str = None  # the particular config used in this simulation
-    sub_dir: str = None
+    this_sub_dir: str = None
     this_sim_rawdata_dir: str = None
     this_exp_rawdata_dir: str = None
     this_val_out_dir: str = None
-    beh_out_filename: str = None
+    this_sub_beh_out_filename: str = None
 
 
 class DirectoryManager:
@@ -140,14 +140,14 @@ class DirectoryManager:
     def define_and_make_sub_beh_out_dir(self):
         """Define paths to subject specific output directory and make
         directory if not existent"""
-        self.paths.sub_dir = os.path.join(
+        self.paths.this_sub_dir = os.path.join(
             self.paths.this_sim_rawdata_dir, f"sub-{self.sub_id}", "beh")
-        if not os.path.exists(self.paths.sub_dir):
-            os.makedirs(self.paths.sub_dir)
+        if not os.path.exists(self.paths.this_sub_dir):
+            os.makedirs(self.paths.this_sub_dir)
 
     def define_beh_out_filename(self):
-        self.paths.beh_out_filename = os.path.join(
-            self.paths.sub_dir,
+        self.paths.this_sub_beh_out_filename = os.path.join(
+            self.paths.this_sub_dir,
             f"sub-{self.sub_id}_task-th_beh")
 
     def define_out_single_val_filename(self, rep, agent, tau, lambda_, part):
@@ -180,9 +180,9 @@ class DirectoryManager:
             dataframe containting simulated behavioral data
         """
         if current_tau_gen is not None:
-            self.paths.beh_out_filename = f"{self.paths.beh_out_filename}_" \
+            self.paths.this_sub_beh_out_filename = f"{self.paths.this_sub_beh_out_filename}_" \
                                           f"tau-{current_tau_gen}"
-        with open(f"{self.paths.beh_out_filename}.tsv", "w",
+        with open(f"{self.paths.this_sub_beh_out_filename}.tsv", "w",
                   encoding="utf8") as tsv_file:
             tsv_file.write(data.to_csv(sep="\t", na_rep=np.NaN, index=False))
 
