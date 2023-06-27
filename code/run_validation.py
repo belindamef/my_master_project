@@ -56,7 +56,7 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     TASK_CONFIG_LABEL = "exp_msc"
-    OUT_DIR_LABEL = "test_new_val_struct"
+    OUT_DIR_LABEL = "delete"
     VERSION_NO = "1"
 
     IS_QUICK_TEST = True
