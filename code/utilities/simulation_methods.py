@@ -146,8 +146,8 @@ class Recorder:
 
     def wrap_up_data(self, tau, lambda_, agent_model):
         """Finalize data set by adding columns for agent and tau parameter"""
-        self.sim_data.insert(0, "lambda", lambda_)
-        self.sim_data.insert(0, "tau", tau)
+        self.sim_data.insert(0, "lambda_gen", lambda_)
+        self.sim_data.insert(0, "tau_gen", tau)
         self.sim_data.insert(0, "agent", agent_model)
 
 

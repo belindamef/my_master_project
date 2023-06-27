@@ -19,7 +19,7 @@ def get_fig_template(plt):
 
     # plt default parameters
     rcParams = {
-        'text.usetex': 'False',
+        'text.usetex': 'True',
         'axes.spines.top': 'False',
         'axes.spines.right': 'False',
         'yaxis.labellocation': 'bottom'

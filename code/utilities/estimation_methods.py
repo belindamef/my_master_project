@@ -118,6 +118,6 @@ class ParameterEstimator:
         print("Starting brute-force estimation")
         #tau_candidate_space = 
 
-    def estimate_parameters(self, method:str):
+    def estimate_parameters(self, method: str):
         if method == "brute_force":
             self.eval_brute_force_estimates()

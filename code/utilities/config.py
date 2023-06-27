@@ -3,10 +3,10 @@ that are shared across scripts."""
 
 from dataclasses import dataclass
 import os
+import argparse
 import copy as cp
 import numpy as np
 import pandas as pd
-from datetime import datetime
 
 
 def get_user_yes_no(question):
@@ -23,11 +23,6 @@ def get_user_yes_no(question):
         print("Please enter valid inputs")
         print(error)
         return get_user_yes_no(question)
-
-
-def extract_number(f):
-    s = re.findall("\d+$",f)
-    return (int(s[0]) if s else -1, f)
 
 
 @dataclass
@@ -372,3 +367,17 @@ class TaskConfigurator:
                 self.states.values())[0].shape[0]
 
         return self
+
+
+def get_arguments():
+    """Get arguments from environment, if script is executed from command line
+    or with a bash jobwrapper."""
+    parser = argparse.ArgumentParser(description='Run model validation.')
+    parser.add_argument('--parallel_computing', action="store_true")
+    parser.add_argument('--repetition', type=int, nargs='+')
+    parser.add_argument('--agent_model', type=str, nargs='+')
+    parser.add_argument('--tau_value', type=float, nargs='+')
+    parser.add_argument('--lambda_value', type=float, nargs='+')
+    parser.add_argument('--participant', type=int, nargs='+')
+    args = parser.parse_args()
+    return args

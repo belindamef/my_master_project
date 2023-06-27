@@ -1,7 +1,7 @@
-import numpy as np
 import copy as cp
 import os
 import json
+import numpy as np
 from .config import Paths
 
 

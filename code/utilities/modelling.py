@@ -344,7 +344,7 @@ class BehavioralModel:
     def return_action(self):
         """This function returns the action value given agent's decision."""
         # probability action given decision of 1
-        if self.tau is None:
+        if self.tau is (None or 0):
             self.a_t = cp.deepcopy(self.agent.d)
 
         else:
