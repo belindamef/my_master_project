@@ -88,7 +88,7 @@ class Counts:
                 if block_df['action_v'].mask(
                         block_df['action_v'] == 'esc', np.nan).count() > 0:
                     # Evaluate No of started blocks (excl. 999, i.e. 'escape')
-                    self.counts_df['n_val_rounds'] += self.events_df['round'][
+                    self.counts_df['n_val_rounds'] += self.events_df['round_'][
                         block_df['action_v'].mask(
                             self.events_df[
                                 'action_v'] == 'esc',
@@ -109,9 +109,9 @@ class Counts:
         self.counts_df = pd.concat([self.counts_df, n_tr_b_df], axis=1)
 
         # ------Count treasures roundwise ------(regardless of block)
-        count_tr_roundwise = self.events_df.groupby(['round'])['r'].sum()
+        count_tr_roundwise = self.events_df.groupby(['round_'])['r'].sum()
         cols = []
-        for round_, round_df in self.events_df.groupby(['round']):
+        for round_, round_df in self.events_df.groupby(['round_']):
             cols.append(f'n_tr_r{round_}')
         n_tr_r_df = pd.DataFrame([count_tr_roundwise.values], columns=cols)
         self.counts_df = pd.concat([self.counts_df, n_tr_r_df], axis=1)
@@ -165,7 +165,7 @@ class Counts:
                     np.nanmean(block_df['action_type_num'])]
 
                 # Count drills roundwise
-                for round_, round_df in block_df.groupby(['round']):
+                for round_, round_df in block_df.groupby(['round_']):
                     action_v_counts_per_br = round_df[
                         'action_type'].value_counts()
                     if 'drill' in round_df['action_type'].values:
@@ -184,7 +184,7 @@ class Counts:
                     action_v_counts_per_b['step']]
 
                 # Count steps roundwise
-                for round_, round_df in block_df.groupby(['round']):
+                for round_, round_df in block_df.groupby(['round_']):
                     action_v_counts_per_br = round_df[
                         'action_type'].value_counts()
                     if 'step' in round_df['action_type'].values:
@@ -204,7 +204,7 @@ class Counts:
         p_drills_r_df = pd.DataFrame()
         p_steps_r_df = pd.DataFrame()
 
-        for round_, round_df in self.events_df.groupby(['round']):
+        for round_, round_df in self.events_df.groupby(['round_']):
             action_v_counts_per_r = round_df['action_type'].value_counts()
 
             # Count drills:
@@ -351,6 +351,7 @@ class DescrStats(Demographics, Counts, ConditionalFrequencies):
             Demographics.__init__(self, part_fn)
         Counts.__init__(self, events_df)
         ConditionalFrequencies.__init__(self, events_df)
+        self.this_agents_events_df = events_df
 
     def perform_descr_stats(self):
         """Create one participant row with descriptive statistics"""
@@ -359,6 +360,8 @@ class DescrStats(Demographics, Counts, ConditionalFrequencies):
         stats_df['sub_id'] = self.subject
         if self.dataset == 'sim':
             stats_df['agent'] = self.agent
+            stats_df['tau_gen'] = self.this_agents_events_df.iloc[0]["tau_gen"]
+            stats_df['lambda_gen'] = self.this_agents_events_df.iloc[0]["lambda_gen"]
 
         # Evaluate demographics
         if self.dataset == 'exp' and self.subject == 'whole_sample':
@@ -395,7 +398,7 @@ class GroupStats(DescrStats):
             n_action_valid = trial_df['action_v'].mask(
                 trial_df['action_v'] == 'esc', np.nan).count()
             t_wise_counts_df.at[trial - 1, 'trial'] = trial
-            t_wise_counts_df.at[trial - 1, 'round'] = 1 + np.floor(
+            t_wise_counts_df.at[trial - 1, 'round_'] = 1 + np.floor(
                 (trial - 1) / 12)
             if 'step' in trial_df['action_type'].values:
                 t_wise_counts_df.at[
@@ -444,7 +447,7 @@ class GroupStats(DescrStats):
             dic[int(col[col.find('n_drills_r') + 10:])] = self.descr_df[
                 col].to_numpy()
             this_r_stats_df = pd.DataFrame(index=range(1))
-            this_r_stats_df['round'] = int(col[col.find('n_drills_r') + 10:])
+            this_r_stats_df['round_'] = int(col[col.find('n_drills_r') + 10:])
             this_r_stats_df['drills_mean'] = np.mean(self.descr_df[col])
             this_r_stats_df['drills_sdt'] = np.std(self.descr_df[col])
             this_r_stats_df['drills_sem'] = (this_r_stats_df.loc[

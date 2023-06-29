@@ -38,24 +38,41 @@ class Paths:
     sim_data: str
         path to directory to store data generated in data simulations
     """
+    # General directories
     utils = os.path.dirname(os.path.abspath(__file__))
     code = os.path.dirname(utils)
     project = os.path.dirname(code)
     task_configs = os.path.join(code, "task_config")  # all configurations
     data = os.path.join(project, "data")
-    exp_data: str = None
     figures = os.path.join(project, "figures")
-    sim_data = os.path.join(data, "rawdata", "sim")
-    exp_data = os.path.join(data, "rawdata", "exp")
+    sim_rawdata = os.path.join(data, "rawdata", "sim")
+    exp_rawdata = os.path.join(data, "rawdata", "exp")
     results = os.path.join(project, "results")
     descr_stats = os.path.join(results, 'descr_stats')
     val_out = os.path.join(results, "validation")
     this_config: str = None  # the particular config used in this simulation
-    this_sub_dir: str = None
-    this_sim_rawdata_dir: str = None
+
+    # Raw behavioral data or estimation results directories
     this_exp_rawdata_dir: str = None
+    this_sim_rawdata_dir: str = None
     this_val_out_dir: str = None
+
+    # Subject-specific directories
+    this_sub_dir: str = None
     this_sub_beh_out_filename: str = None
+
+    # Processed data and descriptive stats directories
+    this_analyses_raw_data_path: str = None
+    this_analyses_proc_data_path: str = None
+    this_analyses_descr_stats_path: str = None
+
+    # Filenames
+    part_fn: str = None
+    events_all_subs_fn: str = None
+    subj_lvl_descr_stats_fn: str = None
+    grp_lvl_descr_stats_fn: str = None
+    t_wise_stats_fn: str = None
+    r_wise_stats_fn: str = None
 
 
 class DirectoryManager:
@@ -64,25 +81,25 @@ class DirectoryManager:
     paths = Paths()
     sub_id: str
 
-    def create_raw_beh_data_out_dir(self, data_type: str,
-                                    out_dir_label:str=None,
-                                    make_dir:bool=True,):
+    def define_raw_beh_data_out_path(self, data_type: str,
+                                     out_dir_label: str=None,
+                                     make_dir: bool=False,):
         """
-        Create paths variable for output directoy containing behavioral data
+        Create path variable for output directoy containing behavioral data
 
         Parameters
         ----------
-        is_simulation: bool
-          if True, creates path variable with "sim" as parent directory
+        data_type: str
+          "sim" or "exp"
         make_dir: bool
-          if False, creates path variable (str) only without creating physical
+          if True, creates physical directory 
           directory
         """
 
         if data_type == "sim":
-            data_directory = self.paths.sim_data
+            data_directory = self.paths.sim_rawdata
         else:
-            data_directory = self.paths.exp_data
+            data_directory = self.paths.exp_rawdata
 
         while not out_dir_label:
             out_dir_label = input(
@@ -92,18 +109,77 @@ class DirectoryManager:
                       "Please choose a different name.")
                 out_dir_label = None
 
-        out_data_path = os.path.join(data_directory, out_dir_label)
+        raw_data_path = os.path.join(data_directory, out_dir_label)
 
         if make_dir:
-            if not os.path.exists(out_data_path):
-                os.makedirs(out_data_path)
+            if not os.path.exists(raw_data_path):
+                os.makedirs(raw_data_path)
             else:
                 print('Output directory with this name alreadyexists.')
 
         if data_type == "sim":
-            self.paths.this_sim_rawdata_dir = out_data_path
+            self.paths.this_analyses_raw_data_path = raw_data_path
+            self.paths.this_sim_rawdata_dir = raw_data_path
         else:
-            self.paths.this_exp_rawdata_dir = out_data_path
+            self.paths.this_analyses_raw_data_path = raw_data_path
+
+    def define_processed_data_path(self, data_type: str,
+                                   dir_label: str,
+                                   make_dir: bool = False):
+        """Define path variable for directory containing processed behavioral
+        data
+        
+        Parameters
+        ----------
+        data_type: str
+          "sim" or "exp"
+        make_dir: bool
+          if True, creates physical directory 
+          directory"""
+        self.paths.this_analyses_proc_data_path = os.path.join(
+            self.paths.data, 'processed_data', f'{data_type}', f'{dir_label}')
+        if make_dir:
+            if not os.path.exists(self.paths.this_analyses_proc_data_path):
+                os.makedirs(self.paths.this_analyses_proc_data_path)
+
+    def define_descr_stats_path(self, data_type: str,
+                                dir_label: str,
+                                make_dir: bool = False):
+        """Define path variable for directory containing descriptive stats
+        
+        Parameters
+        ----------
+        data_type: str
+          "sim" or "exp"
+        make_dir: bool
+          if True, creates physical directory
+          directory"""
+        self.paths.this_analyses_descr_stats_path = os.path.join(
+            self.paths.descr_stats, f'{data_type}', f'{dir_label}')
+        if make_dir:
+            if not os.path.exists(self.paths.this_analyses_descr_stats_path):
+                os.makedirs(self.paths.this_analyses_descr_stats_path)
+
+    def define_stats_filenames(self):
+        self.paths.part_fn = os.path.join(
+            self.paths.this_analyses_raw_data_path, "participants.tsv"
+            )
+        self.paths.events_all_subs_fn = os.path.join(
+            self.paths.this_analyses_proc_data_path,
+            "sub-all_task-th_run-all_beh"
+        )
+        self.paths.subj_lvl_descr_stats_fn = os.path.join(
+            self.paths.this_analyses_descr_stats_path, "descr_stats"
+        )
+        self.paths.grp_lvl_descr_stats_fn = os.path.join(
+            self.paths.this_analyses_descr_stats_path, "grp_lvl_stats"
+        )
+        self.paths.t_wise_stats_fn = os.path.join(
+            self.paths.this_analyses_descr_stats_path, "t_wise_stats"
+        )
+        self.paths.r_wise_stats_fn = os.path.join(
+            self.paths.this_analyses_descr_stats_path, "r_wise_stats"
+        )
 
     def create_val_out_dir(self, out_dir_label=None, version=1):
         if not out_dir_label:
@@ -112,7 +188,7 @@ class DirectoryManager:
                     dir_name = input(
                         "Enter label for validation output directory: ")
                     self.paths.this_val_out_dir = os.path.join(
-                        self.paths.sim_data, dir_name)
+                        self.paths.sim_rawdata, dir_name)
                     os.makedirs(self.paths.this_val_out_dir)
                     break
                 except FileExistsError:
@@ -133,9 +209,11 @@ class DirectoryManager:
         sim_obj: Simulator
         """
         self.sub_id = f"{sim_params.current_agent_attributes.name}_" \
-                        f"rep-{sim_params.current_rep}_" \
-                        f"part-{sim_params.current_part}"
-
+                      f"rep-{sim_params.current_rep}_" \
+                      f"tau-{int(round(sim_params.current_tau_gen * 1000, ndigits=4))}_" \
+                      f"lambda-{int(round(sim_params.current_lambda_gen * 1000, ndigits=4))}_" \
+                      f"part-{sim_params.current_part}"
+                        
 
     def define_and_make_sub_beh_out_dir(self):
         """Define paths to subject specific output directory and make
@@ -179,9 +257,6 @@ class DirectoryManager:
         data: pd.Dataframe
             dataframe containting simulated behavioral data
         """
-        if current_tau_gen is not None:
-            self.paths.this_sub_beh_out_filename = f"{self.paths.this_sub_beh_out_filename}_" \
-                                          f"tau-{current_tau_gen}"
         with open(f"{self.paths.this_sub_beh_out_filename}.tsv", "w",
                   encoding="utf8") as tsv_file:
             tsv_file.write(data.to_csv(sep="\t", na_rep=np.NaN, index=False))

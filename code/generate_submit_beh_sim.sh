@@ -2,7 +2,7 @@
 # v3.0
 
 timestamp=$(date +"%Y%m%d_%H%M")
-logs_dir=/home/data/treasure_hunt/logs/tests/model_recov_${timestamp}
+logs_dir=/home/data/treasure_hunt/logs/tests/beh_sim_${timestamp}
 # create the logs dir if it doesn't exist
 [ ! -d "$logs_dir" ] && mkdir -p "$logs_dir"
 
@@ -15,7 +15,7 @@ request_memory = 8G
 
 # Execution
 initial_dir    = /home/data/treasure_hunt/treasure-hunt/code
-executable     = /home/data/treasure_hunt/treasure-hunt/code/wrapper_script_validation.sh\n"
+executable     = /home/data/treasure_hunt/treasure-hunt/code/wrapper_script_beh_sim.sh\n"
 
 # Make sure floating numbers are comma seperated
 export LC_NUMERIC="en_US.UTF-8"
@@ -24,8 +24,8 @@ export LC_NUMERIC="en_US.UTF-8"
 declare -a agent_models=(C1 C2 C3 A1 A2 A3)
 #declare -a agent_models=(A3)
 n_repetitions=1
-tau_resolution_step=0.4
-n_participants=2
+tau_resolution_step=0.1
+n_participants=10
 
 # Iterate over repetitions
 for repetition in $(seq 1 ${n_repetition}); do

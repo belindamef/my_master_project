@@ -44,8 +44,9 @@ def adjust_total_trial_numbers(task_configuration_object: object):
 
 def main():
     dir_mgr = DirectoryManager()
-    dir_mgr.create_raw_beh_data_out_dir(data_type="sim",
-                                        out_dir_label=OUT_DIR_LABEL)
+    dir_mgr.define_raw_beh_data_out_path(data_type="sim",
+                                         out_dir_label=OUT_DIR_LABEL,
+                                         make_dir=True)
 
     task_config = TaskConfigurator(dir_mgr.paths).get_config(TASK_CONFIG_LABEL)
     bayesian_comps = BayesianModelComps(task_config.params).get_comps()
@@ -62,6 +63,7 @@ def main():
         for agent_model in sim_params.agent_space_gen:
             sim_params.current_agent_attributes = AgentInitObject(
                 agent_model).def_attributes()
+            sim_params.current_agent_model = agent_model
             # if not sim_params.current_agent_attributes.is_deterministic:
             #     n_participants = 50  # TODO: nochmal checken, ob brauchen!
 
@@ -90,8 +92,8 @@ if __name__ == "__main__":
 
     IS_QUICK_TEST = False
     TEST_N_BLOCKS = 1
-    TEST_N_ROUNDS = 2
-    TEST_N_TRIALS = 2
+    TEST_N_ROUNDS = 10
+    TEST_N_TRIALS = 12
 
     main()
 

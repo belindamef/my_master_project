@@ -46,7 +46,7 @@ class Data:
         self.events_df = self.events_df[self.events_df.trial != 13]
         n_trials = len(self.events_df)
         n_blocks = self.events_df['block'].iloc[-1]
-        n_rounds = self.events_df['round'].iloc[-1]
+        n_rounds = self.events_df['round_'].iloc[-1]
         n_trials_perround = self.events_df['trial'].iloc[-1]
         n_trials_perblock = n_rounds * n_trials_perround
         trial_col_index = self.events_df.columns.get_loc("trial")
@@ -70,7 +70,7 @@ class Data:
     def map_action_types(self):
         """Rename action with verbose expressions and group into action
         types """
-        self.events_df['action_v'] = self.events_df['action'].replace(
+        self.events_df['action_v'] = self.events_df['a'].replace(
             [0, -self.dim, 1, self.dim, -1, 999],
             ['drill', 'up', 'right', 'down', 'left', 'esc'])
         self.events_df['action_type'] = self.events_df[

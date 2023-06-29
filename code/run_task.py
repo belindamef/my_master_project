@@ -42,8 +42,8 @@ np.set_printoptions(linewidth=500)
 # raw_exp_data_dir = os.path.join(project_dir, 'data', 'rawdata', 'exp')
 
 paths = Paths()
-if not os.path.exists(paths.exp_data):  # create if non-existent
-    os.makedirs(paths.exp_data)
+if not os.path.exists(paths.exp_rawdata):  # create if non-existent
+    os.makedirs(paths.exp_rawdata)
 
 # Specify experimental parameter
 exp_blocks = 3  # No. of task blocks (each block has different tr location,
@@ -80,9 +80,9 @@ exp_label = input("Enter dataset name (msc/test/rm)\n"
                   "Corresponding task configuration will be loaded, " #TODO !
                   "if existing, \n"
                   "or new configuration will be created.")
-paths.data_this_exp= os.path.join(paths.exp_data, f'{exp_label}')  # main data
+paths.data_this_exp= os.path.join(paths.exp_rawdata, f'{exp_label}')  # main data
 # dir
-exp_data_ext_dir = os.path.join(paths.exp_data, f'{exp_label}_ext')
+exp_data_ext_dir = os.path.join(paths.exp_rawdata, f'{exp_label}_ext')
 if not os.path.exists(paths.data_this_exp):  # create if non-existent
     os.makedirs(paths.data_this_exp)
     print(f'Creating new data folder {paths.data_this_exp}')
