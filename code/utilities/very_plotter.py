@@ -73,15 +73,17 @@ def config_axes(ax, y_label=None, y_lim=None, title=None, x_label=None,
         ax.set_yticklabels(ytickslabels, fontsize=ticksize)
 
 
+
 def plot_bar(ax, x, height, colors, bar_width=0.6, errorbar_size=10,
-             yerr=None):
+             yerr=None, labels=None):
     """Plot bars with error bar if given"""
-    ax.bar(x=x, height=height, yerr=yerr,
-           width=bar_width,
-           color=colors, zorder=0,
-           clip_on=False,
-           error_kw=dict(ecolor='gray', lw=2, capsize=errorbar_size,
-                         capthick=0.9, elinewidth=0.9))
+    return ax.bar(x=x, height=height, yerr=yerr,
+                  width=bar_width,
+                  color=colors, zorder=0,
+                  clip_on=False,
+                  error_kw=dict(ecolor='gray', lw=2, capsize=errorbar_size,
+                                capthick=0.9, elinewidth=0.9),
+                  label=labels)
 
 
 def plot_bar_scatter(ax, data, color, bar_width):

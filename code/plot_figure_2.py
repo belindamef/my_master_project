@@ -15,7 +15,7 @@ paths = config.Paths()
 fig_fn = os.path.join(paths.figures, 'figure_2.png')
 
 # Load data
-data_fn = os.path.join(paths.sim_data, "test", "param_recovery.tsv" )
+data_fn = os.path.join(paths.sim_rawdata, "test", "param_recovery.tsv" )
 data = pd.read_csv(data_fn, sep="\t")
 
 # ----------------------------------------------------------

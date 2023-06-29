@@ -52,10 +52,10 @@ class DataLoader:
 
 def main():
     dir_mgr = DirectoryManager()
-    dir_mgr.create_raw_beh_data_out_dir(data_type="sim",
+    dir_mgr.define_raw_beh_data_out_path(data_type="sim",
                                         out_dir_label=EXP_LABEL,
                                         make_dir=False)
-    dir_mgr.create_raw_beh_data_out_dir(data_type="exp",
+    dir_mgr.define_raw_beh_data_out_path(data_type="exp",
                                         out_dir_label=EXP_LABEL,
                                         make_dir=False)
 
