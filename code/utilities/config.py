@@ -82,8 +82,8 @@ class DirectoryManager:
     sub_id: str
 
     def define_raw_beh_data_out_path(self, data_type: str,
-                                     out_dir_label: str=None,
-                                     make_dir: bool=False,):
+                                     out_dir_label: str = None,
+                                     make_dir: bool = False,):
         """
         Create path variable for output directoy containing behavioral data
 
@@ -92,7 +92,7 @@ class DirectoryManager:
         data_type: str
           "sim" or "exp"
         make_dir: bool
-          if True, creates physical directory 
+          if True, creates physical directory
           directory
         """
 
@@ -128,13 +128,13 @@ class DirectoryManager:
                                    make_dir: bool = False):
         """Define path variable for directory containing processed behavioral
         data
-        
+
         Parameters
         ----------
         data_type: str
           "sim" or "exp"
         make_dir: bool
-          if True, creates physical directory 
+          if True, creates physical directory
           directory"""
         self.paths.this_analyses_proc_data_path = os.path.join(
             self.paths.data, 'processed_data', f'{data_type}', f'{dir_label}')
@@ -146,7 +146,7 @@ class DirectoryManager:
                                 dir_label: str,
                                 make_dir: bool = False):
         """Define path variable for directory containing descriptive stats
-        
+
         Parameters
         ----------
         data_type: str
@@ -213,7 +213,6 @@ class DirectoryManager:
                       f"tau-{int(round(sim_params.current_tau_gen * 1000, ndigits=4))}_" \
                       f"lambda-{int(round(sim_params.current_lambda_gen * 1000, ndigits=4))}_" \
                       f"part-{sim_params.current_part}"
-                        
 
     def define_and_make_sub_beh_out_dir(self):
         """Define paths to subject specific output directory and make
@@ -249,7 +248,7 @@ class DirectoryManager:
         self.define_and_make_sub_beh_out_dir()
         self.define_beh_out_filename()
 
-    def save_data_to_tsv(self, data, current_tau_gen=None):
+    def save_data_to_tsv(self, data):
         """Safe dataframe to a .tsv file
 
         Parameters

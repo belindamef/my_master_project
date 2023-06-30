@@ -332,8 +332,8 @@ class BehavioralModel:
         """Evaluate conditional probability distribution of actions given the
         history of actions and observations and tau
         aka. likehood of this tau"""
-        self.p_a_giv_h = np.exp((1 / self.tau) * self.agent.v) / sum(
-            np.exp((1 / self.tau) * self.agent.v))
+        self.p_a_giv_h = np.exp((1 / self.tau) * self.agent.valence_t) / sum(
+            np.exp((1 / self.tau) * self.agent.valence_t))
 
     def eval_rvs(self):
         """eval action according to sample from multinomial distribution
@@ -345,7 +345,7 @@ class BehavioralModel:
         """This function returns the action value given agent's decision."""
         # probability action given decision of 1
         if self.tau is (None or 0):
-            self.a_t = cp.deepcopy(self.agent.d)
+            self.a_t = cp.deepcopy(self.agent.decision_t)
 
         else:
             self.eval_p_a_giv_tau()

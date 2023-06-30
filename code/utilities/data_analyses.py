@@ -361,7 +361,8 @@ class DescrStats(Demographics, Counts, ConditionalFrequencies):
         if self.dataset == 'sim':
             stats_df['agent'] = self.agent
             stats_df['tau_gen'] = self.this_agents_events_df.iloc[0]["tau_gen"]
-            stats_df['lambda_gen'] = self.this_agents_events_df.iloc[0]["lambda_gen"]
+            stats_df['lambda_gen'] = self.this_agents_events_df.iloc[0][
+                "lambda_gen"]
 
         # Evaluate demographics
         if self.dataset == 'exp' and self.subject == 'whole_sample':

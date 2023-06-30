@@ -105,15 +105,15 @@ class Agent:
         self.lambda_ = lambda_of_interest
 
         # Initialize dynamic agent attributes
-        self.c = np.nan  # hunting round counter
-        self.t = np.nan  # this_trial counter
+        self.current_round = np.nan  # hunting round counter
+        self.current_trial = np.nan  # this_trial counter
         self.moves = self.task.task_configs.params.n_trials
         self.a_s1 = np.nan  # state-dependent action-set
         self.o_s2 = np.nan  # state-dependent observation-set
 
         # Initialize arrays for agent's decision valences and decisionsn
-        self.v = np.full(5, np.nan)  # decision valences
-        self.d = np.full(1, np.nan)  # decision
+        self.valence_t = np.full(5, np.nan)  # decision valences
+        self.decision_t = np.full(1, np.nan)  # decision
 
         # Initialize belief state objects
         self.marg_s3_b = np.full(self.task.n_nodes, np.nan)
@@ -172,9 +172,9 @@ class Agent:
         marg_s4_perm_b = self.p_s_giv_o.sum(axis=0)
         # sum_prob_s4_perm = marg_s4_perm_b[:].sum()
 
-        for s3 in range(self.task.n_nodes):
-            self.prior_c[s3, self.s4_perm_node_indices[s3]] = marg_s4_perm_b[
-                self.s4_perm_node_indices[s3]] * (1 / self.task.n_hides)
+        for s_3 in range(self.task.n_nodes):
+            self.prior_c[s_3, self.s4_perm_node_indices[s_3]] = marg_s4_perm_b[
+                self.s4_perm_node_indices[s_3]] * (1 / self.task.n_hides)
 
         # uncomment for DEBUGGING
         # # Evaluate marginal treasure distribution
@@ -191,27 +191,29 @@ class Agent:
         # sum_prob_hides = marg_s4_b[:].sum()
         # debug = 'here'
 
-    def eval_posterior(self, prior_belief_state, a, s1, s2_s1, o,
+    def eval_posterior(self, prior_belief_state, action, s_1, s2_giv_s1, obs,
                        record_zerosum=False):
         """Evaluate posterior belief state given prior, action, s1 and
         observation"""
         # Convert action value to 1, if step action
-        if a != 0:
-            a = 1
+        if action != 0:
+            action = 1
 
-        if np.sum(prior_belief_state * self.lklh[a, s1, s2_s1, o, :, :]) == 0:
+        if np.sum(prior_belief_state * self.lklh[
+                action, s_1, s2_giv_s1, obs, :, :]) == 0:
             if record_zerosum:
                 self.zero_sum_denominator = 1
-            post_belief_state = (prior_belief_state
-                                 * self.lklh[a, s1, s2_s1, o, :, :])
+            post_belief_state = (
+                prior_belief_state
+                * self.lklh[action, s_1, s2_giv_s1, obs, :, :])
             print('zero_sum occurred')
             # debug = 'here'
         else:
-            post_belief_state = (prior_belief_state
-                                 * self.lklh[a, s1, s2_s1, o, :, :]
-                                 * (1 / np.sum(prior_belief_state
-                                               * self.lklh[
-                                                 a, s1, s2_s1, o, :, :])))
+            post_belief_state = (
+                prior_belief_state
+                * self.lklh[action, s_1, s2_giv_s1, obs, :, :]
+                * (1 / np.sum(prior_belief_state
+                              * self.lklh[action, s_1, s2_giv_s1, obs, :, :])))
 
         return post_belief_state
 
@@ -220,8 +222,8 @@ class Agent:
         treasure location or hiding spot"""
         # Evaluate marginal treasure distribution
         marg_s3_b = np.full(self.task.n_nodes, np.nan)
-        for s3 in range(self.task.n_nodes):
-            marg_s3_b[s3] = belief[s3, :].sum()
+        for s_3 in range(self.task.n_nodes):
+            marg_s3_b[s_3] = belief[s_3, :].sum()
 
         # Evaluate marginal hiding spot distribution
         marg_s4_b = np.full(self.task.n_nodes, np.nan)
@@ -234,17 +236,17 @@ class Agent:
     def start_new_trial(self, trial_number):
         """Reset dynamic states to initial values for a new trial"""
         self.moves -= 1
-        self.t = trial_number
-        self.v = np.full(5, np.nan)  # decision valences
-        self.d = np.full(1, np.nan)  # decision
+        self.current_trial = trial_number
+        self.valence_t = np.full(5, np.nan)  # decision valences
+        self.decision_t = np.full(1, np.nan)  # decision
         self.zero_sum_denominator = 0
 
     def start_new_round(self, round_number):
         """Reset dynamic states to initial values for a new round"""
         self.moves = cp.deepcopy(self.task.task_configs.params.n_trials)
-        self.c = round_number
+        self.current_round = round_number
         # Reset belief states if not first round, if bayesian agent
-        if self.is_bayesian and self.c > 0:
+        if self.is_bayesian and self.current_round > 0:
             self.eval_prior_subs_rounds()
 
         # Uncomment for debugg
@@ -260,14 +262,14 @@ class Agent:
     def update_belief_state(self):
         """Update belief state self"""
         if self.is_bayesian:
-            if self.c == 0 and self.t == 0:
+            if self.current_round == 0 and self.current_trial == 0:
                 self.p_s_giv_o = self.eval_posterior(self.prior_c0, 1,
                                                      self.task.s1_t,
                                                      self.task.s2_t[
                                                          self.task.s1_t],
                                                      self.task.o_t,
                                                      record_zerosum=True)
-            elif self.t == 0:
+            elif self.current_trial == 0:
                 self.p_s_giv_o = self.eval_posterior(self.prior_c, 1,
                                                      self.task.s1_t,
                                                      self.task.s2_t[
@@ -356,27 +358,27 @@ class Agent:
         # Evaluate p_0 with likelihood
         self.p_o_giv_o = np.full((len(self.a_s1), 4), 0.)
 
-        for i, a in np.ndenumerate(self.a_s1):
+        for i, action in np.ndenumerate(self.a_s1):
 
-            new_s1 = self.task.s1_t + a
+            new_s1 = self.task.s1_t + action
 
             # Convert action value to 1, if step action
-            if a != 0:
-                a = 1
+            if action != 0:
+                action = 1
 
             # Identify possible observations on new_s1
-            self.identify_o_giv_s2_marg_s3(new_s1, a)
+            self.identify_o_giv_s2_marg_s3(new_s1, action)
 
-            for o in self.o_s2:
+            for obs in self.o_s2:
                 product_a_o = (self.p_s_giv_o
-                               * self.lklh[a, new_s1,
+                               * self.lklh[action, new_s1,
                                            self.task.s2_t[new_s1],
-                                           o, :, :])
+                                           obs, :, :])
                 sum_prod = np.sum(product_a_o)
-                self.p_o_giv_o[i, o] = sum_prod
+                self.p_o_giv_o[i, obs] = sum_prod
 
     @staticmethod
-    def kl(p_x, q_x):
+    def evaluate_kl_divergence(p_x, q_x):
         """Evaluate kl divergence between two distributions"""
         # # Evaluate directly
         # start = time.time()
@@ -430,7 +432,7 @@ class Agent:
         self.kl_giv_a_o = np.full((len(self.a_s1), 4), 0.)
         self.virt_b = {0: {0: 0., 1: 0., 2: 0., 3: 0.}}
 
-        for a, action in np.ndenumerate(self.a_s1):
+        for i, action in np.ndenumerate(self.a_s1):
 
             new_s1 = self.task.s1_t + action
 
@@ -438,22 +440,20 @@ class Agent:
             if action != 0:
                 action = 1
 
-            self.virt_b[a] = {0: 0.}
+            self.virt_b[i] = {0: 0.}
 
             # Identify possible observations
             self.identify_o_giv_s2_marg_s3(new_s1, action)
 
-            for o in self.o_s2:
+            for obs in self.o_s2:
                 # Evaluate virt belief state on t+1 giv potential o and a
-                self.virt_b[a][o] = self.eval_posterior(self.p_s_giv_o,
-                                                        action,
-                                                        new_s1,
-                                                        self.task.s2_t[new_s1],
-                                                        o)
+                self.virt_b[i][obs] = self.eval_posterior(
+                    self.p_s_giv_o, action, new_s1,
+                    self.task.s2_t[new_s1], obs)
 
                 # Evaluate KL divergence
-                self.kl_giv_a_o[a, o] = self.kl(self.virt_b[a][o],
-                                                self.p_s_giv_o)
+                self.kl_giv_a_o[i, obs] = self.evaluate_kl_divergence(
+                    self.virt_b[i][obs], self.p_s_giv_o)
 
     def evaluate_action_valences(self):
         """Evaluate action valences"""
@@ -462,32 +462,32 @@ class Agent:
         # ---------------------------------------------------------------------
         if self.agent == 'C1':
             # Allocate equal valences over all available actions
-            self.v[:] = 1 / len(self.a_s1)
+            self.valence_t[:] = 1 / len(self.a_s1)
 
         # 'C2' Valence for random exploiter agent
         # ---------------------------------------------------------------------
         if self.agent == 'C2':
             # Allocate equal valences over all avail. actions (excl. drill)
-            self.v[:] = 1 / (len(self.a_s1) - 1)
+            self.valence_t[:] = 1 / (len(self.a_s1) - 1)
 
             # Set valence for drill action to zero
-            self.v[np.where(self.a_s1 == 0)] = 0
+            self.valence_t[np.where(self.a_s1 == 0)] = 0
 
         # 'C3' Valence for 50% random exploit and 50% random explore beh_model
         # ---------------------------------------------------------------------
         if self.agent == 'C3':
             # Allocate 50% times equal valences for all avail. actions (excl.
             # drill)
-            self.v[:] = 1 / 2 * (1 / (len(self.a_s1) - 1))
+            self.valence_t[:] = 1 / 2 * (1 / (len(self.a_s1) - 1))
 
             # Set drill valence to 50%
-            self.v[np.where(self.a_s1 == 0)] = 1 / 2
+            self.valence_t[np.where(self.a_s1 == 0)] = 1 / 2
 
         # 'A1' belief state-based, exploit, max. immediate reward (LOOK-AHEAD)
         # --------------------------------------------------------------------------
         if self.agent == 'A1':
 
-            self.v[:] = 0
+            self.valence_t[:] = 0
 
             # Iterate over possible actions (i.e. state-dependent actions)
             for index, action_i in np.ndenumerate(self.a_s1):
@@ -502,16 +502,18 @@ class Agent:
                             f'{int(new_s1)}_to_{close_max_s3_node}']
                     if self.moves >= new_dist_to_closest_max_beliefs \
                             < current_dist_to_max_belief:
-                        self.v[index] += self.marg_s3_b[close_max_s3_node]
+                        self.valence_t[index] += self.marg_s3_b[
+                            close_max_s3_node]
 
             # Set drill action to minus value
             # ( --> to always have lower value than zero)
             # self.v[np.where(self.a_s1 == 0)] = -1  # Needed,
             # otherwise A1 will drill in last trials
             # Let agent stop drilling, if node is not black or if last round
-            if self.c == (self.task.task_configs.params.n_rounds - 1):
+            if self.current_round == (
+                    self.task.task_configs.params.n_rounds - 1):
                 # or self.task.s_2_node_color[self.task.s_1] != 0:
-                self.v[np.where(self.a_s1 == 0)] = -1
+                self.valence_t[np.where(self.a_s1 == 0)] = -1
 
         # 'A2' pure explorer agent
         # --------------------------------------------------------------------------
@@ -519,21 +521,23 @@ class Agent:
 
             # Iterate over possible actions (i.e. state-dependent actions)
             for i, action_i in np.ndenumerate(self.a_s1):
-                self.v[i] = self.p_o_giv_o[i, 0] * self.kl_giv_a_o[i, 0] + \
-                            self.p_o_giv_o[i, 1] * self.kl_giv_a_o[i, 1] + \
-                            self.p_o_giv_o[i, 2] * self.kl_giv_a_o[i, 2] + \
-                            self.p_o_giv_o[i, 3] * self.kl_giv_a_o[i, 3]
+                self.valence_t[i] = \
+                    self.p_o_giv_o[i, 0] * self.kl_giv_a_o[i, 0] + \
+                    self.p_o_giv_o[i, 1] * self.kl_giv_a_o[i, 1] + \
+                    self.p_o_giv_o[i, 2] * self.kl_giv_a_o[i, 2] + \
+                    self.p_o_giv_o[i, 3] * self.kl_giv_a_o[i, 3]
 
             # Let agent stop drilling, if node is not black or if last round
-            if self.c == (self.task.task_configs.params.n_rounds - 1):
+            if self.current_round == (
+                    self.task.task_configs.params.n_rounds - 1):
                 # or self.task.s_2_node_color[self.task.s_1] != 0:
-                self.v[np.where(self.a_s1 == 0)] = -1
+                self.valence_t[np.where(self.a_s1 == 0)] = -1
 
         # 'A3' belief state based explorer-exploit agent (LOOK-AHEAD)
         # ---------------------------------------------------------------------
         if self.agent == 'A3':
 
-            self.v[:] = 0
+            self.valence_t[:] = 0
 
             # Iterate over possible actions (i.e. state-dependent actions)
             for i, action_i in np.ndenumerate(self.a_s1):
@@ -548,7 +552,7 @@ class Agent:
                             f'{int(new_s1)}_to_{close_max_s3_node}']
                     if self.moves >= new_dist_to_closest_max_beliefs \
                             < current_dist_to_max_belief:
-                        self.v[i] += self.lambda_ * self.marg_s3_b[
+                        self.valence_t[i] += self.lambda_ * self.marg_s3_b[
                             close_max_s3_node]
 
             # Add information value
@@ -557,16 +561,17 @@ class Agent:
                 # because p_o[0] is already filled
                 # if action == 0:
                 #     continue
-                self.v[i] += (1 - self.lambda_) * (
+                self.valence_t[i] += (1 - self.lambda_) * (
                     self.p_o_giv_o[i][0] * self.kl_giv_a_o[i][0] +
                     self.p_o_giv_o[i][1] * self.kl_giv_a_o[i][1] +
                     self.p_o_giv_o[i][2] * self.kl_giv_a_o[i][2] +
                     self.p_o_giv_o[i][3] * self.kl_giv_a_o[i][3])
 
             # Let agent stop drilling, if node is not black or if last round
-            if self.c == (self.task.task_configs.params.n_rounds - 1):
+            if self.current_round == (
+                    self.task.task_configs.params.n_rounds - 1):
                 # or self.task.s_2_node_color[self.task.s_1] != 0:
-                self.v[np.where(self.a_s1 == 0)] = -1
+                self.valence_t[np.where(self.a_s1 == 0)] = -1
 
     def evaluate_delta(self):
         """Implement the agent's decision function delta"""
@@ -574,12 +579,12 @@ class Agent:
         # Random choice agents C1, C2, C3
         # ---------------------------------------------------------------------
         if self.agent in ['C1', 'C2', 'C3']:
-            self.d = np.random.choice(self.a_s1, 1, p=self.v)
+            self.decision_t = np.random.choice(self.a_s1, 1, p=self.valence_t)
 
         # Belief state based
         # ---------------------------------------------------------------------
         if self.agent in ['A1', 'A2', 'A3', 'A4']:
-            self.d = self.a_s1[np.argmax(self.v)]
+            self.decision_t = self.a_s1[np.argmax(self.valence_t)]
 
     def make_decision(self):
         """Let agent make decision"""
@@ -588,7 +593,7 @@ class Agent:
         self.identify_a_giv_s1()
 
         # -------Initialize valence array for state dependent actions----------
-        self.v = np.full(len(self.a_s1), np.nan)  # Better init. with zeros?
+        self.valence_t = np.full(len(self.a_s1), np.nan)
 
         # -------Identify closest nodes with maximum s3 belief values----------
         if self.is_bayesian:

@@ -87,7 +87,8 @@ class Data:
     def str_to_array(values_string):
         """Transform the values in the column 'hide_nodes_s6 to lists"""
         if type(values_string) == str:
-            return np.array(list(map(float, values_string.strip('][').split(' '))))
+            return np.array(
+                list(map(float, values_string.strip('][').split(' '))))
         else:
             return values_string
 
