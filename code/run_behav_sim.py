@@ -87,7 +87,7 @@ if __name__ == "__main__":
     start = time.time()
     arguments = get_arguments()
 
-    TASK_CONFIG_LABEL = "exp_msc"
+    TASK_CONFIG_LABEL = "exp_msc_50parts"
     OUT_DIR_LABEL = "exp_msc"
 
     IS_QUICK_TEST = False

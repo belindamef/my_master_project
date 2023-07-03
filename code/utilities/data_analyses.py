@@ -33,6 +33,7 @@ class Counts:
 
     def __init__(self, events_df):
         self.events_df = events_df  # Input dataframe
+        self.n_blocks = max(self.events_df["block"])
         self.counts_df = pd.DataFrame(index=range(1))  # Output dataframe
 
     def check_interrupt(self):
@@ -98,6 +99,8 @@ class Counts:
         """Count number of treasures found over all trials"""
         # ------Count total treasures-----------------
         self.counts_df['n_tr'] = self.events_df['r'].sum()
+        # TODO hier weiter: average over all blocks berechenen
+
 
         # ------Count treasures blockwise-----------------
         count_tr_blockwise = self.events_df.groupby(['block'])['r'].sum()
@@ -107,6 +110,8 @@ class Counts:
             cols.append(f'n_tr_b{block}')
         n_tr_b_df = pd.DataFrame([count_tr_blockwise.values], columns=cols)
         self.counts_df = pd.concat([self.counts_df, n_tr_b_df], axis=1)
+        self.counts_df["mean_tr_over_blocks"] = np.nanmean(n_tr_b_df)
+        self.counts_df["std_tr_over_blocks"] = np.nanstd(n_tr_b_df)
 
         # ------Count treasures roundwise ------(regardless of block)
         count_tr_roundwise = self.events_df.groupby(['round_'])['r'].sum()

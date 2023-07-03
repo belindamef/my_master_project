@@ -50,10 +50,10 @@ def main():
         # Load events all subs
         events_all_subs_df = pd.read_pickle(
             f'{dir_mgr.paths.events_all_subs_fn}.pkl')
-        # Load events block (run) wise all subs
-        for block_, block_df in events_all_subs_bw.items():
-            events_all_subs_bw[block_] = pd.read_pickle(os.path.join(
-                dir_mgr.paths.this_analyses_proc_data_dir, f'sub-all_task-th_run-{block_:02d}_beh.pkl'))
+        # # Load events block (run) wise all subs
+        # for block_, block_df in events_all_subs_bw.items():
+        #     events_all_subs_bw[block_] = pd.read_pickle(os.path.join(
+        #         dir_mgr.paths.this_analyses_proc_data_path, f'sub-all_task-th_run-{block_:02d}_beh.pkl'))
     else:
         events_all_subs_df = pd.DataFrame()
         edited_processed_events_all_subs = True

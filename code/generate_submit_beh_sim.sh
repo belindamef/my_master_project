@@ -25,7 +25,7 @@ declare -a agent_models=(C1 C2 C3 A1 A2 A3)
 #declare -a agent_models=(A3)
 n_repetitions=1
 tau_resolution_step=0.1
-n_participants=10
+n_participants=50
 
 # Iterate over repetitions
 for repetition in $(seq 1 ${n_repetition}); do

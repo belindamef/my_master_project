@@ -41,7 +41,8 @@ def main():
     agent_models.sort()
 
     agent_performance_group_averages = subj_lvl_stats_df.groupby(
-        ["agent", "tau_gen", "lambda_gen"])["n_tr"].agg(["mean", "std"])
+        ["agent", "tau_gen", "lambda_gen"])["mean_tr_over_blocks"].agg(
+        ["mean", "std"])
 
     tau_gen_values = agent_performance_group_averages.index.unique(
         level="tau_gen").values
@@ -126,7 +127,7 @@ def main():
 
 if __name__ == "__main__":
 
-    EXP_LABEL = "exp_msc_test"
+    EXP_LABEL = "exp_msc"
     FIGURE_FILENAME = "figue_1_agent_perf"
     N_BLOCKS = 3
 
