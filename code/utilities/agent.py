@@ -97,11 +97,10 @@ class Agent:
     """
 
     def __init__(self, agent_attributes, task_object, lambda_of_interest):
-        self.agent = agent_attributes.name
+        self.agent_name = agent_attributes.name
         self.is_bayesian = agent_attributes.is_bayesian
         self.is_explorative = agent_attributes.is_explorative
         self.task = task_object
-        self.beh_model = None
         self.lambda_ = lambda_of_interest
 
         # Initialize dynamic agent attributes
@@ -259,8 +258,8 @@ class Agent:
         #         self.marg_s3_prior, self.marg_s4_prior = \
         #             self.eval_marg_b(self.prior_c)
 
-    def update_belief_state(self):
-        """Update belief state self"""
+    def update_belief_state(self, current_action):
+        """Update belief state"""
         if self.is_bayesian:
             if self.current_round == 0 and self.current_trial == 0:
                 self.p_s_giv_o = self.eval_posterior(self.prior_c0, 1,
@@ -279,7 +278,7 @@ class Agent:
 
             else:
                 self.p_s_giv_o = self.eval_posterior(self.p_s_giv_o,
-                                                     self.beh_model.a_t,
+                                                     current_action,
                                                      self.task.s1_t,
                                                      self.task.s2_t[
                                                          self.task.s1_t],
@@ -460,13 +459,13 @@ class Agent:
 
         # 'C1' Valence for random choice agent
         # ---------------------------------------------------------------------
-        if self.agent == 'C1':
+        if self.agent_name == 'C1':
             # Allocate equal valences over all available actions
             self.valence_t[:] = 1 / len(self.a_s1)
 
         # 'C2' Valence for random exploiter agent
         # ---------------------------------------------------------------------
-        if self.agent == 'C2':
+        if self.agent_name == 'C2':
             # Allocate equal valences over all avail. actions (excl. drill)
             self.valence_t[:] = 1 / (len(self.a_s1) - 1)
 
@@ -475,7 +474,7 @@ class Agent:
 
         # 'C3' Valence for 50% random exploit and 50% random explore beh_model
         # ---------------------------------------------------------------------
-        if self.agent == 'C3':
+        if self.agent_name == 'C3':
             # Allocate 50% times equal valences for all avail. actions (excl.
             # drill)
             self.valence_t[:] = 1 / 2 * (1 / (len(self.a_s1) - 1))
@@ -485,7 +484,7 @@ class Agent:
 
         # 'A1' belief state-based, exploit, max. immediate reward (LOOK-AHEAD)
         # --------------------------------------------------------------------------
-        if self.agent == 'A1':
+        if self.agent_name == 'A1':
 
             self.valence_t[:] = 0
 
@@ -517,7 +516,7 @@ class Agent:
 
         # 'A2' pure explorer agent
         # --------------------------------------------------------------------------
-        if self.agent == 'A2':
+        if self.agent_name == 'A2':
 
             # Iterate over possible actions (i.e. state-dependent actions)
             for i, action_i in np.ndenumerate(self.a_s1):
@@ -535,7 +534,7 @@ class Agent:
 
         # 'A3' belief state based explorer-exploit agent (LOOK-AHEAD)
         # ---------------------------------------------------------------------
-        if self.agent == 'A3':
+        if self.agent_name == 'A3':
 
             self.valence_t[:] = 0
 
@@ -578,12 +577,12 @@ class Agent:
 
         # Random choice agents C1, C2, C3
         # ---------------------------------------------------------------------
-        if self.agent in ['C1', 'C2', 'C3']:
+        if self.agent_name in ['C1', 'C2', 'C3']:
             self.decision_t = np.random.choice(self.a_s1, 1, p=self.valence_t)
 
         # Belief state based
         # ---------------------------------------------------------------------
-        if self.agent in ['A1', 'A2', 'A3', 'A4']:
+        if self.agent_name in ['A1', 'A2', 'A3', 'A4']:
             self.decision_t = self.a_s1[np.argmax(self.valence_t)]
 
     def make_decision(self):

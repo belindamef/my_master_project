@@ -113,7 +113,7 @@ class Validator:
             self.iterate_data_generating_tau_space()
 
     def iterate_repetitions(self):
-        for repetition in self.sim_params.repetitions:
+        for repetition in self.sim_params.repetition_numbers:
             self.sim_params.current_rep = repetition + 1
             self.iterate_data_generating_agent_model_space()
 

@@ -19,12 +19,11 @@ class Recorder:
 
     out_var_list = []
     data_one_round = {}
+    sim_data_this_block = None
+    sim_data = pd.DataFrame()
 
-    def __init__(self, task_design_params, *args):
-        self.sim_data = pd.DataFrame()
-        self.sim_data_this_block = None
+    def __init__(self, *args):
         self.define_sim_out_list(*args)
-        self.task_design_params = task_design_params
 
     def define_sim_out_list(self, *args: str):
         """Define a list of variables that are saved to output data
@@ -51,7 +50,7 @@ class Recorder:
         """Create new empty dataframe for this rounds data"""
         self.sim_data_this_block = pd.DataFrame()
 
-    def create_rec_arrays_thisround(self):
+    def create_rec_arrays_thisround(self, n_trials):
         """Create a dictionary with recording arrays for one round
 
         Returns
@@ -61,9 +60,9 @@ class Recorder:
         """
         for var in self.out_var_list:
             self.data_one_round[var] = np.full(
-                self.task_design_params.n_trials + 1, np.nan, dtype=object)
+                n_trials + 1, np.nan, dtype=object)
 
-    def record_trial_start(self, trial, task):
+    def record_trial_start(self, trial, task: Task):
         """Record all states and observations before agent makes decision,
         beh_model returns action and task evaluates state transition
 
@@ -81,41 +80,35 @@ class Recorder:
         self.data_one_round["n_blue"][trial] = task.n_blue
         self.data_one_round["o"][trial] = task.o_t
 
-    def record_trial_ending(self, trial, sim_obj):
+    def record_trial_ending(self, trial, task: Task, agent: Agent,
+                            beh_model: BehavioralModel):
         """Record all states and agent beh_model values after agent made
         decision, beh_model returned action and task evaluated state
         transition"""
-        self.data_one_round["a_giv_s1"][trial] = sim_obj.agent.a_s1
-        self.data_one_round["o_giv_s2"][trial] = sim_obj.agent.o_s2
-        self.data_one_round["p_o_giv_o"][trial] = sim_obj.agent.p_o_giv_o
-        self.data_one_round["kl_giv_a_o"][trial] = sim_obj.agent.kl_giv_a_o
-        self.data_one_round["v"][trial] = sim_obj.agent.v
-        self.data_one_round["d"][trial] = sim_obj.agent.d
-        self.data_one_round["a"][trial] = sim_obj.beh_model.a_t
-        self.data_one_round["log_p_a_giv_h"][
-            trial] = sim_obj.beh_model.log_likelihood
-        self.data_one_round["r"][trial] = sim_obj.task.r_t
-        self.data_one_round["information"][trial] = sim_obj.task.drill_finding
-        self.data_one_round["tr_found_on_blue"] = sim_obj.task.tr_found_on_blue
-        self.data_one_round["marg_s3_posterior"][trial] = \
-            sim_obj.agent.marg_s3_b
-        self.data_one_round["marg_s3_prior_t0"][trial] = \
-            sim_obj.agent.marg_s3_prior
-        self.data_one_round["marg_s4_posterior"][trial] = \
-            sim_obj.agent.marg_s4_b
-        self.data_one_round["marg_s4_prior_t0"][trial] = \
-            sim_obj.agent.marg_s4_prior
-        self.data_one_round["max_s3_belief"][trial] = \
-            sim_obj.agent.max_s3_b_value
-        self.data_one_round["argsmax_s3_belief"][trial] = \
-            sim_obj.agent.max_s3_b_nodes
-        self.data_one_round["min_dist_argsmax_s3_belief"][trial] = \
-            sim_obj.agent.shortest_dist_to_max_s3_b
-        self.data_one_round["closest_argsmax_s3_belief"][trial] = \
-            sim_obj.agent.closest_max_s3_b_nodes
-        self.data_one_round["hiding_spots"][trial] = sim_obj.task.hides_loc
+        self.data_one_round["a_giv_s1"][trial] = agent.a_s1
+        self.data_one_round["o_giv_s2"][trial] = agent.o_s2
+        self.data_one_round["p_o_giv_o"][trial] = agent.p_o_giv_o
+        self.data_one_round["kl_giv_a_o"][trial] = agent.kl_giv_a_o
+        self.data_one_round["v"][trial] = agent.valence_t
+        self.data_one_round["d"][trial] = agent.decision_t
+        self.data_one_round["a"][trial] = beh_model.action_t
+        self.data_one_round["log_p_a_giv_h"][trial] = beh_model.log_likelihood
+        self.data_one_round["r"][trial] = task.r_t
+        self.data_one_round["information"][trial] = task.drill_finding
+        self.data_one_round["tr_found_on_blue"] = task.tr_found_on_blue
+        self.data_one_round["marg_s3_posterior"][trial] = agent.marg_s3_b
+        self.data_one_round["marg_s3_prior_t0"][trial] = agent.marg_s3_prior
+        self.data_one_round["marg_s4_posterior"][trial] = agent.marg_s4_b
+        self.data_one_round["marg_s4_prior_t0"][trial] = agent.marg_s4_prior
+        self.data_one_round["max_s3_belief"][trial] = agent.max_s3_b_value
+        self.data_one_round["argsmax_s3_belief"][trial] = agent.max_s3_b_nodes
+        self.data_one_round["min_dist_argsmax_s3_belief"][
+            trial] = agent.shortest_dist_to_max_s3_b
+        self.data_one_round["closest_argsmax_s3_belief"][
+            trial] = agent.closest_max_s3_b_nodes
+        self.data_one_round["hiding_spots"][trial] = task.hides_loc
 
-    def append_this_round_to_block_df(self, this_round):
+    def append_this_round_to_block_df(self, this_round, n_trials):
         """Append this round's dataframe to this block's dataframe
 
         Parameters
@@ -125,7 +118,7 @@ class Recorder:
         # Create a dataframe from recording array dictionary
         sim_data_this_round = pd.DataFrame(self.data_one_round)
         sim_data_this_round.insert(0, "trial", pd.Series(  # add trial column
-            range(1, self.task_design_params.n_trials + 2)))
+            range(1, n_trials + 2)))
         sim_data_this_round.insert(0, "round_", this_round + 1)  # add round
         # col
         self.sim_data_this_block = pd.concat(
@@ -144,23 +137,22 @@ class Recorder:
         self.sim_data = pd.concat([self.sim_data, self.sim_data_this_block],
                                   ignore_index=True)
 
-    def wrap_up_data(self, tau, lambda_, agent_model):
+    def wrap_up_data(self, tau, lambda_, agent_name):
         """Finalize data set by adding columns for agent and tau parameter"""
         self.sim_data.insert(0, "lambda_gen", lambda_)
         self.sim_data.insert(0, "tau_gen", tau)
-        self.sim_data.insert(0, "agent", agent_model)
+        self.sim_data.insert(0, "agent", agent_name)
 
 
 class SimulationParameters:
 
-    n_repetitions: int = 1
-    n_participants: int = 1
-    repetitions = range(n_repetitions)
-    agent_space_gen = ["C1", "C2", "C3", "A1", "A2", "A3"]
-    tau_space_gen = np.linspace(0.1, 2., 2)
-    tau_gen_space_if_fixed = np.arange(0.1, 2., 0.4)  # TODO: only for plots?
-    lambda_gen_space = np.linspace(0.1, 0.9, 5)
-    participant_numbers = range(n_participants)
+    n_repetitions: int
+    repetition_numbers: range
+    n_participants: int
+    participant_numbers: range
+    agent_space_gen: list
+    tau_space_gen: list
+    lambda_gen_space: list
     current_rep: int = None
     current_agent_attributes: object = None
     current_agent_model: str = None
@@ -169,19 +161,38 @@ class SimulationParameters:
     current_part: int = None
 
     def get_params_from_args(self, args):
-        self.repetitions = args.repetition
+        self.repetition_numbers = args.repetition
         self.agent_space_gen = args.agent_model
         self.tau_space_gen = args.tau_value
         self.lambda_gen_space = args.lambda_value
         self.participant_numbers = args.participant
         return self
 
-    def define_lambda_gen_space(self):
-        if self.current_agent_attributes.name == "A3":  # and
-            # tau_gen in sim_params.tau_gen_space_if_fixed):
-            self.lambda_gen_space = np.linspace(0.1, 0.9, 5)
+    def define_n_reps_and_participants_manually(self, n_rep: int = 1,
+                                                n_part: int = 1,):
+        self.n_repetitions = n_rep
+        self.repetition_numbers = range(self.n_repetitions)
+        self.n_participants = n_part
+        self.participant_numbers = range(self.n_participants)
+
+    def define_params_manually(self, agent_gen_space: list = None,
+                               tau_gen_space: list = None,
+                               lambda_gen_space: list = None):
+
+        if agent_gen_space is None:
+            self.agent_space_gen = ["C1", "C2", "C3", "A1", "A2", "A3"]
         else:
-            self.lambda_gen_space = [0.5]
+            self.agent_space_gen = agent_gen_space
+
+        if tau_gen_space is None:
+            self.tau_space_gen = np.linspace(0, 2, 21).tolist()
+        else:
+            self.tau_space_gen = tau_gen_space
+
+        if lambda_gen_space is None:
+            self.lambda_gen_space = np.linspace(0, 1, 11)
+        else:
+            self.lambda_gen_space = lambda_gen_space
 
 
 class Timer:
@@ -217,7 +228,7 @@ class Timer:
               f" {round(time_this_block, ndigits=2)} sec")
 
 
-class Simulator:
+class Simulator():
 
     agent: Agent = None
     task: Task = None
@@ -230,8 +241,7 @@ class Simulator:
         self.bayesian_comps = bayesian_comps
         self.sim_params = sim_params
 
-    def create_interacting_objects(self, this_block, current_tau_of_interest,
-                                   current_lambda_of_interest):
+    def create_interacting_objects(self, this_block, tau_gen, lambda_gen):
         """Create beh_model objects that interact in each trial
 
         Parameters
@@ -242,15 +252,13 @@ class Simulator:
         self.task = Task(self.task_configs)
         self.task.start_new_block(this_block)
         self.agent = Agent(self.sim_params.current_agent_attributes, self.task,
-                           current_lambda_of_interest)
+                           lambda_gen)
         if self.sim_params.current_agent_attributes.is_bayesian:
             self.agent.add_bayesian_model_components(self.bayesian_comps)
-        self.beh_model = BehavioralModel(current_tau_of_interest)
+        self.beh_model = BehavioralModel(tau_gen, self.agent)
 
-        # Connect interacting models
-        self.beh_model.agent = self.agent
-        self.task.behavioral_model = self.beh_model
-        self.agent.beh_model = self.beh_model
+        # Connect interacting model
+        self.task.beh_model = self.beh_model
 
     def simulate_trial_start(self, this_trial):
         """Simulate the beginning of a trial, when an
@@ -263,7 +271,7 @@ class Simulator:
         self.task.start_new_trial(this_trial)
         self.agent.start_new_trial(this_trial)
         self.task.return_observation()
-        self.agent.update_belief_state()
+        self.agent.update_belief_state(self.beh_model.action_t)
 
     def simulate_trial_interaction(self):
         """Simulate the agent-task interaction, i.e. agent decision, resulting
@@ -274,36 +282,39 @@ class Simulator:
         self.task.eval_action()
 
     def simulate_beh_data(self):
-        recorder = Recorder(self.task_configs.params)
+        recorder = Recorder()
 
-        for block in range(self.task_configs.params.n_blocks):
-            timer = Timer(self.sim_params, block).start()
+        for this_block in range(self.task_configs.params.n_blocks):
+            timer = Timer(self.sim_params, this_block).start()
             recorder.create_rec_df_one_block()
-            self.create_interacting_objects(block,
+            self.create_interacting_objects(this_block,
                                             self.sim_params.current_tau_gen,
                                             self.sim_params.current_lambda_gen)
 
-            for round_ in range(self.task_configs.params.n_rounds):
-                recorder.create_rec_arrays_thisround()
-                self.task.start_new_round(block, round_)
-                self.agent.start_new_round(round_)
+            for this_round in range(self.task_configs.params.n_rounds):
+                recorder.create_rec_arrays_thisround(
+                    self.task_configs.params.n_trials)
+                self.task.start_new_round(this_block, this_round)
+                self.agent.start_new_round(this_round)
 
-                for trial in range(self.task_configs.params.n_trials):
-                    self.simulate_trial_start(trial)
-                    recorder.record_trial_start(trial, self.task)
+                for this_trial in range(self.task_configs.params.n_trials):
+                    self.simulate_trial_start(this_trial)
+                    recorder.record_trial_start(this_trial, self.task)
                     self.simulate_trial_interaction()
-                    recorder.record_trial_ending(trial, self)
+                    recorder.record_trial_ending(
+                        this_trial, self.task, self.agent, self.beh_model)
 
                     # End round, if treasure discovered
                     if self.task.r_t == 1:
                         # Evaluate observation and belief update for t + 1
                         self.task.return_observation()
-                        self.agent.update_belief_state()
-                        recorder.record_trial_start(trial + 1, self.task)
+                        self.agent.update_belief_state(self.beh_model.action_t)
+                        recorder.record_trial_start(this_trial + 1, self.task)
                         break
 
-                recorder.append_this_round_to_block_df(round_)
-            recorder.append_this_block_to_simdata_df(block)
+                recorder.append_this_round_to_block_df(
+                    this_round, self.task_configs.params.n_trials)
+            recorder.append_this_block_to_simdata_df(this_block)
             timer.end()
         recorder.wrap_up_data(self.sim_params.current_tau_gen,
                               self.sim_params.current_lambda_gen,
@@ -364,7 +375,7 @@ class Simulator:
                     # Embedd data action in behavioral and task model, so that
                     # next iteraton in trial simulation has same state as is
                     # data
-                    self.beh_model.a_t = data_action_t
+                    self.beh_model.action_t = data_action_t
                     self.task.eval_action()
 
                     # TODO: check if task reward now matches with data
@@ -373,7 +384,7 @@ class Simulator:
                     if self.task.r_t == 1:
                         # Evaluate observation and belief update for t + 1
                         self.task.return_observation()
-                        self.agent.update_belief_state()
+                        self.agent.update_belief_state(self.beh_model.action_t)
                         break
 
                     llhs_all_trials[trial] = self.beh_model.log_likelihood

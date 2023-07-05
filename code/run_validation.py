@@ -17,14 +17,9 @@ def define_simulation_parameters() -> SimulationParameters:
 
     if arguments.parallel_computing:
         sim_parameters.get_params_from_args(arguments)
-
-    else:  # Define parameters for local tests, i.e. not parallel computing
-        # note to myself: this overwrites default class attributes
-        sim_parameters.agent_space_gen = ["A3"]
-        sim_parameters.tau_space_gen = np.linspace(0.1, 2., 5)
-        sim_parameters.tau_gen_space_if_fixed = [0.1]
-        sim_parameters.n_participants = 10
-        sim_parameters.lambda_gen_space = np.linspace(0.1, 0.9, 5)
+    else:
+        sim_parameters.define_n_reps_and_participants_manually()
+        sim_parameters.define_params_manually()
     return sim_parameters
 
 

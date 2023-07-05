@@ -84,7 +84,7 @@ def main():
     # task_configs.params.n_rounds = 2
     # task_configs.params.n_trials = 2
 
-    for repetition in sim_params.repetitions:
+    for repetition in sim_params.repetition_numbers:
         sim_params.current_rep = repetition + 1
 
         for agent_model in sim_params.agent_space_gen:

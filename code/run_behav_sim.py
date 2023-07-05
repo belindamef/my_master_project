@@ -32,6 +32,9 @@ def define_simulation_parameters() -> SimulationParameters:
 
     if arguments.parallel_computing:
         sim_parameters.get_params_from_args(arguments)
+    else:
+        sim_parameters.define_n_reps_and_participants_manually()
+        sim_parameters.define_params_manually()
 
     return sim_parameters
 
@@ -57,7 +60,7 @@ def main():
     sim_params = define_simulation_parameters()
     simulator = Simulator(task_config, bayesian_comps, sim_params)
 
-    for repetition in sim_params.repetitions:
+    for repetition in sim_params.repetition_numbers:
         sim_params.current_rep = repetition
 
         for agent_model in sim_params.agent_space_gen:
@@ -65,7 +68,7 @@ def main():
                 agent_model).def_attributes()
             sim_params.current_agent_model = agent_model
             # if not sim_params.current_agent_attributes.is_deterministic:
-            #     n_participants = 50  # TODO: nochmal checken, ob brauchen!
+            #     n_participants = 50  # TODO: nochmal checken, ob benötigt!
 
             for tau_gen in sim_params.tau_space_gen:
                 sim_params.current_tau_gen = tau_gen
@@ -79,7 +82,7 @@ def main():
                         dir_mgr.prepare_beh_output(sim_params)
 
                         simulator.simulate_beh_data()
-    
+
                         dir_mgr.save_data_to_tsv(simulator.data)
 
 
@@ -87,8 +90,8 @@ if __name__ == "__main__":
     start = time.time()
     arguments = get_arguments()
 
-    TASK_CONFIG_LABEL = "exp_msc_50parts"
-    OUT_DIR_LABEL = "exp_msc"
+    TASK_CONFIG_LABEL = "exp_msc"
+    OUT_DIR_LABEL = "exp_msc_testing"
 
     IS_QUICK_TEST = False
     TEST_N_BLOCKS = 1

@@ -208,11 +208,15 @@ class DirectoryManager:
         ----------
         sim_obj: Simulator
         """
-        self.sub_id = f"{sim_params.current_agent_attributes.name}_" \
-                      f"rep-{sim_params.current_rep}_" \
-                      f"tau-{int(round(sim_params.current_tau_gen * 1000, ndigits=4))}_" \
-                      f"lambda-{int(round(sim_params.current_lambda_gen * 1000, ndigits=4))}_" \
-                      f"part-{sim_params.current_part}"
+        self.sub_id = (
+            f"{sim_params.current_agent_attributes.name}_" +
+            f"rep-{sim_params.current_rep}_" +
+            "tau-" + f"{sim_params.current_tau_gen * 1000}"[:4] + "_" +
+            "lambda-" + f"{sim_params.current_lambda_gen * 1000}"[:4] + "_" +
+            f"part-{sim_params.current_part}"
+            ).replace(".", "")
+
+        self.sub_id.replace(".", "")
 
     def define_and_make_sub_beh_out_dir(self):
         """Define paths to subject specific output directory and make

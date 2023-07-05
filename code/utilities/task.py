@@ -3,6 +3,7 @@ import os
 import json
 import numpy as np
 from .config import Paths
+from .modelling import BehavioralModel
 
 
 class Task:
@@ -98,7 +99,7 @@ class Task:
         self.n_hides = task_configs.params.n_hides
 
         # Initialize empty attribute to embed beh_model object of class BehavioralModel
-        self.behavioral_model: object = None
+        self.beh_model: BehavioralModel = None
 
         # Initialize task beh_model components
         self.s1_t = np.nan
@@ -287,10 +288,10 @@ class Task:
     def perform_state_transition_f(self):
         """Perform the state transition function f"""
         # Move to new position (transition s_1)
-        self.s1_t += int(self.behavioral_model.a_t)
+        self.s1_t += int(self.beh_model.action_t)
 
         # After informative actions
-        if self.behavioral_model.a_t == 0:
+        if self.beh_model.action_t == 0:
 
             # Change node colors (transition s_2)
             if self.s4[self.s1_t] == 0:  # If s_1 not hiding spot
@@ -331,7 +332,7 @@ class Task:
 
         # If participant decides to take a step
         # -----------------------------------------------------
-        if self.behavioral_model.a_t != 0:
+        if self.beh_model.action_t != 0:
 
             # Evaluate whether new position is treasure location
             self.eval_whether_treasure()
