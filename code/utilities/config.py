@@ -111,11 +111,18 @@ class DirectoryManager:
 
         raw_data_path = os.path.join(data_directory, out_dir_label)
 
-        if make_dir:
-            if not os.path.exists(raw_data_path):
-                os.makedirs(raw_data_path)
-            else:
-                print('Output directory with this name alreadyexists.')
+        try:
+            if make_dir:
+                if not os.path.exists(raw_data_path):
+                    os.makedirs(raw_data_path)
+                else:
+                    print("Output directory for raw data already exists. "
+                          "Skipping makedirs. Raw data will be written to "
+                          "existing directory.")
+        except FileExistsError:
+            print("Output directory for raw data already exists. "
+                  "Skipping makedirs. Raw data will be written to "
+                  "existing directory.")
 
         if data_type == "sim":
             self.paths.this_analyses_raw_data_path = raw_data_path

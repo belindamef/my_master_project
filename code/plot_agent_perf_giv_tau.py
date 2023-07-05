@@ -41,13 +41,15 @@ def main():
     agent_models.sort()
 
     agent_performance_group_averages = subj_lvl_stats_df.groupby(
-        ["agent", "tau_gen", "lambda_gen"])["mean_tr_over_blocks"].agg(
+        ["agent", "tau_gen", "lambda_gen"], dropna=False)["mean_tr_over_blocks"].agg(
         ["mean", "std"])
 
     tau_gen_values = agent_performance_group_averages.index.unique(
         level="tau_gen").values
+    tau_gen_values = tau_gen_values[~np.isnan(tau_gen_values)]
     lambda_gen_values = agent_performance_group_averages.index.unique(
         level="lambda_gen").values
+    lambda_gen_values = lambda_gen_values[~np.isnan(lambda_gen_values)]
 
     width = 0.014
     agent_n_tr_means = {}
@@ -69,7 +71,7 @@ def main():
     axes = {}
 
     fig = plt.figure(figsize=(16, 13), layout="constrained")
-    gridspecstrum = gridspec.GridSpec(5, 1)
+    gridspecstrum = gridspec.GridSpec(len(lambda_gen_values), 1)
 
     agent_colors = col_agents + col_controls  # Specify agent colors
 
@@ -91,6 +93,7 @@ def main():
 
             stds = agent_n_tr_stds[agent]
             offset = width * multiplier
+
 
             very_plotter.plot_bar(
                 ax=this_ax, x=tau_gen_values+offset,
@@ -127,8 +130,8 @@ def main():
 
 if __name__ == "__main__":
 
-    EXP_LABEL = "exp_msc"
-    FIGURE_FILENAME = "figue_1_agent_perf"
+    EXP_LABEL = "exp_msc_testing"
+    FIGURE_FILENAME = "figue_1_agent_perf_testing"
     N_BLOCKS = 3
 
     main()

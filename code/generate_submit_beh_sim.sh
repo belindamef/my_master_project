@@ -25,10 +25,15 @@ declare -a all_agents=(C1 C2 C3 A1 A2 A3)
 declare -a bayesian_agents=(A1 A2 A3)
 declare -a control_agents=(C1 C2 C3)
 #declare -a agent_models=(A3)
+
+# Repetions and number of participants
 n_repetitions=1
-tau_resolution_step=1
-lambda_resolution_step=0.5
-n_participants=1
+n_participants=2
+
+# Parameterspace
+tau_max=1.0
+tau_resolution_step=0.01
+lambda_resolution_step=0.1
 
 # Iterate over repetitions
 for repetition in $(seq 1 ${n_repetition}); do
@@ -38,7 +43,7 @@ for repetition in $(seq 1 ${n_repetition}); do
 
         # Define tau space # TODO
         if [[ " ${bayesian_agents[*]} " == *" ${agent_model} "* ]]; then
-            tau_gen_sapce=$(seq 0 ${tau_resolution_step} 2.0)
+            tau_gen_sapce=$(seq 0 ${tau_resolution_step} ${tau_max})
         else
             tau_gen_sapce=(nan)
         fi

@@ -399,7 +399,7 @@ def main():
     #     r_wise_stats_df.to_pickle(f'{dir_mgr.paths.r_wise_stats_fn}.pkl')
 
 if __name__ == "__main__":
-    EXP_LABEL = "exp_msc"  # 'exp_msc' or 'sim_100_msc' or 'test'""
+    EXP_LABEL = "exp_msc_testing"  # 'exp_msc' or 'sim_100_msc' or 'test'""
     EXP_OR_SIM = "sim"  # str(input("Enter dataset ('exp' or 'sim): "))
     DIM = 5
     N_BLOCKS = 1

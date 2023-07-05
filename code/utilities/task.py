@@ -98,7 +98,6 @@ class Task:
         self.n_nodes = self.dim ** 2  # Number of fields
         self.n_hides = task_configs.params.n_hides
 
-        # Initialize empty attribute to embed beh_model object of class BehavioralModel
         self.beh_model: BehavioralModel = None
 
         # Initialize task beh_model components
@@ -238,7 +237,6 @@ class Task:
         """Evaluate s_4 values according to hides_loc"""
         for node in self.hides_loc:
             self.s4[node] = 1
-
 
     def start_new_block(self, block_number):
         """Start new block with new task_configuration

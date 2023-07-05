@@ -77,6 +77,7 @@ def config_axes(ax, y_label=None, y_lim=None, title=None, x_label=None,
 def plot_bar(ax, x, height, colors, bar_width=0.6, errorbar_size=10,
              yerr=None, labels=None):
     """Plot bars with error bar if given"""
+    yerr[np.isnan(yerr)]=0
     return ax.bar(x=x, height=height, yerr=yerr,
                   width=bar_width,
                   color=colors, zorder=0,
