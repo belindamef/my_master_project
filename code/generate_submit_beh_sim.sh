@@ -28,11 +28,11 @@ declare -a control_agents=(C1 C2 C3)
 
 # Repetions and number of participants
 n_repetitions=1
-n_participants=2
+n_participants=50
 
 # Parameterspace
-tau_max=1.0
-tau_resolution_step=0.01
+tau_max=0.5
+tau_resolution_step=0.025
 lambda_resolution_step=0.1
 
 # Iterate over repetitions

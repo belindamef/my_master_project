@@ -62,9 +62,9 @@ def main():
     # Initialize or load dataframe for subject level descr stats all subs
     if os.path.exists(f'{dir_mgr.paths.subj_lvl_descr_stats_fn}.pkl'):
         descr_stats_all_subs_df = pd.read_pickle(f'{dir_mgr.paths.subj_lvl_descr_stats_fn}.pkl')
-        for block_, block_df in subj_level_stats_all_subs_bw.items():
-            subj_level_stats_all_subs_bw[block_] = pd.read_pickle(
-                f'{dir_mgr.paths.subj_lvl_descr_stats_fn}_run-{block_:02d}.pkl')
+        # for block_, block_df in subj_level_stats_all_subs_bw.items():
+        #     subj_level_stats_all_subs_bw[block_] = pd.read_pickle(
+        #         f'{dir_mgr.paths.subj_lvl_descr_stats_fn}_run-{block_:02d}.pkl')
     else:
         descr_stats_all_subs_df = pd.DataFrame()  # (one row per subject)
         edited_descr_stats = True
@@ -398,10 +398,11 @@ def main():
     #         tsv_file.write(r_wise_stats_df.to_csv(sep='\t', na_rep='n/a'))
     #     r_wise_stats_df.to_pickle(f'{dir_mgr.paths.r_wise_stats_fn}.pkl')
 
+
 if __name__ == "__main__":
-    EXP_LABEL = "exp_msc_testing"  # 'exp_msc' or 'sim_100_msc' or 'test'""
+    EXP_LABEL = "exp_msc_50parts"  # 'exp_msc' or 'sim_100_msc' or 'test'""
     EXP_OR_SIM = "sim"  # str(input("Enter dataset ('exp' or 'sim): "))
     DIM = 5
-    N_BLOCKS = 1
+    N_BLOCKS = 3
 
     main()

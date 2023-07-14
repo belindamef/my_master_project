@@ -43,7 +43,8 @@ def get_fig_template(plt):
         for list_ in [viridis_20[4], viridis_20[1]]]
     col_A = [
         [value / 255 for value in list_]
-        for list_ in [viridis_20[18], viridis_20[14], viridis_20[9]]]
+        for list_ in [viridis_20[18], viridis_20[9], viridis_20[14]]]
+    
     return plt, col_exp, col_A, col_C  # , col_A, reds
 
 

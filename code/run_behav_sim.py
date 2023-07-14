@@ -91,7 +91,7 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     TASK_CONFIG_LABEL = "exp_msc"
-    OUT_DIR_LABEL = "exp_msc_testing"
+    OUT_DIR_LABEL = "exp_msc_50parts_new"
 
     IS_QUICK_TEST = False
     TEST_N_BLOCKS = 1

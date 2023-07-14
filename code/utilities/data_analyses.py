@@ -99,8 +99,6 @@ class Counts:
         """Count number of treasures found over all trials"""
         # ------Count total treasures-----------------
         self.counts_df['n_tr'] = self.events_df['r'].sum()
-        # TODO hier weiter: average over all blocks berechenen
-
 
         # ------Count treasures blockwise-----------------
         count_tr_blockwise = self.events_df.groupby(['block'])['r'].sum()
@@ -217,7 +215,7 @@ class Counts:
                 n_drills_r_df[f'n_drills_r{round_:02d}'] = [
                     action_v_counts_per_r['drill']]
                 p_drills_r_df[f'p_drills_r{round_:02d}'] = (
-                        [action_v_counts_per_r['drill']] 
+                        [action_v_counts_per_r['drill']]
                         / round_df['action_type'].count())
                 # drills_over_blocks_cols = [
                 #     col for col in n_drills_br_df.columns
@@ -437,7 +435,7 @@ class GroupStats(DescrStats):
                 t_wise_counts_df.at[trial - 1, 'p_drills'] = 0
 
         return t_wise_counts_df
-    
+
     def eval_r_wise_stats(self):
         """Evaluate roundwise descriptive statistics"""
 
@@ -567,11 +565,11 @@ class GroupStats(DescrStats):
                 descr_stats_this_group_df, ignore_index=True)
 
         return group_descr_stats_df
-    
+
     def perform_grp_lvl_stats(self, group_by):
         """Perform group level descriptive statistics"""
         group_lvl_stats_df = pd.DataFrame()
-        
+
         for group_, group_df in self.descr_df.groupby([group_by]):
             self.subject = group_
             self.n_subs = len(list(group_df.sub_id.unique()))
