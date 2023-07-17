@@ -66,8 +66,8 @@ def main():
     # Create general figure components
 
     # Initialize figure
-    plt, col_exp, col_agents, col_controls = very_plotter.get_fig_template(
-        pyplot)
+    plt = very_plotter.get_fig_template(pyplot)
+    col_agents, col_controls = very_plotter.get_agent_colors()
     axes = {}
 
     fig = plt.figure(figsize=(16, 20), layout="constrained")

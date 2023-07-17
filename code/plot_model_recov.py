@@ -3,10 +3,10 @@ import os
 import glob
 import numpy as np
 import re
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+from matplotlib import gridspec
+from matplotlib import pyplot
+from utilities import very_plotter
 import pandas as pd
-import utilities.very_plotter as very_plotter
 import utilities.config as config
 
 
@@ -48,7 +48,9 @@ mle_group_averages = mle_df.groupby(
 # ----------------------------------------------------------
 
 # Initialize figure
-plt, col_exp, col_A, col_C = very_plotter.get_fig_template(plt)
+plt = very_plotter.get_fig_template(pyplot)
+col_exp = very_plotter.get_exp_group_colors()
+col_A, col_C = very_plotter.get_agent_colors
 fig = plt.figure(figsize=(25, 10))
 gs = gridspec.GridSpec(2, 10)
 ax = {}

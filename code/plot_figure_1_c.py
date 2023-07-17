@@ -137,7 +137,10 @@ n_tr_max = int(n_blocks * n_rounds)
 n_tr_b = n_rounds
 
 # Initialize figure
-plt, col_exp, col_A, col_C = very_plotter.get_fig_template(plt)
+plt = very_plotter.get_fig_template(pyplot)
+col_exp = very_plotter.get_exp_group_colors()
+col_A, col_C = very_plotter.get_agent_colors
+
 ax = {}
 fig = plt.figure(figsize=(14, 4))
 gs = gridspec.GridSpec(2, 1)

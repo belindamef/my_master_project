@@ -25,27 +25,35 @@ def get_fig_template(plt):
         'yaxis.labellocation': 'bottom'
     }
     plt.rcParams.update(rcParams)
+    return plt
 
-    # tab20 = plt.get_cmap('tab20')
-    # tab20b = plt.get_cmap('tab20b')
-    # tab20c = plt.get_cmap('tab20c')
-    # col_exp = [tab20c(11), tab20c(8)]
-    # col_A = [tab20c(0), tab20b(18), tab20(18)]
-    col_C = [wesanderson.color_palettes['Darjeeling Limited'][1][0],
-             wesanderson.color_palettes['Darjeeling Limited'][1][2],
-             # wesanderson.color_palettes['Hotel Chevalier'][0][3],
-             wesanderson.color_palettes['Isle of Dogs'][1][2]]
 
+def get_exp_group_colors():
     viridis_20 = palettable.matplotlib.Viridis_20.colors
-    # magma_20 = palettable.matplotlib.Magma_20.colors
+
     col_exp = [
         [value / 255 for value in list_]
         for list_ in [viridis_20[4], viridis_20[1]]]
+
+    return col_exp
+
+
+def get_agent_colors(control_color="orange"):
+
+    viridis_20 = palettable.matplotlib.Viridis_20.colors
     col_A = [
         [value / 255 for value in list_]
-        for list_ in [viridis_20[18], viridis_20[9], viridis_20[14]]]
+        for list_ in [viridis_20[3], viridis_20[19], viridis_20[14]]]
     
-    return plt, col_exp, col_A, col_C  # , col_A, reds
+    if control_color == "organge":
+        col_C = [wesanderson.color_palettes['Darjeeling Limited'][1][0],
+                wesanderson.color_palettes['Darjeeling Limited'][1][2],
+                # wesanderson.color_palettes['Hotel Chevalier'][0][3],
+                wesanderson.color_palettes['Isle of Dogs'][1][2]]
+    elif control_color == "grey":
+        col_C = ['0.7', '0.85', '0.99']
+    
+    return col_A, col_C
 
 
 def config_axes(ax, y_label=None, y_lim=None, title=None, x_label=None,

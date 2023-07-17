@@ -63,8 +63,9 @@ def main():
     # ----------------------------------------------------------
     #       Prepare figure
     # ----------------------------------------------------------
-    plt, col_exp, col_agents, col_controls = very_plotter.get_fig_template(
-        pyplot)
+    plt = very_plotter.get_fig_template(pyplot)
+    col_agents, col_controls = very_plotter.get_agent_colors(
+        control_color="grey")
     axes = {}
 
     fig = plt.figure(figsize=(16, 20), layout="constrained")
@@ -87,9 +88,9 @@ def main():
         stds = agent_n_tr_stds[bayesian_agent]
 
         axes[0].errorbar(
-            tau_gen_values, means, alpha=0.7, markersize=4, 
+            tau_gen_values, means, alpha=0.7, markersize=5,
             color=agent_colors[color_index], fmt='o',
-            linestyle='-', linewidth=0.8,
+            linestyle='-', linewidth=1,
             label=bayesian_agent,
             clip_on=False, yerr=stds)
 
@@ -123,10 +124,10 @@ def main():
                                 x_label=r"$\tau$",
                                 # title=f"A3_lambda = {lambda_gen}",
                                 title_font=20,
-                                axix_label_size=20,
-                                ticksize=16,
-                                xticks=tau_gen_values,
-                                xticklabels=tau_gen_values,
+                                axix_label_size=28,
+                                ticksize=18,
+                                xticks=np.round(np.arange(0, max(tau_gen_values) + 0.05, 0.05), 2),
+                                xticklabels=np.round(np.arange(0, max(tau_gen_values) + 0.05, 0.05), 2),
                                 yticks=np.arange(0, 11, 2),
                                 ytickslabels=np.arange(0, 11, 2),
                                 y_lim=(0, 10))
@@ -135,14 +136,13 @@ def main():
 
     # ------Figure B----------------------------------------–
 
-    color_indices = np.arange(1, 20, 20/len(lambda_gen_values))
+    color_indices = np.flip(np.round(np.linspace(3, 19, 11)))
     color_indices = np.round(color_indices)
     viridis_20 = palettable.matplotlib.Viridis_20.colors
     a3_viridis_colors = [viridis_20[int(i)] for i in color_indices]
     a3_colors = [
         [value / 255 for value in list_]
         for list_ in a3_viridis_colors]
-
 
     for index, lambda_gen in enumerate(lambda_gen_values):
         agent_n_tr_means["A3"] = agent_performance_group_averages.loc[
@@ -161,16 +161,16 @@ def main():
         stds = agent_n_tr_stds["A3"]
 
         axes[1].errorbar(
-            tau_gen_values, means, alpha=0.7, markersize=4,
+            tau_gen_values, means, alpha=0.7, markersize=5,
             color=a3_colors[index],
             fmt='o',
-            linestyle='-', linewidth=0.8,
+            linestyle='-', linewidth=1,
             label=r"$\lambda$ = " + f"{lambda_gen}",
             clip_on=False, yerr=stds)
 
     tau_gen_values = agent_performance_group_averages.loc[
         "A3", :, :].index.unique(level="tau_gen").values
-    axes[1].legend(loc="upper right", fontsize=15)
+    axes[1].legend(loc="upper right", fontsize=18)
         # axex[1].set_title(label=r"A3 $\lambda$ = " + f"{lambda_gen}",
         #                     loc="left", fontsize=20)
 
@@ -178,10 +178,10 @@ def main():
                                 x_label=r"$\tau$",
                                 # title=f"A3_lambda = {lambda_gen}",
                                 title_font=20,
-                                axix_label_size=20,
-                                ticksize=16,
-                                xticks=tau_gen_values,
-                                xticklabels=tau_gen_values,
+                                axix_label_size=28,
+                                ticksize=18,
+                                xticks=np.round(np.arange(0, max(tau_gen_values) + 0.05, 0.05), 2),
+                                xticklabels=np.round(np.arange(0, max(tau_gen_values)+0.05, 0.05), 2),
                                 yticks=np.arange(0, 11, 2),
                                 ytickslabels=np.arange(0, 11, 2),
                                 y_lim=(0, 10))
@@ -195,8 +195,8 @@ def main():
 
 if __name__ == "__main__":
 
-    EXP_LABEL = "exp_msc_50parts_new"
-    FIGURE_FILENAME = "figue_1_agent_perf_50parts_new"
+    EXP_LABEL = "exp_msc_50parts"
+    FIGURE_FILENAME = "figue_1_agent_perf_50parts"
     N_BLOCKS = 3
 
     main()

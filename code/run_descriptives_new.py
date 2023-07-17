@@ -177,6 +177,7 @@ def main():
             descr_stats_all_subs_df = pd.concat([descr_stats_all_subs_df,
                                                  descr_stats_this_sub_df],
                                                 ignore_index=True)
+            edited_descr_stats = True
 
             # for block_, block_df in events_block_this_sub.items():
             #     descr_stats_this_block = DescrStats(

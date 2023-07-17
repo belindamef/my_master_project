@@ -1,6 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+from matplotlib import gridspec
+from matplotlib import pyplot
+from utilities import very_plotter
 import pandas as pd
 import os
 import glob
@@ -23,7 +24,10 @@ data = pd.read_csv(data_fn, sep="\t")
 # ----------------------------------------------------------
 
 # Initialize figure
-plt, col_exp, col_A, col_C = very_plotter.get_fig_template(plt)
+plt = very_plotter.get_fig_template(pyplot)
+col_exp = very_plotter.get_exp_group_colors()
+col_A, col_C = very_plotter.get_agent_colors
+
 fig = plt.figure(figsize=(20, 6))
 gs = gridspec.GridSpec(1, 5)
 ax = {}

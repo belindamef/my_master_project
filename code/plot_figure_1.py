@@ -134,7 +134,10 @@ def main():
     n_rounds = np.max(exp_ev_all_subs_df['round'])
 
     # Initialize figure
-    plt, col_exp, col_A, col_C = very_plotter.get_fig_template(pyplot)  # an
+    plt = very_plotter.get_fig_template(pyplot)
+    col_exp = very_plotter.get_exp_group_colors()
+    col_A, col_C = very_plotter.get_agent_colors
+
     ax = {}
     fig = plt.figure(figsize=(16, 10))
     gs = gridspec.GridSpec(4, 10)
