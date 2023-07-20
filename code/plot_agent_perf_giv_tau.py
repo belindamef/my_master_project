@@ -51,6 +51,7 @@ def main():
     lambda_gen_values = agent_performance_group_averages.index.unique(
         level="lambda_gen").values
     lambda_gen_values = lambda_gen_values[~np.isnan(lambda_gen_values)]
+    lambda_gen_values.sort()
 
     agent_n_tr_means = {}
     agent_n_tr_stds = {}
@@ -195,8 +196,8 @@ def main():
 
 if __name__ == "__main__":
 
-    EXP_LABEL = "exp_msc_50parts"
-    FIGURE_FILENAME = "figue_1_agent_perf_50parts"
+    EXP_LABEL = "exp_msc_50parts_new"
+    FIGURE_FILENAME = "figue_1_agent_perf_50parts_new"
     N_BLOCKS = 3
 
     main()
