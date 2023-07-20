@@ -12,6 +12,8 @@ universe       = vanilla
 getenv         = True
 request_cpus   = 1
 request_memory = 8G
+notify_user    = belinda.fleischmann@ovgu.de
+notification   = Error
 
 # Execution
 initial_dir    = /home/data/treasure_hunt/treasure-hunt/code
