@@ -57,9 +57,10 @@ class Paths:
     this_sim_rawdata_dir: str = None
     this_val_out_dir: str = None
 
-    # Subject-specific directories
+    # Subject-specific directories and filenames
     this_sub_dir: str = None
     this_sub_beh_out_filename: str = None
+    this_sub_val_results_filename: str = None
 
     # Processed data and descriptive stats directories
     this_analyses_raw_data_path: str = None
@@ -204,8 +205,21 @@ class DirectoryManager:
         else:
             self.paths.this_val_out_dir = os.path.join(
                 self.paths.val_out, f"{out_dir_label}_{version}")
+
             if not os.path.exists(self.paths.this_val_out_dir):
                 os.makedirs(self.paths.this_val_out_dir)
+
+        try:
+            if not os.path.exists(self.paths.this_val_out_dir):
+                os.makedirs(self.paths.this_val_out_dir)
+            else:
+                print("Output directory for validation results already exists. "
+                        "Skipping makedirs. results will be written to "
+                        "existing directory.")
+        except FileExistsError:
+            print("Output directory for validation results already exists. "
+                        "Skipping makedirs. results will be written to "
+                        "existing directory.")
 
     def create_agent_sub_id(self, sim_params):
         """Create id for this subject. More than one subject id per agent
@@ -238,21 +252,10 @@ class DirectoryManager:
             self.paths.this_sub_dir,
             f"sub-{self.sub_id}_task-th_beh")
 
-    def define_out_single_val_filename(self, rep, agent, tau, lambda_, part):
-        if np.isnan(lambda_):
-            filename = os.path.join(
-                self.paths.this_val_out_dir,
-                f"rep-{rep}_agent-{agent}_"
-                f"tau-{int(round(tau * 1000, ndigits=4))}_"
-                f"part-{part}")
-        else:
-            filename = os.path.join(
-                self.paths.this_val_out_dir,
-                f"rep-{rep}_agent-{agent}_"
-                f"tau-{int(round(tau * 1000, ndigits=4))}_"
-                f"lambda-{int(round(lambda_ * 1000, ndigits=4))}_"
-                f"part-{part}")
-        return filename
+    def define_val_results_filename(self):
+        self.paths.this_sub_val_results_filename = os.path.join(
+            self.paths.this_val_out_dir,
+            f"val_results_sub-{self.sub_id}")
 
     def prepare_beh_output(self, sim_params):
         self.create_agent_sub_id(sim_params)

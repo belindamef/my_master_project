@@ -11,7 +11,7 @@ import argparse
 from utilities.config import DirectoryManager, TaskConfigurator
 from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.modelling import AgentInitObject, BayesianModelComps
-from utilities.estimation_methods import ParameterEstimator, EstimationParams
+from utilities.estimation_methods import ParamAndModelRecoverer, RecoveryParameters
 import numpy as np
 import pandas as pd
 
@@ -56,8 +56,8 @@ def define_simulation_parameters() -> SimulationParameters:
     return sim_parameters
 
 
-def define_estimation_parameters() -> EstimationParams:
-    estimation_params = EstimationParams()
+def define_estimation_parameters() -> RecoveryParameters:
+    estimation_params = RecoveryParameters()
     return estimation_params
 
 
@@ -111,7 +111,7 @@ def main():
 
                         simulator.simulate_beh_data()
 
-                        estimator = ParameterEstimator()
+                        estimator = ParamAndModelRecoverer()
 
                         estimator.instantiate_sim_obj(
                             exp_data=simulator.data,

@@ -1,5 +1,5 @@
 """
-This script evaluates and visualizes beh_model recovery simulations.
+This script evaluates and visualizes beh_model recovery analyses.
 
 Author: Belinda Fleischmann
 """
@@ -9,7 +9,6 @@ from utilities.config import DirectoryManager, TaskConfigurator, get_arguments
 from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.modelling import BayesianModelComps
 from utilities.validation_methods import Validator
-import numpy as np
 
 
 def define_simulation_parameters() -> SimulationParameters:
@@ -36,14 +35,14 @@ def main():
     task_config = TaskConfigurator(dir_mgr.paths).get_config(TASK_CONFIG_LABEL)
     bayesian_comps = BayesianModelComps(task_config.params).get_comps()
 
-    sim_params = define_simulation_parameters()
-    simulator = Simulator(task_config, bayesian_comps, sim_params)
-
     if IS_QUICK_TEST:
         adjust_total_trial_numbers(task_config)
 
+    sim_params = define_simulation_parameters()
+    simulator = Simulator(task_config, bayesian_comps, sim_params)
+
     validator = Validator(sim_params, simulator, dir_mgr)
-    validator.run_simulation_and_estimation_routine()
+    validator.run_simulation_and_validation_routine()
 
 
 if __name__ == "__main__":
@@ -51,13 +50,13 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     TASK_CONFIG_LABEL = "exp_msc"
-    OUT_DIR_LABEL = "delete"
-    VERSION_NO = "1"
+    OUT_DIR_LABEL = "exp_msc_tests"
+    VERSION_NO = "2"
 
     IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1
-    TEST_N_ROUNDS = 10
-    TEST_N_TRIALS = 12
+    TEST_N_ROUNDS = 2
+    TEST_N_TRIALS = 2
 
     main()
     end = time.time()

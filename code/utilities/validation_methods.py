@@ -5,7 +5,7 @@ Author: Belinda Fleischmann
 """
 
 from utilities.simulation_methods import Simulator, SimulationParameters
-from utilities.estimation_methods import ParameterEstimator
+from utilities.estimation_methods import ParamAndModelRecoverer
 from utilities.modelling import AgentInitObject
 from utilities.config import DirectoryManager
 import numpy as np
@@ -17,12 +17,13 @@ class Validator:
         "agent": [], "participant": [],
         "tau_gen": [], "tau_mle": [],
         "lambda_gen": [], "lambda_mle": []}
+    recoverer: ParamAndModelRecoverer = ParamAndModelRecoverer()
 
     def __init__(self, sim_params: SimulationParameters,
                  simulator: Simulator, dir_mgr: DirectoryManager):
-        self.sim_params = sim_params
-        self.simulator = simulator
-        self.dir_mgr = dir_mgr
+        self.sim_params: SimulationParameters = sim_params
+        self.simulator: Simulator = simulator
+        self.dir_mgr: DirectoryManager = dir_mgr
 
     def record_data_generating_sim_params(self):
         # TODO: more elegant solution please...
@@ -45,77 +46,82 @@ class Validator:
     def record_lambda_estimate(self, lambda_estimate):
         self.data_dic["lambda_mle"].append(lambda_estimate)
 
-    def save_data(self):
-        out_fn = self.dir_mgr.define_out_single_val_filename(
-            self.sim_params.current_rep,
-            self.sim_params.current_agent_model,
-            self.sim_params.current_tau_gen,
-            self.sim_params.current_lambda_gen,
-            self.sim_params.current_part)
+    def save_param_est_results(self):
+        self.dir_mgr.create_agent_sub_id(self.sim_params)
+        self.dir_mgr.define_val_results_filename()
 
         mle_df = pd.DataFrame(self.data_dic)
 
-        with open(f"{out_fn}.tsv", "w", encoding="utf8") as tsv_file:
+        with open(f"{self.dir_mgr.paths.this_sub_val_results_filename}.tsv",
+                  "w", encoding="utf8") as tsv_file:
             tsv_file.write(mle_df.to_csv(sep="\t", na_rep=np.NaN, index=False))
 
+    def estimate_parameter_values(self):
+        self.recoverer.instantiate_sim_obj(
+            exp_data=self.simulator.data,
+            task_configs=self.simulator.task_configs,
+            bayesian_comps=self.simulator.bayesian_comps
+            )
+
+        # Embed simulation params in estimator sim object
+        self.recoverer.sim_object.sim_params = self.sim_params
+
+        if (np.isnan(self.sim_params.current_tau_gen)
+                and np.isnan(self.sim_params.current_lambda_gen)):
+            mle_tau_est = np.nan
+            mle_lambda_est = np.nan
+
+        elif np.isnan(self.sim_params.current_lambda_gen):
+            mle_tau_est = self.recoverer.estimate_tau(
+                method="brute_force")
+            mle_lambda_est = np.nan
+
+        else:         # TODO: hier weiter! wie 2-dimensional schätzen??!!
+            mle_tau_est, mle_lambda_est = self.recoverer.estimate_tau_lambda(
+                    method="brute_force")
+
+        self.record_tau_estimate(mle_tau_est)
+        self.record_lambda_estimate(mle_lambda_est)
+        self.save_param_est_results()
+
+    def evaluate_model_recovery_performance(self):
+        self.recoverer.evaluate_BICs()
+
     def iterate_participants(self):
+        """For each participant, simulate behavioral data, estimate parameter
+        values and evaluate model recovery performance"""
         for participant in self.sim_params.participant_numbers:
             self.sim_params.current_part = participant + 1
             self.record_participant_number()
 
             self.simulator.simulate_beh_data()
 
-            estimator = ParameterEstimator()
-            estimator.instantiate_sim_obj(
-                exp_data=self.simulator.data,
-                task_configs=self.simulator.task_configs,
-                bayesian_comps=self.simulator.bayesian_comps
-                )
+            self.estimate_parameter_values()
 
-            # Embed simulation params in estimator sim object
-            estimator.sim_object.sim_params = self.sim_params
+            self.evaluate_model_recovery_performance()
 
-            print("Starting brute-force estimation for tau",
-                  f"tau_gen: {self.sim_params.current_tau_gen}")
-
-            mle_tau_estimate = estimator.estimate_tau(method="brute_force")
-            self.record_tau_estimate(mle_tau_estimate)
-
-            # Estimate lambda, if appliclabe
-            if np.isnan(self.sim_params.current_lambda_gen):
-                mle_lambda_estimate = np.nan
-            else:
-                mle_lambda_estimate = estimator.estimate_lambda(
-                    method="brute_force")
-
-            self.record_lambda_estimate(mle_lambda_estimate)
-
-            self.save_data()
-
-    def iterate_data_generating_lambda_space(self):
-        for lambda_gen in self.simulator.sim_params.lambda_gen_space:
-            self.simulator.sim_params.current_lambda_gen = lambda_gen
-
-            self.record_data_generating_sim_params()
-
-            self.iterate_participants()
-
-    def iterate_data_generating_tau_space(self):
+    def iterate_parameter_space(self):
         for tau_gen in self.simulator.sim_params.tau_space_gen:
             self.simulator.sim_params.current_tau_gen = tau_gen
-            self.iterate_data_generating_lambda_space()
 
-    def iterate_data_generating_agent_model_space(self):
-        for agent_model in self.simulator.sim_params.agent_space_gen:
-            self.sim_params.current_agent_attributes = AgentInitObject(
-                agent_model)
-            self.sim_params.current_agent_model = agent_model
-            self.iterate_data_generating_tau_space()
+            for lambda_gen in self.simulator.sim_params.lambda_gen_space:
+                self.simulator.sim_params.current_lambda_gen = lambda_gen
 
-    def iterate_repetitions(self):
+                self.record_data_generating_sim_params()
+
+                self.iterate_participants()
+
+    def iterate_reps_and_generating_beh_models(self):
         for repetition in self.sim_params.repetition_numbers:
             self.sim_params.current_rep = repetition + 1
-            self.iterate_data_generating_agent_model_space()
 
-    def run_simulation_and_estimation_routine(self):
-        self.iterate_repetitions()
+            for agent_model in self.simulator.sim_params.agent_space_gen:
+                self.sim_params.current_agent_attributes = AgentInitObject(
+                    agent_model)
+
+                self.sim_params.current_agent_model = agent_model
+
+                self.iterate_parameter_space()
+
+    def run_simulation_and_validation_routine(self):
+        self.iterate_reps_and_generating_beh_models()

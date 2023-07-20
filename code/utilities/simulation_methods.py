@@ -166,6 +166,8 @@ class SimulationParameters:
         self.tau_space_gen = args.tau_value
         self.lambda_gen_space = args.lambda_value
         self.participant_numbers = args.participant
+        self.n_participants = len(self.participant_numbers)
+        self.n_repetitions = len(self.repetition_numbers)
         return self
 
     def define_n_reps_and_participants_manually(self, n_rep: int = 1,
@@ -321,8 +323,8 @@ class Simulator():
                               self.sim_params.current_agent_attributes.name)
         self.data = recorder.sim_data
 
-    def sim_to_eval_llh(self, current_tau_analyze,
-                        current_lambda_analyze) -> float:
+    def sim_to_eval_llh(self, candidate_tau,
+                        candidate_lambda) -> float:
         """Simulate trialwise interactions between agent and task to evaluate
         the llh function value for a given tau and lambda and given data,
         as sum over all trials
@@ -334,7 +336,7 @@ class Simulator():
 
         for block in range(self.task_configs.params.n_blocks):
             self.create_interacting_objects(
-                block, current_tau_analyze, current_lambda_analyze)
+                block, candidate_tau, candidate_lambda)
             llhs_all_rounds = np.full(
                 (self.task_configs.params.n_rounds, 1), np.nan)
 
