@@ -51,11 +51,11 @@ if __name__ == "__main__":
 
     TASK_CONFIG_LABEL = "exp_msc"
     OUT_DIR_LABEL = "exp_msc_tests"
-    VERSION_NO = "2"
+    VERSION_NO = "3"
 
     IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1
-    TEST_N_ROUNDS = 2
+    TEST_N_ROUNDS = 1
     TEST_N_TRIALS = 2
 
     main()

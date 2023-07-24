@@ -66,26 +66,25 @@ class Validator:
         # Embed simulation params in estimator sim object
         self.recoverer.sim_object.sim_params = self.sim_params
 
-        if (np.isnan(self.sim_params.current_tau_gen)
-                and np.isnan(self.sim_params.current_lambda_gen)):
-            mle_tau_est = np.nan
-            mle_lambda_est = np.nan
+        # Set candidate agent model to generating agent
+        self.recoverer.current_cand_agent = self.sim_params.current_agent_gen
 
-        elif np.isnan(self.sim_params.current_lambda_gen):
-            mle_tau_est = self.recoverer.estimate_tau(
-                method="brute_force")
-            mle_lambda_est = np.nan
+        self.recoverer.reset_result_variables_to_nan()  # TODO hübscher
 
-        else:         # TODO: hier weiter! wie 2-dimensional schätzen??!!
-            mle_tau_est, mle_lambda_est = self.recoverer.estimate_tau_lambda(
-                    method="brute_force")
+        self.recoverer.estimate_parameters(method="brute_force")
+
+        mle_tau_est = self.recoverer.tau_est_result_gen_agent
+        mle_lambda_est = self.recoverer.lambda_est_result_gen_agent
 
         self.record_tau_estimate(mle_tau_est)
         self.record_lambda_estimate(mle_lambda_est)
         self.save_param_est_results()
 
     def evaluate_model_recovery_performance(self):
-        self.recoverer.evaluate_BICs()
+        agent_spec_BICs = self.evaluate_bic_s(est_method="brute_force")
+
+        # TODO: hier weiter record BICs 
+        stop = "here"
 
     def iterate_participants(self):
         """For each participant, simulate behavioral data, estimate parameter
@@ -119,7 +118,7 @@ class Validator:
                 self.sim_params.current_agent_attributes = AgentInitObject(
                     agent_model)
 
-                self.sim_params.current_agent_model = agent_model
+                self.sim_params.current_agent_gen = agent_model
 
                 self.iterate_parameter_space()
 

@@ -10,23 +10,24 @@ from utilities.modelling import BayesianModelComps
 from utilities.config import TaskConfigurator
 
 
-
 class RecoveryParameters:
-    agent_model_candidate_space = ["C1", "C2", "C3", "A1", "A2", "A3"]
-    tau_bf_cand_space = np.arange(0.01, 0.51, 0.1)  # TODO: more elegant way!
+    agent_model_candidate_space = ["C1", "C2", "C3"] #, "A1", "A2", "A3"]
+    tau_bf_cand_space = np.linspace(0.01, 0.5, 5)
     lambda_bf_cand_space = np.linspace(0.1, 0.9, 5)
-    current_tau_analyze: float = None
-    current_lambda_analyze: float = None
-    tau_analyze_if_fixed = 0.1
-
-    def get_params_from_args(self):
-        return self
 
 
 class ParamAndModelRecoverer:
     """A class to evaluate Maximum Likelihood parameters estimations"""
     est_params: RecoveryParameters = RecoveryParameters()
     sim_object: Simulator
+
+    current_cand_agent: str
+    tau_est_result_gen_agent: float = np.nan
+    tau_est_result_current_cand_agent: float = np.nan
+    lambda_est_result_gen_agent: float = np.nan
+    lambda_est_result_current_cand_agent: float = np.nan
+    llh_theta_hat_gen_agent: float = np.nan
+    llh_theta_hat_current_cand_agent: float = np.nan
 
     def instantiate_sim_obj(self, exp_data, task_configs: TaskConfigurator,
                             bayesian_comps: BayesianModelComps):
@@ -37,6 +38,14 @@ class ParamAndModelRecoverer:
         """
         self.sim_object = Simulator(task_configs, bayesian_comps)
         self.sim_object.data = exp_data
+
+    def reset_result_variables_to_nan(self):
+        self.tau_est_result_gen_agent = np.nan
+        self.tau_est_result_current_cand_agent = np.nan
+        self.lambda_est_result_gen_agent = np.nan
+        self.lambda_est_result_current_cand_agent = np.nan
+        self.llh_theta_hat_gen_agent = np.nan
+        self.llh_theta_hat_current_cand_agent = np.nan
 
     def eval_llh_function_tau(self):
         """Evaluate log_likelihood function for given tau parameter space, and
@@ -54,23 +63,6 @@ class ParamAndModelRecoverer:
             loglikelihood_function[i] = this_tau_s_llh
 
         return loglikelihood_function
-
-    # def eval_llh_function_lambda(self):
-    #     """Evaluate log_likelihood function for given lambda parameter space,
-    #      fixed tau value and simulated dataset.
-    #     """
-
-    #     loglikelihood_function = np.full(
-    #         len(self.est_params.lambda_bf_cand_space), np.nan)
-
-    #     for i, lambda_i in np.ndenumerate(self.est_params.lambda_bf_cand_space):
-    #         this_lambda_s_llh = self.sim_object.sim_to_eval_llh(
-    #             self.est_params.tau_analyze_if_fixed,
-    #             lambda_i)
-
-    #         loglikelihood_function[i] = this_lambda_s_llh
-
-    #     return loglikelihood_function
 
     def eval_llh_function_tau_and_lambda(self):
         """Evaluate log_likelihood function for given 2-dimdensional tau and
@@ -107,11 +99,17 @@ class ParamAndModelRecoverer:
         # Identify tau with maximum likelihood, i.e. min. neg. log likelihood
         neg_llh_function = - loglikelihood_function
         maximum_likelihood_tau = self.est_params.tau_bf_cand_space[
-            np.argmin(neg_llh_function)]  # TODO möglich, mehrere Minima zu haben? 
+            np.argmin(neg_llh_function)]
         end_est_total = time.time()
         print(f"Finined estimation in "
               f"{round(end_est_total - start_est_total,ndigits=2)} sec.")
-        return maximum_likelihood_tau
+
+        if self.current_cand_agent == self.sim_object.data.loc["agent"][0]:
+            self.tau_est_result_gen_agent = maximum_likelihood_tau
+            self.llh_theta_hat_gen_agent = np.min(neg_llh_function)
+        else:
+            self.tau_est_result_current_cand_agent = maximum_likelihood_tau
+            self.llh_theta_hat_current_cand_agent = np.min(neg_llh_function)
 
     def eval_brute_force_tau_lambda(self) -> tuple[float, float]:
         """Evaluate the maximum likelihood estimation of the decision noise
@@ -132,40 +130,75 @@ class ParamAndModelRecoverer:
         max_llh_lambda = self.est_params.lambda_bf_cand_space[
             min_neg_llh_lambda_index]
 
-        return max_llh_tau, max_llh_lambda
+        if self.current_cand_agent == self.sim_object.data.iloc[0]["agent"]:
+            self.tau_est_result_gen_agent = max_llh_tau
+            self.lambda_est_result_gen_agent = max_llh_lambda
+            self.llh_theta_hat_gen_agent = np.min(neg_llh_function)
+        else:
+            self.tau_est_result_current_cand_agent = max_llh_tau
+            self.lambda_est_result_current_cand_agent = max_llh_lambda
+            self.llh_theta_hat_current_cand_agent = np.min(
+                neg_llh_function)
 
-    # def eval_brute_force_est_lambda(self) -> float:
-    #     print("Starting brute-force estimation for lambda")
-    #     start_est_total = time.time()
-    #     lambda_candidate_space = self.est_params.lambda_bf_cand_space
-    #     loglikelihood_function = self.eval_llh_function_lambda()
-
-    #     # Identify tau with maximum likelihood, i.e. min. neg. log likelihood
-    #     neg_llh_function = - loglikelihood_function
-    #     maximum_likelihood_lambda = lambda_candidate_space[np.argmin(
-    #         neg_llh_function)]
-    #     end_est_total = time.time()
-    #     print(f"Finined estimation in "
-    #           f"{round(end_est_total - start_est_total,ndigits=2)} sec.")
-    #     return maximum_likelihood_lambda
-
-    def estimate_tau(self, method: str) -> float:
+    def estimate_tau(self, method: str):
 
         if method == "brute_force":
-            tau_estimate = self.eval_brute_force_est_tau()
-
-        return tau_estimate
+            self.eval_brute_force_est_tau()
 
     def estimate_tau_lambda(self, method: str):
         """Estimate two-dimensional parameter vektor, tau and lambda"""
 
         if method == "brute_force":
-            tau_estimate, lambda_estimate = self.eval_brute_force_tau_lambda()
+            self.eval_brute_force_tau_lambda()
 
-        return tau_estimate, lambda_estimate
+    def estimate_parameters(self, method: str):
+        if (np.isnan(self.sim_object.sim_params.current_tau_gen)
+                and np.isnan(self.sim_object.sim_params.current_lambda_gen)):
+            pass  # TODO check, if before already np.nan
 
-    def evaluate_BICs(self):
+        elif np.isnan(self.sim_object.sim_params.current_lambda_gen):
+            self.estimate_tau(method=method)
 
-        for agent_model in self.est_params.agent_model_candidate_space:
+        else:
+            self.estimate_tau_lambda(method=method)
 
-            stop = "here"
+    def eval_bic_giv_theta_hat(self,
+                               llh_theta_hat: float,
+                               n_params: int,
+                               n_valid_actions: int):
+
+        this_bic = llh_theta_hat - n_params/2 * np.log(n_valid_actions)
+        return this_bic
+
+    def evaluate_bic_s(self, est_method: str):
+
+        agent_specific_bic_s = np.ful(
+            len(self.est_params.agent_model_candidate_space),
+            np.nan)
+
+        for i, agent_model in enumerate(
+                self.est_params.agent_model_candidate_space):
+            self.current_cand_agent = agent_model
+
+            if "C" in agent_model:
+                n_params = 0
+            elif agent_model == "A3":
+                n_params = 2
+            else:
+                n_params = 1
+
+            n_valid_choices = self.sim_object.data.a.count()
+
+            if agent_model == self.sim_object.data.iloc[0]["agent"]:
+                llh_theta_hat = self.llh_theta_hat_gen_agent
+
+            else:
+                self.estimate_parameters(method=est_method)
+                llh_theta_hat = self.llh_theta_hat_current_cand_agent
+
+            agent_specific_bic_s[i] = self.eval_bic_giv_theta_hat(
+                llh_theta_hat=llh_theta_hat,
+                n_params=n_params,
+                n_valid_actions=n_valid_choices)
+
+        return agent_specific_bic_s

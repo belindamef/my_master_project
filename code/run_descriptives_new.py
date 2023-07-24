@@ -129,8 +129,15 @@ def main():
                 f'Skipping processing for sub-{sub_id}, '
                 f'already in descr_stats_all_subs_df')
 
+    if edited_descr_stats:
+        with open(f'{dir_mgr.paths.subj_lvl_descr_stats_fn}.tsv', 'w',
+                  encoding="utf8") as tsv_file:
+            tsv_file.write(descr_stats_all_subs_df.to_csv(sep='\t', na_rep='n/a'))
+        descr_stats_all_subs_df.to_pickle(
+            f'{dir_mgr.paths.subj_lvl_descr_stats_fn}.pkl')
+
 if __name__ == "__main__":
-    EXP_LABEL = "exp_msc_50parts"  # 'exp_msc' or 'sim_100_msc' or 'test'""
+    EXP_LABEL = "exp_msc_50parts_new"  # 'exp_msc' or 'sim_100_msc' or 'test'""
     EXP_OR_SIM = "sim"  # str(input("Enter dataset ('exp' or 'sim): "))
     DIM = 5
     N_BLOCKS = 3

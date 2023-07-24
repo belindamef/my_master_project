@@ -20,13 +20,13 @@ executable     = /home/data/treasure_hunt/treasure-hunt/code/wrapper_script_beh_
 # Make sure floating numbers are comma seperated
 export LC_NUMERIC="en_US.UTF-8"
 
-# Define simulation parameter spaces
+# Define simulation behavioral model space
 declare -a all_agents=(C1 C2 C3 A1 A2 A3)
 declare -a bayesian_agents=(A1 A2 A3)
 declare -a control_agents=(C1 C2 C3)
 #declare -a agent_models=(A3)
 
-# Repetions and number of participants
+# Specify number of repetions and participants
 n_repetitions=1
 n_participants=50
 

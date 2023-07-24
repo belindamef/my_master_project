@@ -155,7 +155,7 @@ class SimulationParameters:
     lambda_gen_space: list
     current_rep: int = None
     current_agent_attributes: object = None
-    current_agent_model: str = None
+    current_agent_gen: str = None
     current_tau_gen: float = None
     current_lambda_gen: float = None
     current_part: int = None
