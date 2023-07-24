@@ -11,7 +11,7 @@ from utilities.config import TaskConfigurator
 
 
 class RecoveryParameters:
-    agent_model_candidate_space = ["C1", "C2", "C3"] #, "A1", "A2", "A3"]
+    agent_model_candidate_space = ["C1", "C2", "C3"]  # , "A1", "A2", "A3"]
     tau_bf_cand_space = np.linspace(0.01, 0.5, 5)
     lambda_bf_cand_space = np.linspace(0.1, 0.9, 5)
 
@@ -76,7 +76,7 @@ class ParamAndModelRecoverer:
         for i_tau, tau_i in np.ndenumerate(self.est_params.tau_bf_cand_space):
 
             for i_lambda, lambda_i in np.ndenumerate(
-                self.est_params.lambda_bf_cand_space):
+                    self.est_params.lambda_bf_cand_space):
 
                 this_theta_s_llh = self.sim_object.sim_to_eval_llh(
                     candidate_tau=tau_i,
@@ -84,7 +84,7 @@ class ParamAndModelRecoverer:
                 )
 
                 loglikelihood_function[i_tau, i_lambda] = this_theta_s_llh
-        
+
         return loglikelihood_function
 
     def eval_brute_force_est_tau(self) -> float:

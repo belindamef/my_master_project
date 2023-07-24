@@ -81,10 +81,9 @@ class Validator:
         self.save_param_est_results()
 
     def evaluate_model_recovery_performance(self):
-        agent_spec_BICs = self.evaluate_bic_s(est_method="brute_force")
-
-        # TODO: hier weiter record BICs 
-        stop = "here"
+        # TODO: agent_spec_BICs = self.evaluate_bic_s(est_method="brute_force")
+        # TODO: hier weiter record BICs
+        4 + 4
 
     def iterate_participants(self):
         """For each participant, simulate behavioral data, estimate parameter

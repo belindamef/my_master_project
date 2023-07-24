@@ -213,13 +213,13 @@ class DirectoryManager:
             if not os.path.exists(self.paths.this_val_out_dir):
                 os.makedirs(self.paths.this_val_out_dir)
             else:
-                print("Output directory for validation results already exists. "
-                        "Skipping makedirs. results will be written to "
-                        "existing directory.")
+                print("Output directory for validation results already exists."
+                      " Skipping makedirs. results will be written to "
+                      "existing directory.")
         except FileExistsError:
             print("Output directory for validation results already exists. "
-                        "Skipping makedirs. results will be written to "
-                        "existing directory.")
+                  "Skipping makedirs. results will be written to "
+                  "existing directory.")
 
     def create_agent_sub_id(self, sim_params):
         """Create id for this subject. More than one subject id per agent

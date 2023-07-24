@@ -1,5 +1,5 @@
-"""This script runs and plots a set of descriptive statistics on the 
-treasure hunt task 
+"""This script runs and plots a set of descriptive statistics on the
+treasure hunt task
 
 File creation
     tr_found.png  : Number of treasures found for each subject
@@ -13,7 +13,6 @@ import pandas as pd
 from utilities.config import DirectoryManager
 from utilities.data_class import Data
 from utilities.data_analyses import DescrStats
-from utilities.data_analyses import GroupStats
 
 
 def main():
@@ -32,9 +31,8 @@ def main():
     dir_mgr.define_stats_filenames()
 
     # Initialize or Load dataframes for event and descr stats
-    edited_processed_events_all_subs = False
+    # edited_processed_events_all_subs = False
     edited_descr_stats = False
-
 
     # ---------------------------------------------------------------------
     # Initialize or load dataframe for events_all_subs for processed data
@@ -46,12 +44,13 @@ def main():
 
     else:
         events_all_subs_df = pd.DataFrame()
-        edited_processed_events_all_subs = True
+        # edited_processed_events_all_subs = True
 
     # ---------------------------------------------------------------------
     # Initialize or load dataframe for subject level descr stats all subs
     if os.path.exists(f'{dir_mgr.paths.subj_lvl_descr_stats_fn}.pkl'):
-        descr_stats_all_subs_df = pd.read_pickle(f'{dir_mgr.paths.subj_lvl_descr_stats_fn}.pkl')
+        descr_stats_all_subs_df = pd.read_pickle(
+            f'{dir_mgr.paths.subj_lvl_descr_stats_fn}.pkl')
         # for block_, block_df in subj_level_stats_all_subs_bw.items():
         #     subj_level_stats_all_subs_bw[block_] = pd.read_pickle(
         #         f'{dir_mgr.paths.subj_lvl_descr_stats_fn}_run-{block_:02d}.pkl')
@@ -86,7 +85,8 @@ def main():
 
             # Check if processed data existent, and load if existent
             proc_data_fn = os.path.join(
-                dir_mgr.paths.this_analyses_proc_data_path, f'sub-{sub_id}_task-th_run-all_beh')
+                dir_mgr.paths.this_analyses_proc_data_path,
+                f'sub-{sub_id}_task-th_run-all_beh')
             if os.path.exists(f'{proc_data_fn}.pkl'):
                 print(f'unpacking sub-{sub_id} proc_events.pkl')
                 events_this_sub_df = pd.read_pickle(f'{proc_data_fn}.pkl')
@@ -102,7 +102,8 @@ def main():
                 events_this_sub_df = data_this_sub.events_df
 
                 # ------Save processed data--------
-                with open(f'{proc_data_fn}.tsv', 'w') as tsv_file:
+                with open(f'{proc_data_fn}.tsv', 'w',
+                          encoding="utf-8") as tsv_file:
                     tsv_file.write(
                         events_this_sub_df.to_csv(
                             sep='\t', na_rep=np.NaN, index=False))
@@ -111,13 +112,14 @@ def main():
             # Add this subs events to events_all_subs_df
             events_all_subs_df = pd.concat([events_all_subs_df,
                                             events_this_sub_df],
-                                            ignore_index=True)
+                                           ignore_index=True)
 
             descr_stats_this_sub = DescrStats(
                 events_this_sub_df, EXP_OR_SIM, subject=sub_id)
-        
+
             # (One row for this subject)
-            descr_stats_this_sub_df = descr_stats_this_sub.perform_descr_stats()
+            descr_stats_this_sub_df = descr_stats_this_sub.perform_descr_stats(
+            )
 
             descr_stats_all_subs_df = pd.concat([descr_stats_all_subs_df,
                                                  descr_stats_this_sub_df],
@@ -132,9 +134,11 @@ def main():
     if edited_descr_stats:
         with open(f'{dir_mgr.paths.subj_lvl_descr_stats_fn}.tsv', 'w',
                   encoding="utf8") as tsv_file:
-            tsv_file.write(descr_stats_all_subs_df.to_csv(sep='\t', na_rep='n/a'))
+            tsv_file.write(
+                descr_stats_all_subs_df.to_csv(sep='\t', na_rep='n/a'))
         descr_stats_all_subs_df.to_pickle(
             f'{dir_mgr.paths.subj_lvl_descr_stats_fn}.pkl')
+
 
 if __name__ == "__main__":
     EXP_LABEL = "exp_msc_50parts_new"  # 'exp_msc' or 'sim_100_msc' or 'test'""
