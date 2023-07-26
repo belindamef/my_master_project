@@ -15,7 +15,8 @@ code/utilities/lklh_dim-5_h6_bu.npy
 .idea/
 __pycache__/
 **__pycache__/
+
+# Virtual environments
 .th_env
 .my-master-project
-.python-version
 .python-version
