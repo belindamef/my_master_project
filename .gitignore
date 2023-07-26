@@ -10,7 +10,6 @@
 *archive*
 code/utilities/lklh_dim-5_h6.npy
 code/utilities/lklh_dim-5_h6_bu.npy
-
 # IDE and other software hidden files
 **.pptx
 *.vscode
@@ -18,7 +17,6 @@ code/utilities/lklh_dim-5_h6_bu.npy
 .idea/
 __pycache__/
 **__pycache__/
-
 # Virtual environment
 .th_env
 .my-master-project
