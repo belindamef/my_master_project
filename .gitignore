@@ -1,4 +1,3 @@
-#Project contents
 *data/*
 *defense*
 *results/*
@@ -10,14 +9,12 @@
 *archive*
 code/utilities/lklh_dim-5_h6.npy
 code/utilities/lklh_dim-5_h6_bu.npy
-#IDE and other software hidden files
 **.pptx
 *.vscode
 .DS_Store
 .idea/
 __pycache__/
 **__pycache__/
-#Virtual environment
 .th_env
 .my-master-project
 .python-version
