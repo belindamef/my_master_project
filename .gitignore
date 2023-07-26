@@ -1,3 +1,4 @@
+# Project contents
 *data/*
 *defense*
 *results/*
@@ -7,14 +8,18 @@
 *ethics/*
 *doc*
 *archive*
-.my-master-project
-.th_env
-.DS_Store
-.idea/
 code/utilities/lklh_dim-5_h6.npy
 code/utilities/lklh_dim-5_h6_bu.npy
+
+# IDE and other software hidden files
+**.pptx
+*.vscode
+.DS_Store
+.idea/
 __pycache__/
 **__pycache__/
 
-**.pptx
-*.vscode
+# Virtual environment
+.th_env
+.my-master-project
+.python-version
