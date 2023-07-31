@@ -6,7 +6,6 @@ Author: Belinda Fleischmann
 
 from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.estimation_methods import ParamAndModelRecoverer
-from utilities.modelling import AgentInitObject
 from utilities.config import DirectoryManager
 import numpy as np
 import pandas as pd
@@ -27,7 +26,7 @@ class Validator:
             "agent": [], "participant": [],
             "tau_gen": [], "tau_mle": [],
             "lambda_gen": [], "lambda_mle": []}
-        
+
         for agent in self.recoverer.recov_params.agent_candidate_space:
             self.data_dic[f"BIC_{agent}"] = []
 

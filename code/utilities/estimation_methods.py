@@ -3,7 +3,6 @@ estimations of model parameters
 
 Author: Belinda Fleischmann
 """
-import time
 import numpy as np
 from utilities.simulation_methods import Simulator
 from utilities.modelling import BayesianModelComps
@@ -16,8 +15,8 @@ class RecoveryParameters:
     lambda_bf_cand_space: list
 
     def def_params_manually(self, agent_candidate_space: list = None,
-                               tau_bf_cand_space: list = None,
-                               lambda_bf_cand_space: list = None):
+                            tau_bf_cand_space: list = None,
+                            lambda_bf_cand_space: list = None):
 
         if agent_candidate_space is None:
             self.agent_candidate_space = ["C1", "C2", "C3", "A1", "A2", "A3"]
@@ -64,7 +63,7 @@ class ParamAndModelRecoverer:
         self.tau_est_result_current_cand_agent = np.nan
         self.lambda_est_result_gen_agent = np.nan
         self.lambda_est_result_current_cand_agent = np.nan
-        self.llh_noparam_current_cand_agent = np.nan  # TODO this is fff are neg!
+        self.llh_noparam_current_cand_agent = np.nan
         self.llh_theta_hat_gen_agent = np.nan
         self.llh_theta_hat_current_cand_agent = np.nan
 
@@ -73,8 +72,7 @@ class ParamAndModelRecoverer:
             candidate_tau=np.nan,
             candidate_lambda=np.nan
         )
-        neg_llh = - llh
-        self.llh_noparam_current_cand_agent = neg_llh
+        self.llh_noparam_current_cand_agent = llh
 
     def eval_llh_function_tau(self):
         """Evaluate log_likelihood function for given tau parameter space, and
@@ -123,19 +121,18 @@ class ParamAndModelRecoverer:
         method.
         """
 
-        loglikelihood_function = self.eval_llh_function_tau()
+        llh_function = self.eval_llh_function_tau()
 
-        # Identify tau with maximum likelihood, i.e. min. neg. log likelihood
-        neg_llh_function = - loglikelihood_function
+        # Identify tau with maximum likelihood
         maximum_likelihood_tau = self.recov_params.tau_bf_cand_space[
-            np.argmin(neg_llh_function)]
+            np.argmax(llh_function)]
 
         if self.current_cand_agent == self.sim_object.data.iloc[0]["agent"]:
             self.tau_est_result_gen_agent = maximum_likelihood_tau
-            self.llh_theta_hat_gen_agent = np.min(neg_llh_function)
+            self.llh_theta_hat_gen_agent = np.max(llh_function)
         else:
             self.tau_est_result_current_cand_agent = maximum_likelihood_tau
-            self.llh_theta_hat_current_cand_agent = np.min(neg_llh_function)
+            self.llh_theta_hat_current_cand_agent = np.max(llh_function)
 
     def eval_brute_force_tau_lambda(self):
         """Evaluate the maximum likelihood estimation of the decision noise
@@ -143,29 +140,26 @@ class ParamAndModelRecoverer:
         participant with brute force method.
         """
 
-        loglikelihood_function = self.eval_llh_function_tau_and_lambda()
+        llh_function = self.eval_llh_function_tau_and_lambda()
 
-        # Identify theta=(tau,lambda) with max likelihood, i.e. min neg logL
-        neg_llh_function = -loglikelihood_function
-        min_neg_llh_two_dim_index = np.unravel_index(
-            neg_llh_function.argmin(), neg_llh_function.shape)
-        min_neg_llh_tau_index = min_neg_llh_two_dim_index[0]
-        min_neg_llh_lambda_index = min_neg_llh_two_dim_index[1]
+        # Identify theta=(tau,lambda) with max likelihood
+        max_llh_two_dim_index = np.unravel_index(
+            llh_function.argmax(), llh_function.shape)
+        max_llh_tau_index = max_llh_two_dim_index[0]
+        max_llh_lambda_index = max_llh_two_dim_index[1]
 
-        max_llh_tau = self.recov_params.tau_bf_cand_space[
-            min_neg_llh_tau_index]
+        max_llh_tau = self.recov_params.tau_bf_cand_space[max_llh_tau_index]
         max_llh_lambda = self.recov_params.lambda_bf_cand_space[
-            min_neg_llh_lambda_index]
+            max_llh_lambda_index]
 
         if self.current_cand_agent == self.sim_object.data.iloc[0]["agent"]:
             self.tau_est_result_gen_agent = max_llh_tau
             self.lambda_est_result_gen_agent = max_llh_lambda
-            self.llh_theta_hat_gen_agent = np.min(neg_llh_function)
+            self.llh_theta_hat_gen_agent = np.max(llh_function)
         else:
             self.tau_est_result_current_cand_agent = max_llh_tau
             self.lambda_est_result_current_cand_agent = max_llh_lambda
-            self.llh_theta_hat_current_cand_agent = np.min(
-                neg_llh_function)
+            self.llh_theta_hat_current_cand_agent = np.min(llh_function)
 
     def estimate_tau(self, method: str):
 
@@ -206,9 +200,6 @@ class ParamAndModelRecoverer:
         return this_bic
 
     def evaluate_bic_s(self, est_method: str) -> dict:
-
-
-        # TODO: hier weiter: negative llh or postive??? 
         agent_specific_bic_s = {
             "BIC_C1": np.nan, "BIC_C2": np.nan, "BIC_C3": np.nan,
             "BIC_A1": np.nan, "BIC_A2": np.nan, "BIC_A3": np.nan
@@ -242,7 +233,8 @@ class ParamAndModelRecoverer:
                                        method=est_method)
                     llh_data = self.llh_theta_hat_current_cand_agent
 
-            agent_specific_bic_s[f"BIC_{agent_model}"] = self.eval_bic_giv_theta_hat(
+            agent_specific_bic_s[
+                f"BIC_{agent_model}"] = self.eval_bic_giv_theta_hat(
                 llh_theta_hat=llh_data,
                 n_params=n_params,
                 n_valid_actions=n_valid_choices)
