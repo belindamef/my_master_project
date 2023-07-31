@@ -13,10 +13,7 @@ import pandas as pd
 
 
 class Validator:
-    data_dic: dict = {
-        "agent": [], "participant": [],
-        "tau_gen": [], "tau_mle": [],
-        "lambda_gen": [], "lambda_mle": []}
+    data_dic: dict
     recoverer: ParamAndModelRecoverer = ParamAndModelRecoverer()
 
     def __init__(self, sim_params: SimulationParameters,
@@ -24,6 +21,15 @@ class Validator:
         self.sim_params: SimulationParameters = sim_params
         self.simulator: Simulator = simulator
         self.dir_mgr: DirectoryManager = dir_mgr
+
+    def init_data_dic(self):
+        self.data_dic = {
+            "agent": [], "participant": [],
+            "tau_gen": [], "tau_mle": [],
+            "lambda_gen": [], "lambda_mle": []}
+        
+        for agent in self.recoverer.recov_params.agent_candidate_space:
+            self.data_dic[f"BIC_{agent}"] = []
 
     def record_data_generating_sim_params(self):
         # TODO: more elegant solution please...
@@ -45,6 +51,10 @@ class Validator:
 
     def record_lambda_estimate(self, lambda_estimate):
         self.data_dic["lambda_mle"].append(lambda_estimate)
+
+    def record_bics(self, bics: dict):
+        for agent in self.recoverer.recov_params.agent_candidate_space:
+            self.data_dic[f"BIC_{agent}"].append(bics[f"BIC_{agent}"])
 
     def save_param_est_results(self):
         self.dir_mgr.create_agent_sub_id(self.sim_params)
@@ -78,18 +88,19 @@ class Validator:
 
         self.record_tau_estimate(mle_tau_est)
         self.record_lambda_estimate(mle_lambda_est)
-        self.save_param_est_results()
 
     def evaluate_model_recovery_performance(self):
-        # TODO: agent_spec_BICs = self.evaluate_bic_s(est_method="brute_force")
-        # TODO: hier weiter record BICs
-        4 + 4
+        bics = self.recoverer.evaluate_bic_s(est_method="brute_force")
+        self.record_bics(bics)
 
     def iterate_participants(self):
         """For each participant, simulate behavioral data, estimate parameter
         values and evaluate model recovery performance"""
         for participant in self.sim_params.participant_numbers:
             self.sim_params.current_part = participant + 1
+
+            self.init_data_dic()
+            self.record_data_generating_sim_params()
             self.record_participant_number()
 
             self.simulator.simulate_beh_data()
@@ -98,28 +109,4 @@ class Validator:
 
             self.evaluate_model_recovery_performance()
 
-    def iterate_parameter_space(self):
-        for tau_gen in self.simulator.sim_params.tau_space_gen:
-            self.simulator.sim_params.current_tau_gen = tau_gen
-
-            for lambda_gen in self.simulator.sim_params.lambda_gen_space:
-                self.simulator.sim_params.current_lambda_gen = lambda_gen
-
-                self.record_data_generating_sim_params()
-
-                self.iterate_participants()
-
-    def iterate_reps_and_generating_beh_models(self):
-        for repetition in self.sim_params.repetition_numbers:
-            self.sim_params.current_rep = repetition + 1
-
-            for agent_model in self.simulator.sim_params.agent_space_gen:
-                self.sim_params.current_agent_attributes = AgentInitObject(
-                    agent_model)
-
-                self.sim_params.current_agent_gen = agent_model
-
-                self.iterate_parameter_space()
-
-    def run_simulation_and_validation_routine(self):
-        self.iterate_reps_and_generating_beh_models()
+            self.save_param_est_results()

@@ -187,12 +187,12 @@ class SimulationParameters:
             self.agent_space_gen = agent_gen_space
 
         if tau_gen_space is None:
-            self.tau_space_gen = np.linspace(0, 2, 21).tolist()
+            self.tau_space_gen = np.linspace(0.01, 0.5, 20).tolist()
         else:
             self.tau_space_gen = tau_gen_space
 
         if lambda_gen_space is None:
-            self.lambda_gen_space = np.linspace(0, 1, 11)
+            self.lambda_gen_space = np.linspace(0, 1, 20).tolist()
         else:
             self.lambda_gen_space = lambda_gen_space
 
@@ -389,7 +389,13 @@ class Simulator():
                         self.agent.update_belief_state(self.beh_model.action_t)
                         break
 
-                    llhs_all_trials[trial] = self.beh_model.log_likelihood
+                    if np.isnan(candidate_tau):
+                        llhs_all_trials[trial] = self.agent.valence_t[
+                            np.where(
+                            self.agent.a_s1 == self.beh_model.action_t)]
+
+                    else:
+                        llhs_all_trials[trial] = self.beh_model.log_likelihood
                 llhs_all_rounds[round_] = np.nansum(llhs_all_trials)
             llhs_all_blocks[block] = np.nansum(llhs_all_rounds)
 
