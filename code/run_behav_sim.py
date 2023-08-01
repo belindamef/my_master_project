@@ -49,7 +49,7 @@ def main():
         sim_params.current_rep = repetition
 
         for agent_model in sim_params.agent_space_gen:
-            sim_params.current_agent_attributes = AgentInitObject(
+            sim_params.current_agent_gen_attributes = AgentInitObject(
                 agent_model).def_attributes()
             sim_params.current_agent_gen = agent_model
             # if not sim_params.current_agent_attributes.is_deterministic:

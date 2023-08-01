@@ -52,6 +52,7 @@ for repetition in $(seq 1 ${n_repetition}); do
 
                     # Run validation
                     cd ~/treasure-hunt
+                    echo "running--parallel_computing --repetition ${repetition} --agent_model ${agent_model} --tau_value ${tau_value} --lambda_value ${lambda_value} --participant ${participant}"
                     python code/run_validation.py --parallel_computing --repetition ${repetition} --agent_model ${agent_model} --tau_value ${tau_value} --lambda_value ${lambda_value} --participant ${participant}
                 done
             done

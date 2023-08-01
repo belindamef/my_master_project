@@ -7,93 +7,6 @@ class Agent:
     An agent object can interact with a task object within an
     agent-based behavioral modelling framework
 
-    ...
-
-    Attributes
-    ----------
-    agent : str
-        Agent beh_model
-    is_bayesian : bool
-        True if agent beh_model is bayesian, False otherwise
-    is_explorative : bool
-        True if agent beh_model is uses exploring strategy, False otherwise
-    task : any
-        Object of class Task
-    c : int
-        Current round index
-    t: int
-        Current trial index
-    moves : int
-        Number of moves left in round c
-    a_s1 : array_like
-        State-dependent action set
-    o_s2 : array_like
-        State-dependent observation-set
-    v : array_like
-        (a_s1 x 1)-dimensional array denoting decision valences for each
-        available action
-    d : float
-        Agent's decision
-    s4_perms : list of tuple
-        All possible permutations for state s_4
-    s4_perm_node_indices : dict of list
-        Dictionary with one list for each node. Each list contains indices
-        corresponding to s4_permutations in which
-        respective nodes are a hiding spot (TODO: add example?)
-    prior_c0 : array_like
-        (n_nodes x n_s4_perms)-dimensional array denoting the agent's initial
-        belief state (subjective uncertainty over the non-observable states
-        s3_c and s4 at trial t=0 in round c=0
-    prior_c : array_like
-        (n_nodes x n_s4_perms)-dimensional array denoting the agent's
-        initial  belief state (subjective uncertainty) over the
-        non-observable states s3_c and s4 at trial t=0 in round c=0
-    marg_s3_prior : array_like
-        (n_nodes x 1)-dimensional array denoting the agent's marginal
-        initial belief state (subjective uncertainty) over the
-        non-observable states s3_c at trial t=0 in round c=0
-    marg_s4_prior : array_like
-        (n_nodes x 1)-dimensional array denoting the agent's marginal
-        initial belief state (subjective uncertainty) over the
-        non-observable states s4 at trial t=0 in round c=0
-    lklh : array_like
-        (2 x n_nodes x 3 x 4 x n_nodes x n_s4_pers)-dimensional array denoting
-        the state and action-dependent state-conditional observation
-        distribution (prob. distribution of o_t on node s1 with node color
-        s3_{s1} given the non-observable states s3_c and s4 and action a_t
-    p_s_giv_o : array_like
-        (n_nodes x n_s4_perms)-dimensional array denoting the agent's
-        (posterior) belief state (subjective uncertainty) over the
-        non-observable states s3_c and s4 at trial t given the
-        history  of observations and actions
-    marg_s3_b : array_like
-        (n_nodes x 1)-dimensional array denoting the agent's marginal
-        (posterior) belief state (subjective uncertainty) over the
-        non-observable states s3_c at trial t given the history of observations
-        and actions
-    marg_s4_b : array_like
-        (n_nodes x 1)-dimensional array denoting the agent's marginal
-        (posterior) belief state (subjective uncertainty) over the
-        non-observable states s4 at trial t given the history of observations
-        and actions
-    zero_sum_denominator : int
-        Variable denoting whether or not a zero value was encountered in
-        denominator during belief state update
-
-    # TODO
-    self.max_s3_b_value = np.nan
-    self.rounded_marg_s3_b = np.full(self.task.n_nodes, np.nan)
-    self.max_s3_b_nodes = np.nan
-    self.dist_to_max_s3_b_nodes = np.nan
-    self.shortest_dist_to_max_s3_b = np.nan
-    self.closest_max_s3_b_nodes_i_s = np.nan
-    self.closest_max_s3_b_nodes = np.nan
-
-    # Initialize p_o_giv_o and kl objects
-    self.p_o_giv_o = np.nan
-    self.kl_giv_a_o = np.nan
-    self.virt_b = np.nan
-
     """
 
     def __init__(self, agent_attributes, task_object, lambda_of_interest):
@@ -197,6 +110,7 @@ class Agent:
         # Convert action value to 1, if step action
         if action != 0:
             action = 1
+        action = int(action)
 
         if np.sum(prior_belief_state * self.lklh[
                 action, s_1, s2_giv_s1, obs, :, :]) == 0:
@@ -205,7 +119,7 @@ class Agent:
             post_belief_state = (
                 prior_belief_state
                 * self.lklh[action, s_1, s2_giv_s1, obs, :, :])
-            print('zero_sum occurred')
+            print('zero_sum in bayesian likelihood occurred')
             # debug = 'here'
         else:
             post_belief_state = (
@@ -222,7 +136,7 @@ class Agent:
         # Evaluate marginal treasure distribution
         marg_s3_b = np.full(self.task.n_nodes, np.nan)
         for s_3 in range(self.task.n_nodes):
-            marg_s3_b[s_3] = belief[s_3, :].sum()
+            marg_s3_b[s_3] = belief[s_3, :].sum()  # TODO: hier weiter: warum belief.shape = (1, 25, 177100)
 
         # Evaluate marginal hiding spot distribution
         marg_s4_b = np.full(self.task.n_nodes, np.nan)

@@ -67,14 +67,15 @@ class ParamAndModelRecoverer:
         self.llh_theta_hat_gen_agent = np.nan
         self.llh_theta_hat_current_cand_agent = np.nan
 
-    def eval_llh_data_no_params(self):
+    def eval_llh_data_no_params(self, candidate_agent):
         llh = self.sim_object.sim_to_eval_llh(
             candidate_tau=np.nan,
-            candidate_lambda=np.nan
+            candidate_lambda=np.nan,
+            candidate_agent=candidate_agent
         )
         self.llh_noparam_current_cand_agent = llh
 
-    def eval_llh_function_tau(self):
+    def eval_llh_function_tau(self, candidate_agent: str):
         """Evaluate log_likelihood function for given tau parameter space, and
         when lambda is not applicable.
         """
@@ -85,13 +86,14 @@ class ParamAndModelRecoverer:
         for i, tau_i in np.ndenumerate(self.recov_params.tau_bf_cand_space):
             this_tau_s_llh = self.sim_object.sim_to_eval_llh(
                 candidate_tau=tau_i,
-                candidate_lambda=np.nan)
+                candidate_lambda=np.nan,
+                candidate_agent=candidate_agent)
 
             loglikelihood_function[i] = this_tau_s_llh
 
         return loglikelihood_function
 
-    def eval_llh_function_tau_and_lambda(self):
+    def eval_llh_function_tau_and_lambda(self, candidate_agent: str):
         """Evaluate log_likelihood function for given 2-dimdensional tau and
         lambda space."""
 
@@ -108,20 +110,22 @@ class ParamAndModelRecoverer:
 
                 this_theta_s_llh = self.sim_object.sim_to_eval_llh(
                     candidate_tau=tau_i,
-                    candidate_lambda=lambda_i
+                    candidate_lambda=lambda_i,
+                    candidate_agent=candidate_agent
                 )
 
                 loglikelihood_function[i_tau, i_lambda] = this_theta_s_llh
 
         return loglikelihood_function
 
-    def eval_brute_force_est_tau(self) -> float:
+    def eval_brute_force_est_tau(self, candidate_agent: str) -> float:
         """Evaluate the maximum likelihood estimation of the decision noise
         parameter tau  based on dataset of one participant with brute force
         method.
         """
 
-        llh_function = self.eval_llh_function_tau()
+        llh_function = self.eval_llh_function_tau(
+            candidate_agent=candidate_agent)
 
         # Identify tau with maximum likelihood
         maximum_likelihood_tau = self.recov_params.tau_bf_cand_space[
@@ -134,13 +138,14 @@ class ParamAndModelRecoverer:
             self.tau_est_result_current_cand_agent = maximum_likelihood_tau
             self.llh_theta_hat_current_cand_agent = np.max(llh_function)
 
-    def eval_brute_force_tau_lambda(self):
+    def eval_brute_force_tau_lambda(self, candidate_agent: str):
         """Evaluate the maximum likelihood estimation of the decision noise
         parameter tau and weighting parameter lambda based on dataset of one
         participant with brute force method.
         """
 
-        llh_function = self.eval_llh_function_tau_and_lambda()
+        llh_function = self.eval_llh_function_tau_and_lambda(
+            candidate_agent=candidate_agent)
 
         # Identify theta=(tau,lambda) with max likelihood
         max_llh_two_dim_index = np.unravel_index(
@@ -161,35 +166,43 @@ class ParamAndModelRecoverer:
             self.lambda_est_result_current_cand_agent = max_llh_lambda
             self.llh_theta_hat_current_cand_agent = np.min(llh_function)
 
-    def estimate_tau(self, method: str):
+    def estimate_tau(self, method: str, candidate_agent: str):
+        # TODO: llh comutation is a side product! NOT NICE, no no
 
         if method == "brute_force":
-            self.eval_brute_force_est_tau()
+            self.eval_brute_force_est_tau(candidate_agent=candidate_agent)
 
-    def estimate_tau_lambda(self, method: str):
+    def estimate_tau_lambda(self, method: str, candidate_agent: str):
         """Estimate two-dimensional parameter vektor, tau and lambda"""
 
         if method == "brute_force":
-            self.eval_brute_force_tau_lambda()
+            self.eval_brute_force_tau_lambda(candidate_agent=candidate_agent)
 
-    def estimate_parameters(self, method: str):
+    def estimate_parameters(self, method: str, candidate_agent: str):
         if (np.isnan(self.sim_object.sim_params.current_tau_gen)
                 and np.isnan(self.sim_object.sim_params.current_lambda_gen)):
             pass
 
         elif np.isnan(self.sim_object.sim_params.current_lambda_gen):
-            self.estimate_tau(method=method)
+            self.estimate_tau(method=method, candidate_agent=candidate_agent)
 
         else:
-            self.estimate_tau_lambda(method=method)
+            self.estimate_tau_lambda(method=method,
+                                     candidate_agent=candidate_agent)
 
-    def eval_llh_data(self, agent_model, method: str):
-        if "C" in agent_model:
-            self.eval_llh_data_no_params()
-        elif agent_model in ["A1", "A2"]:
-            self.estimate_tau(method=method)
-        elif agent_model == "A3":
-            self.estimate_tau_lambda(method=method)
+    def eval_llh_data(self, candidate_agent, method: str):
+
+        if "C" in candidate_agent:
+            self.eval_llh_data_no_params(
+                candidate_agent=candidate_agent)
+
+        elif candidate_agent in ["A1", "A2"]:
+            self.estimate_tau(method=method,
+                              candidate_agent=candidate_agent)
+
+        elif candidate_agent == "A3":
+            self.estimate_tau_lambda(method=method,
+                                     candidate_agent=candidate_agent)
 
     def eval_bic_giv_theta_hat(self,
                                llh_theta_hat: float,
@@ -219,7 +232,7 @@ class ParamAndModelRecoverer:
 
             if "C" in agent_model:
 
-                self.eval_llh_data(agent_model=agent_model,
+                self.eval_llh_data(candidate_agent=agent_model,
                                    method=est_method)
                 llh_data = self.llh_noparam_current_cand_agent
 
@@ -229,7 +242,7 @@ class ParamAndModelRecoverer:
                     llh_data = self.llh_theta_hat_gen_agent
 
                 else:
-                    self.eval_llh_data(agent_model=agent_model,
+                    self.eval_llh_data(candidate_agent=agent_model,
                                        method=est_method)
                     llh_data = self.llh_theta_hat_current_cand_agent
 

@@ -33,7 +33,7 @@ class Validator:
     def record_data_generating_sim_params(self):
         # TODO: more elegant solution please...
         self.data_dic["agent"].extend(
-            [self.simulator.sim_params.current_agent_attributes.name
+            [self.simulator.sim_params.current_agent_gen_attributes.name
              ] * self.simulator.sim_params.n_participants)
         self.data_dic["tau_gen"].extend(
             [self.simulator.sim_params.current_tau_gen
@@ -80,7 +80,9 @@ class Validator:
 
         self.recoverer.reset_result_variables_to_nan()  # TODO hübscher
 
-        self.recoverer.estimate_parameters(method="brute_force")
+        self.recoverer.estimate_parameters(
+            method="brute_force",
+            candidate_agent=self.sim_params.current_agent_gen)
 
         mle_tau_est = self.recoverer.tau_est_result_gen_agent
         mle_lambda_est = self.recoverer.lambda_est_result_gen_agent

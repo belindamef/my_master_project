@@ -50,7 +50,7 @@ def main():
         sim_params.current_rep = repetition + 1
 
         for gen_agent in sim_params.agent_space_gen:
-            sim_params.current_agent_attributes = AgentInitObject(gen_agent)
+            sim_params.current_agent_gen_attributes = AgentInitObject(gen_agent)
 
             sim_params.current_agent_gen = gen_agent
 
@@ -104,21 +104,21 @@ if __name__ == "__main__":
 
     TASK_CONFIG_LABEL = "exp_msc"
     OUT_DIR_LABEL = "exp_msc_tests"
-    VERSION_NO = "6"
+    VERSION_NO = "5"
 
     # Define Simulation parameters
-    AGENT_GEN_SPACE = ["C1", "C2", "C3", "A1"]
+    AGENT_GEN_SPACE = ["C1", "C2", "C3", "A1", "A2"]
     TAU_GEN_SPACE = np.linspace(0.01, 0.5, 5).tolist()
     LAMBDA_GEN_SPACE = np.linspace(0, 1, 5).tolist()
 
     AGENT_CAND_SPACE = ["C1", "C2", "C3", "A1"]
     TAU_CAND_SPACE = np.linspace(0.01, 0.5, 5).tolist()
-    LANBDA_CAND_SPACE = np.linspace(0, 1, 5).tolist()
+    LAMBDA_CAND_SPACE = np.linspace(0, 1, 5).tolist()
 
     IS_QUICK_TEST = False
     TEST_N_BLOCKS = 1
     TEST_N_ROUNDS = 1
-    TEST_N_TRIALS = 2
+    TEST_N_TRIALS = 12
 
     main()
     end = time.time()

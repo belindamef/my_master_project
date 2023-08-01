@@ -230,7 +230,7 @@ class DirectoryManager:
         sim_obj: Simulator
         """
         self.sub_id = (
-            f"{sim_params.current_agent_attributes.name}_" +
+            f"{sim_params.current_agent_gen_attributes.name}_" +
             f"rep-{sim_params.current_rep}_" +
             "tau-" + f"{sim_params.current_tau_gen * 1000}"[:4] + "_" +
             "lambda-" + f"{sim_params.current_lambda_gen * 1000}"[:4] + "_" +

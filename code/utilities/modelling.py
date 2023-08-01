@@ -15,7 +15,7 @@ class AgentInitObject:
     is_explorative: bool
     is_deterministic: bool
 
-    def __init__(self, agent_model):
+    def __init__(self, agent_model: str):
         self.name = agent_model
         self.def_attributes()
 

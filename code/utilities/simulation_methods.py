@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 from .task import Task
 from .agent import Agent
-from .modelling import BehavioralModel
+from .modelling import BehavioralModel, AgentInitObject
 np.set_printoptions(linewidth=500)
 
 
@@ -154,7 +154,7 @@ class SimulationParameters:
     tau_space_gen: list
     lambda_gen_space: list
     current_rep: int = None
-    current_agent_attributes: object = None
+    current_agent_gen_attributes: object = None
     current_agent_gen: str = None
     current_tau_gen: float = None
     current_lambda_gen: float = None
@@ -210,7 +210,7 @@ class Timer:
         """
         self.this_block = block
         self.this_repetition = sim_params.current_rep
-        self.agent_model = sim_params.current_agent_attributes.name
+        self.agent_model = sim_params.current_agent_gen_attributes.name
         self.tau_gen = sim_params.current_tau_gen
         self.participant = sim_params.current_part
 
@@ -243,7 +243,9 @@ class Simulator():
         self.bayesian_comps = bayesian_comps
         self.sim_params = sim_params
 
-    def create_interacting_objects(self, this_block, tau_gen, lambda_gen):
+    def create_interacting_objects(self, this_block: int, tau_gen: float,
+                                   lambda_gen: float,
+                                   agent_name: str=None):
         """Create beh_model objects that interact in each trial
 
         Parameters
@@ -251,11 +253,15 @@ class Simulator():
         this_block: int
         agent_attributes: AgentInitObject
         """
+        if agent_name is None:
+            agent_attributes = self.sim_params.current_agent_gen_attributes
+        else:
+            agent_attributes = AgentInitObject(agent_name)
         self.task = Task(self.task_configs)
         self.task.start_new_block(this_block)
-        self.agent = Agent(self.sim_params.current_agent_attributes, self.task,
-                           lambda_gen)
-        if self.sim_params.current_agent_attributes.is_bayesian:
+        self.agent = Agent(agent_attributes, self.task, lambda_gen)
+
+        if agent_attributes.is_bayesian:
             self.agent.add_bayesian_model_components(self.bayesian_comps)
         self.beh_model = BehavioralModel(tau_gen, self.agent)
 
@@ -320,11 +326,11 @@ class Simulator():
             timer.end()
         recorder.wrap_up_data(self.sim_params.current_tau_gen,
                               self.sim_params.current_lambda_gen,
-                              self.sim_params.current_agent_attributes.name)
+                              self.sim_params.current_agent_gen_attributes.name)
         self.data = recorder.sim_data
 
-    def sim_to_eval_llh(self, candidate_tau,
-                        candidate_lambda) -> float:
+    def sim_to_eval_llh(self, candidate_tau: float, candidate_lambda: float,
+                        candidate_agent: str) -> float:
         """Simulate trialwise interactions between agent and task to evaluate
         the llh function value for a given tau and lambda and given data,
         as sum over all trials
@@ -336,7 +342,7 @@ class Simulator():
 
         for block in range(self.task_configs.params.n_blocks):
             self.create_interacting_objects(
-                block, candidate_tau, candidate_lambda)
+                block, candidate_tau, candidate_lambda, candidate_agent)
             llhs_all_rounds = np.full(
                 (self.task_configs.params.n_rounds, 1), np.nan)
 
@@ -389,16 +395,16 @@ class Simulator():
                         self.agent.update_belief_state(self.beh_model.action_t)
                         break
 
-                    if np.isnan(candidate_tau):
+                    if np.isnan(candidate_tau):  # TODO: hier weiter debuggen, rausfinden, warum llh bei allesn controls gleich
                         llhs_all_trials[trial] = self.agent.valence_t[
                             np.where(
-                            self.agent.a_s1 == self.beh_model.action_t)]
+                                self.agent.a_s1 == self.beh_model.action_t)]
 
                     else:
                         llhs_all_trials[trial] = self.beh_model.log_likelihood
                 llhs_all_rounds[round_] = np.nansum(llhs_all_trials)
             llhs_all_blocks[block] = np.nansum(llhs_all_rounds)
 
-            llh_sum_over_all_blocks = np.nansum(llhs_all_blocks)
+        llh_sum_over_all_blocks = np.nansum(llhs_all_blocks)
 
-            return llh_sum_over_all_blocks
+        return llh_sum_over_all_blocks
