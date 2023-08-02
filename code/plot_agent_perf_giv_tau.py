@@ -1,24 +1,12 @@
-"""This script plots figure 1"""
+"""This script plots simulated agent performance"""
 
 import os
 import numpy as np
 import pandas as pd
+from utilities.very_plotter_new import VeryPlotter
+from utilities.config import DirectoryManager, DataLoader
 from matplotlib import gridspec
-from matplotlib import pyplot
-from utilities import very_plotter
-from utilities.config import DirectoryManager, Paths
 import palettable
-
-
-class DataLoader:
-    def __init__(self, paths: Paths, exp_label):
-        self.paths = paths
-        self.exp_label = exp_label
-
-    def load_sim_subj_lvl_stats(self) -> pd.DataFrame:
-        subj_lvl_stats_df = pd.read_pickle(
-            f"{self.paths.subj_lvl_descr_stats_fn}.pkl")
-        return subj_lvl_stats_df
 
 
 def main():
@@ -64,8 +52,10 @@ def main():
     # ----------------------------------------------------------
     #       Prepare figure
     # ----------------------------------------------------------
-    plt = very_plotter.get_fig_template(pyplot)
-    col_agents, col_controls = very_plotter.get_agent_colors(
+    plotter = VeryPlotter(paths=dir_mgr.paths)
+    plt = plotter.get_pyplot_object()
+
+    col_agents, col_controls = plotter.get_agent_colors(
         control_color="grey")
     axes = {}
 
@@ -121,17 +111,19 @@ def main():
                              color=agent_colors[color_index],
                              alpha=0.2)
 
-    very_plotter.config_axes(axes[0], y_label=r"\textit{N} treasures",
-                                x_label=r"$\tau$",
-                                # title=f"A3_lambda = {lambda_gen}",
-                                title_font=20,
-                                axix_label_size=28,
-                                ticksize=18,
-                                xticks=np.round(np.arange(0, max(tau_gen_values) + 0.05, 0.05), 2),
-                                xticklabels=np.round(np.arange(0, max(tau_gen_values) + 0.05, 0.05), 2),
-                                yticks=np.arange(0, 11, 2),
-                                ytickslabels=np.arange(0, 11, 2),
-                                y_lim=(0, 10))
+    plotter.config_axes(
+        axes[0], y_label=r"\textit{N} treasures",
+        x_label=r"$\tau$",
+        # title=f"A3_lambda = {lambda_gen}",
+        title_font=20,
+        axix_label_size=28,
+        ticksize=18,
+        xticks=np.round(np.arange(0, max(tau_gen_values) + 0.05, 0.05), 2),
+        xticklabels=np.round(np.arange(
+            0, max(tau_gen_values) + 0.05, 0.05), 2),
+        yticks=np.arange(0, 11, 2),
+        ytickslabels=np.arange(0, 11, 2),
+        y_lim=(0, 10))
 
     axes[0].legend(loc='upper right', fontsize=15)
 
