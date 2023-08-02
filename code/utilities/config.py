@@ -189,8 +189,9 @@ class DirectoryManager:
             self.paths.this_analyses_descr_stats_path, "r_wise_stats"
         )
 
-    def create_val_out_dir(self, out_dir_label=None, version=1):
-        if not out_dir_label:
+    def define_val_out_path(self, dir_label: str = "not_given", version=1,
+                            make_dir: bool = False):
+        if dir_label == "not_given":
             while True:
                 try:
                     dir_name = input(
@@ -204,22 +205,20 @@ class DirectoryManager:
                           'exists.')
         else:
             self.paths.this_val_out_dir = os.path.join(
-                self.paths.val_out, f"{out_dir_label}_{version}")
+                self.paths.val_out, f"{dir_label}_{version}")
 
-            if not os.path.exists(self.paths.this_val_out_dir):
-                os.makedirs(self.paths.this_val_out_dir)
-
-        try:
-            if not os.path.exists(self.paths.this_val_out_dir):
-                os.makedirs(self.paths.this_val_out_dir)
-            else:
-                print("Output directory for validation results already exists."
-                      " Skipping makedirs. results will be written to "
+        if make_dir:
+            try:
+                if not os.path.exists(self.paths.this_val_out_dir):
+                    os.makedirs(self.paths.this_val_out_dir)
+                else:
+                    print("Output directory for validation results already exists."
+                          " Skipping makedirs. results will be written to "
+                          "existing directory.")
+            except FileExistsError:
+                print("Output directory for validation results already exists. "
+                      "Skipping makedirs. results will be written to "
                       "existing directory.")
-        except FileExistsError:
-            print("Output directory for validation results already exists. "
-                  "Skipping makedirs. results will be written to "
-                  "existing directory.")
 
     def create_agent_sub_id(self, sim_params):
         """Create id for this subject. More than one subject id per agent
@@ -273,6 +272,17 @@ class DirectoryManager:
         with open(f"{self.paths.this_sub_beh_out_filename}.tsv", "w",
                   encoding="utf8") as tsv_file:
             tsv_file.write(data.to_csv(sep="\t", na_rep=np.NaN, index=False))
+
+
+class DataLoader:
+    def __init__(self, paths: Paths, exp_label):
+        self.paths = paths
+        self.exp_label = exp_label
+
+    def load_sim_subj_lvl_stats(self) -> pd.DataFrame:
+        subj_lvl_stats_df = pd.read_pickle(
+            f"{self.paths.subj_lvl_descr_stats_fn}.pkl")
+        return subj_lvl_stats_df
 
 
 @dataclass
