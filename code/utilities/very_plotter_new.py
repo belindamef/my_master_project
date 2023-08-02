@@ -138,4 +138,4 @@ class VeryPlotter:
                     size=30, weight='bold')
 
 
-    def save_figure(self):
+    #def save_figure(self):

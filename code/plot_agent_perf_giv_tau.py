@@ -167,7 +167,7 @@ def main():
         # axex[1].set_title(label=r"A3 $\lambda$ = " + f"{lambda_gen}",
         #                     loc="left", fontsize=20)
 
-    very_plotter.config_axes(axes[1], y_label=r"\textit{N} treasures",
+    plotter.config_axes(axes[1], y_label=r"\textit{N} treasures",
                                 x_label=r"$\tau$",
                                 # title=f"A3_lambda = {lambda_gen}",
                                 title_font=20,
