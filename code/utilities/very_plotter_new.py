@@ -12,7 +12,7 @@ class VeryPlotter:
     def __init__(self, paths: Paths) -> None:
         self.paths = paths
 
-    def get_pyplot_object(self) -> object:
+    def get_pyplot_object(self):
         """This function sets some plt defaults and returns blue and red color
         palettes
 
