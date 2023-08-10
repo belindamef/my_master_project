@@ -9,6 +9,7 @@ from utilities.estimation_methods import ParamAndModelRecoverer
 from utilities.config import DirectoryManager
 import numpy as np
 import pandas as pd
+import time
 
 
 class Validator:
@@ -33,7 +34,7 @@ class Validator:
     def record_data_generating_sim_params(self):
         # TODO: more elegant solution please...
         self.data_dic["agent"].extend(
-            [self.simulator.sim_params.current_agent_gen_attributes.name
+            [self.simulator.sim_params.current_agent_gen
              ] * self.simulator.sim_params.n_participants)
         self.data_dic["tau_gen"].extend(
             [self.simulator.sim_params.current_tau_gen
@@ -55,15 +56,15 @@ class Validator:
         for agent in self.recoverer.recov_params.agent_candidate_space:
             self.data_dic[f"BIC_{agent}"].append(bics[f"BIC_{agent}"])
 
-    def save_param_est_results(self):
+    def save_results(self):
         self.dir_mgr.create_agent_sub_id(self.sim_params)
         self.dir_mgr.define_val_results_filename()
 
         mle_df = pd.DataFrame(self.data_dic)
 
-        with open(f"{self.dir_mgr.paths.this_sub_val_results_filename}.tsv",
+        with open(f"{self.dir_mgr.paths.this_sub_val_result_fn}.tsv",
                   "w", encoding="utf8") as tsv_file:
-            tsv_file.write(mle_df.to_csv(sep="\t", na_rep=np.NaN, index=False))
+            tsv_file.write(mle_df.to_csv(sep="\t", na_rep="nan", index=False))
 
     def estimate_parameter_values(self):
         self.recoverer.instantiate_sim_obj(
@@ -94,20 +95,29 @@ class Validator:
         bics = self.recoverer.evaluate_bic_s(est_method="brute_force")
         self.record_bics(bics)
 
-    def iterate_participants(self):
+    def run_param_model_recovery_routine(self):
         """For each participant, simulate behavioral data, estimate parameter
         values and evaluate model recovery performance"""
-        for participant in self.sim_params.participant_numbers:
-            self.sim_params.current_part = participant + 1
 
-            self.init_data_dic()
-            self.record_data_generating_sim_params()
-            self.record_participant_number()
+        self.init_data_dic()
+        self.record_data_generating_sim_params()
+        self.record_participant_number()
 
-            self.simulator.simulate_beh_data()
+        self.simulator.simulate_beh_data()
 
-            self.estimate_parameter_values()
+        start = time.time()
+        self.estimate_parameter_values()
+        end = time.time()
+        print("time needed for ML parameter estimation with "
+              f"{self.sim_params.current_agent_gen} as generating agent: "
+              f"{round((end-start), ndigits=2)} sec.")
 
-            self.evaluate_model_recovery_performance()
+        start = time.time()
+        self.evaluate_model_recovery_performance()
+        end = time.time()
+        print(
+            "time needed for evaluatung mordel recovery performance for data",
+            f" from {self.sim_params.current_agent_gen} as generating agent: ",
+            f"{round((end-start), ndigits=2)} sec.")
 
-            self.save_param_est_results()
+        self.save_results()

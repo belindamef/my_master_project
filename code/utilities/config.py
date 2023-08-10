@@ -7,6 +7,7 @@ import argparse
 import copy as cp
 import numpy as np
 import pandas as pd
+import glob
 
 
 def get_user_yes_no(question):
@@ -60,7 +61,7 @@ class Paths:
     # Subject-specific directories and filenames
     this_sub_dir: str = None
     this_sub_beh_out_filename: str = None
-    this_sub_val_results_filename: str = None
+    this_sub_val_result_fn: str = None
 
     # Processed data and descriptive stats directories
     this_analyses_raw_data_path: str = None
@@ -229,7 +230,7 @@ class DirectoryManager:
         sim_obj: Simulator
         """
         self.sub_id = (
-            f"{sim_params.current_agent_gen_attributes.name}_" +
+            f"{sim_params.current_agent_gen_init_obj.name}_" +
             f"rep-{sim_params.current_rep}_" +
             "tau-" + f"{sim_params.current_tau_gen * 1000}"[:4] + "_" +
             "lambda-" + f"{sim_params.current_lambda_gen * 1000}"[:4] + "_" +
@@ -252,7 +253,7 @@ class DirectoryManager:
             f"sub-{self.sub_id}_task-th_beh")
 
     def define_val_results_filename(self):
-        self.paths.this_sub_val_results_filename = os.path.join(
+        self.paths.this_sub_val_result_fn = os.path.join(
             self.paths.this_val_out_dir,
             f"val_results_sub-{self.sub_id}")
 
@@ -283,6 +284,19 @@ class DataLoader:
         subj_lvl_stats_df = pd.read_pickle(
             f"{self.paths.subj_lvl_descr_stats_fn}.pkl")
         return subj_lvl_stats_df
+
+    def create_list_of_files_in_folder(self, folder_path) -> list:
+        return glob.glob(os.path.join(folder_path, "*"))
+
+    def load_data_in_folder(self, folder_path) -> pd.DataFrame:
+        file_list = self.create_list_of_files_in_folder(
+            folder_path=folder_path)
+        
+        dataframe = pd.concat(
+            (pd.read_csv(f, sep="\t") for f in file_list),
+            ignore_index=True)
+        
+        return dataframe
 
 
 @dataclass

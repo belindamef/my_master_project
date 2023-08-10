@@ -10,7 +10,8 @@ import pandas as pd
 import numpy as np
 from .task import Task
 from .agent import Agent
-from .modelling import BehavioralModel, AgentInitObject
+from .modelling import BehavioralModel, AgentInitObj, BayesianModelComps
+from .config import TaskConfigurator
 np.set_printoptions(linewidth=500)
 
 
@@ -19,7 +20,7 @@ class Recorder:
 
     out_var_list = []
     data_one_round = {}
-    sim_data_this_block = None
+    sim_data_this_block: pd.DataFrame
     sim_data = pd.DataFrame()
 
     def __init__(self, *args):
@@ -145,6 +146,7 @@ class Recorder:
 
 
 class SimulationParameters:
+    """Class to store and manage parameters for behavioral data simulation"""
 
     n_repetitions: int
     repetition_numbers: range
@@ -153,14 +155,16 @@ class SimulationParameters:
     agent_space_gen: list
     tau_space_gen: list
     lambda_gen_space: list
-    current_rep: int = None
-    current_agent_gen_attributes: object = None
-    current_agent_gen: str = None
-    current_tau_gen: float = None
-    current_lambda_gen: float = None
-    current_part: int = None
+    current_rep: int
+    current_agent_gen_init_obj: AgentInitObj
+    current_agent_gen: str
+    current_tau_gen: float
+    current_lambda_gen: float
+    current_part: int
 
     def get_params_from_args(self, args):
+        """Method to fetch simulation parameters from command line or bash
+        script arguments."""
         self.repetition_numbers = args.repetition
         self.agent_space_gen = args.agent_model
         self.tau_space_gen = args.tau_value
@@ -172,14 +176,27 @@ class SimulationParameters:
 
     def define_n_reps_and_participants_manually(self, n_rep: int = 1,
                                                 n_part: int = 1,):
+        """Method to define pass number of repetitions and participants to
+        class instance.
+
+        Parameters
+        ----------
+        n_rep : int
+            Number of repetitions. Default value is 1
+        n_part : int
+            Number of participants. Default value is 1
+            """
         self.n_repetitions = n_rep
         self.repetition_numbers = range(self.n_repetitions)
         self.n_participants = n_part
         self.participant_numbers = range(self.n_participants)
 
-    def define_params_manually(self, agent_gen_space: list = None,
-                               tau_gen_space: list = None,
-                               lambda_gen_space: list = None):
+    def define_params_manually(self, agent_gen_space=None,
+                               tau_gen_space=None,
+                               lambda_gen_space=None):
+        """Method to manually set data generating model and parameter spacec.
+
+        """
 
         if agent_gen_space is None:
             self.agent_space_gen = ["C1", "C2", "C3", "A1", "A2", "A3"]
@@ -198,6 +215,7 @@ class SimulationParameters:
 
 
 class Timer:
+    """Class to time start and stop of simulations"""
 
     start_of_block: float
     end_of_block: float
@@ -210,11 +228,16 @@ class Timer:
         """
         self.this_block = block
         self.this_repetition = sim_params.current_rep
-        self.agent_model = sim_params.current_agent_gen_attributes.name
+        self.agent_model = sim_params.current_agent_gen
         self.tau_gen = sim_params.current_tau_gen
         self.participant = sim_params.current_part
 
     def start(self):
+        """Method to start timer.
+
+        Returns:
+            __self__: Class instance
+        """
         self.start_of_block = time.time()
         print(f"Starting simulation for agent {self.agent_model}, "
               f"participant {self.participant}, "
@@ -223,6 +246,7 @@ class Timer:
         return self
 
     def end(self):
+        """Method to end timer"""
         self.end_of_block = time.time()
         time_this_block = self.end_of_block - self.start_of_block
         print(f"agent {self.agent_model} finished block "
@@ -231,32 +255,46 @@ class Timer:
 
 
 class Simulator():
+    """Class for behavioral data simulation objects
 
-    agent: Agent = None
-    task: Task = None
-    beh_model: BehavioralModel = None
-    data: pd.DataFrame = None
+    Attributes:
+        agent
+    """
+    agent: Agent
+    task: Task
+    beh_model: BehavioralModel
+    data: pd.DataFrame
 
-    def __init__(self, task_configs, bayesian_comps,
+    def __init__(self, task_configs: TaskConfigurator,
+                 bayesian_comps: BayesianModelComps,
                  sim_params=SimulationParameters()):
+        """_summary_
+
+        Args:
+            task_configs (TaskConfigurator): Task configuration object
+            bayesian_comps (BayesianModelComps): Bayesian model components
+                object
+            sim_params (SimulationParameters, optional): simulation parameters.
+                Defaults to SimulationParameters().
+        """
         self.task_configs = task_configs
         self.bayesian_comps = bayesian_comps
         self.sim_params = sim_params
 
-    def create_interacting_objects(self, this_block: int, tau_gen: float,
-                                   lambda_gen: float,
-                                   agent_name: str=None):
+    def create_interacting_objects(self, agent_name: str, this_block: int,
+                                   tau_gen: float, lambda_gen: float):
         """Create beh_model objects that interact in each trial
 
-        Parameters
-        ----------
-        this_block: int
-        agent_attributes: AgentInitObject
+        Args:
+            agent_name (str): Behavioral model name
+            this_block (int): Block number
+            tau_gen (float): Generating tau value
+            lambda_gen (float): Generating lambda value
         """
         if agent_name is None:
-            agent_attributes = self.sim_params.current_agent_gen_attributes
+            agent_attributes = self.sim_params.current_agent_gen_init_obj
         else:
-            agent_attributes = AgentInitObject(agent_name)
+            agent_attributes = AgentInitObj(agent_name)
         self.task = Task(self.task_configs)
         self.task.start_new_block(this_block)
         self.agent = Agent(agent_attributes, self.task, lambda_gen)
@@ -268,13 +306,11 @@ class Simulator():
         # Connect interacting model
         self.task.beh_model = self.beh_model
 
-    def simulate_trial_start(self, this_trial):
-        """Simulate the beginning of a trial, when an
-        initial observation is made, but before decision is made
+    def simulate_trial_start(self, this_trial: int):
+        """Simulate agent task interaction at beginning of a new trial
 
-        Parameters
-        ----------
-        this_trial: int
+        Args:
+            this_trial (int): Trial number
         """
         self.task.start_new_trial(this_trial)
         self.agent.start_new_trial(this_trial)
@@ -289,13 +325,41 @@ class Simulator():
         self.beh_model.return_action()
         self.task.eval_action()
 
+    def simulate_trial_interation_for_llh_evaluation(self, data_s_action):
+        """Method to simulate trial-wise interaction between agent, task and
+        behavioral model for the evaluation of data likelihood. More
+        specifically, this method frist let's the agent make a decision and the
+        behavioral model evaluate the conditional probability distribution of
+        All actions given the history of actions and observations*.
+        Subsequently the behavioral model evaluates the probability of this
+        trials action as given by the data based on theat distribution.
+
+        * Note that this history is based on actions and observations as given
+        by the data.
+
+        Args:
+            data_s_action (np.int64): this trials action value from data
+        """
+        self.agent.make_decision()
+        self.beh_model.eval_p_a_giv_tau()
+        self.beh_model.eval_p_a_giv_h_this_action(data_s_action)
+
+        # Embedd data action in behavioral and task model, so that next
+        # iteraton in trial simulation has same state as in data
+        self.beh_model.action_t = data_s_action
+        self.task.eval_action()
+
     def simulate_beh_data(self):
+        """Run behavioral data simulation routine. Saves data to instance
+        attribute self.data.
+        """
         recorder = Recorder()
 
         for this_block in range(self.task_configs.params.n_blocks):
             timer = Timer(self.sim_params, this_block).start()
             recorder.create_rec_df_one_block()
-            self.create_interacting_objects(this_block,
+            self.create_interacting_objects(self.sim_params.current_agent_gen,
+                                            this_block,
                                             self.sim_params.current_tau_gen,
                                             self.sim_params.current_lambda_gen)
 
@@ -326,7 +390,7 @@ class Simulator():
             timer.end()
         recorder.wrap_up_data(self.sim_params.current_tau_gen,
                               self.sim_params.current_lambda_gen,
-                              self.sim_params.current_agent_gen_attributes.name)
+                              self.sim_params.current_agent_gen)
         self.data = recorder.sim_data
 
     def sim_to_eval_llh(self, candidate_tau: float, candidate_lambda: float,
@@ -336,20 +400,21 @@ class Simulator():
         as sum over all trials
         """
 
-        # TODO: alle sim und task parameters aus Datensatz lesen?
-        llhs_all_blocks = np.full(
-            (self.task_configs.params.n_blocks, 1), np.nan)
+        # Read task configuration parameters from given dataset
+        n_blocks = self.data.block.max()
+        n_rounds = self.data.round_.max()
+        n_trials = self.data.trial.max() - 1  # subtract 1 bc data trials = 13
 
-        for block in range(self.task_configs.params.n_blocks):
-            self.create_interacting_objects(
-                block, candidate_tau, candidate_lambda, candidate_agent)
-            llhs_all_rounds = np.full(
-                (self.task_configs.params.n_rounds, 1), np.nan)
+        llhs_all_blocks = np.full((n_blocks, 1), np.nan)
 
-            for round_ in range(self.task_configs.params.n_rounds):
+        for block in range(n_blocks):
+            self.create_interacting_objects(candidate_agent, block,
+                                            candidate_tau, candidate_lambda)
+            llhs_all_rounds = np.full((n_rounds, 1), np.nan)
 
-                llhs_all_trials = np.full(
-                    (self.task_configs.params.n_trials, 1), np.nan)
+            for round_ in range(n_rounds):
+
+                llhs_all_trials = np.full((n_trials, 1), np.nan)
 
                 data_this_round = self.data[(
                             self.data.block == block + 1) & (
@@ -358,36 +423,17 @@ class Simulator():
                 self.task.start_new_round(block, round_)
                 self.agent.start_new_round(round_)
 
-                for trial in range(self.task_configs.params.n_trials):
+                for trial in range(n_trials):
 
                     data_this_trial = data_this_round.query(
                         'trial == (@trial + 1)')
 
                     self.simulate_trial_start(trial)
 
-                    # TODO: this is a part of simulate_trial_interaction()
-                    # Find more elegant way
-                    # ----------------------------------
-                    # Let agent evaluate valence function.
-                    # TODO: resulting decision value is redundant
-                    self.agent.make_decision()
-                    # fetch action from simulated data
-                    data_action_t = data_this_trial.a.item()
-                    # Evaluate conditional probability distribution of actions
-                    # given tau, aka likeholood of this tau
-                    self.beh_model.eval_p_a_giv_tau()
-                    # Evaluate conditional probability of data action given
-                    # this tau, (aka likelihood of this tau)
-                    self.beh_model.eval_p_a_giv_h_this_action(data_action_t)
+                    self.simulate_trial_interation_for_llh_evaluation(
+                        data_s_action=data_this_trial.a.item()
+                    )
 
-                    # Embedd data action in behavioral and task model, so that
-                    # next iteraton in trial simulation has same state as is
-                    # data
-                    self.beh_model.action_t = data_action_t
-                    self.task.eval_action()
-
-                    # TODO: check if task reward now matches with data
-                    # self.task.r_t = data_this_trial.r.item()
                     # End round, if treasure discovered
                     if self.task.r_t == 1:
                         # Evaluate observation and belief update for t + 1
@@ -395,13 +441,21 @@ class Simulator():
                         self.agent.update_belief_state(self.beh_model.action_t)
                         break
 
-                    if np.isnan(candidate_tau):  # TODO: hier weiter debuggen, rausfinden, warum llh bei allesn controls gleich
-                        llhs_all_trials[trial] = self.agent.valence_t[
-                            np.where(
+                    if np.isnan(candidate_tau):
+                        # TODO: eleganter?!!!!
+                        prob_data_giv_action = self.agent.valence_t
+                        prob_data_giv_action[prob_data_giv_action == 0] = 0.001
+                        prob_data_giv_action = prob_data_giv_action / sum(
+                            prob_data_giv_action)
+
+                        llhs_all_trials[trial] = np.log(
+                            prob_data_giv_action[np.where(
                                 self.agent.a_s1 == self.beh_model.action_t)]
+                                )
 
                     else:
                         llhs_all_trials[trial] = self.beh_model.log_likelihood
+
                 llhs_all_rounds[round_] = np.nansum(llhs_all_trials)
             llhs_all_blocks[block] = np.nansum(llhs_all_rounds)
 

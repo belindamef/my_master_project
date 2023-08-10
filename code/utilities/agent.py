@@ -20,7 +20,7 @@ class Agent:
         self.current_round = np.nan  # hunting round counter
         self.current_trial = np.nan  # this_trial counter
         self.moves = self.task.task_configs.params.n_trials
-        self.a_s1 = np.nan  # state-dependent action-set
+        self.a_s1: np.ndarray = np.array(np.nan)  # state-dependent action-set
         self.o_s2 = np.nan  # state-dependent observation-set
 
         # Initialize arrays for agent's decision valences and decisionsn
@@ -383,7 +383,7 @@ class Agent:
             # Allocate equal valences over all avail. actions (excl. drill)
             self.valence_t[:] = 1 / (len(self.a_s1) - 1)
 
-            # Set valence for drill action to zero
+            # Set valence for drill action to zero  # TODO: elegantere Lösung...
             self.valence_t[np.where(self.a_s1 == 0)] = 0
 
         # 'C3' Valence for 50% random exploit and 50% random explore beh_model

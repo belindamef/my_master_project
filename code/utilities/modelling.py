@@ -1,16 +1,18 @@
-import copy as cp
 import os
 import time
 import pickle
-import numpy as np
+import copy as cp
 import more_itertools
+import numpy as np
 
 from .agent import Agent
 from .config import Paths
 
 
-class AgentInitObject:
-
+class AgentInitObj:
+    """A class to create object that stores creates and stores all necessary
+    information to create an agent class instance
+    """
     is_bayesian: bool
     is_explorative: bool
     is_deterministic: bool
@@ -52,15 +54,15 @@ class BayesianModelComps:
 
     TODO
     """
-    paths = Paths()
-    s4_perms = []
-    s4_perm_node_indices = {}
-    n_s4_perms = np.nan
-    prior_c0 = np.nan
-    lklh = np.nan
 
     def __init__(self, task_design_params):
         self.task_design_params = task_design_params
+        self.paths = Paths()
+        self.s4_perms = []
+        self.s4_perm_node_indices = {}
+        self.n_s4_perms = np.array(np.nan)
+        self.prior_c0 = np.array(np.nan)
+        self.lklh = np.array(np.nan)
 
     def eval_s4_perms(self):
         """Evaluate permutations of s4 states"""
@@ -72,11 +74,11 @@ class BayesianModelComps:
 
     def eval_prior(self):
         """Evaluate agent's state priors"""
-        for s3 in range(self.task_design_params.n_nodes):
+        for s_3 in range(self.task_design_params.n_nodes):
             for index, s4_perm in enumerate(self.s4_perms):
 
-                if s4_perm[s3] == 1:
-                    self.prior_c0[s3, index] = 1 / (
+                if s4_perm[s_3] == 1:
+                    self.prior_c0[s_3, index] = 1 / (
                             self.n_s4_perms * self.task_design_params.n_hides)
                     # self.prior_c0[s3, index] = 1 / 1062600
 
@@ -89,25 +91,25 @@ class BayesianModelComps:
         for index, s4_perm in enumerate(self.s4_perms):
 
             # Loop through s1 values
-            for s1 in range(self.task_design_params.n_nodes):
+            for s_1 in range(self.task_design_params.n_nodes):
 
                 # ---------for all a = 0---------------
 
                 # If s4[s1] == 0 (not hiding spot), lklh(o == 1 (grey)) = 1,
                 #   else remain zero
-                if s4_perm[s1] == 0:
+                if s4_perm[s_1] == 0:
 
                     # for s2[s1] == 0 (black)
                     # -----------------------
                     s2_s1 = 0
-                    self.lklh[0, s1, s2_s1, 1, :, index] = 1
-                    self.lklh[0, s1, s2_s1, 1, s1, index] = 0
+                    self.lklh[0, s_1, s2_s1, 1, :, index] = 1
+                    self.lklh[0, s_1, s2_s1, 1, s_1, index] = 0
 
                     # for s2[s1] == 1 (grey)
                     # -----------------------
                     s2_s1 = 1
-                    self.lklh[0, s1, s2_s1, 1, :, index] = 1
-                    self.lklh[0, s1, s2_s1, 1, s1, index] = 0
+                    self.lklh[0, s_1, s2_s1, 1, :, index] = 1
+                    self.lklh[0, s_1, s2_s1, 1, s_1, index] = 0
 
                     # for s2[s1] == 2 (blue)
                     # -----------------------
@@ -116,14 +118,14 @@ class BayesianModelComps:
 
                 # If s4[s1] == 1 (hiding spot), lklh( o == 2 (blue)) = 1,
                     # else remain zero
-                if s4_perm[s1] == 1:
+                if s4_perm[s_1] == 1:
 
                     # for s2[s1] == 0 (black)
                     # -----------------------
                     s2_s1 = 0
                     # will deterministically turn to blue since s4_s1=1
-                    self.lklh[0, s1, s2_s1, 2, :, index] = 1
-                    self.lklh[0, s1, s2_s1, 2, s1, index] = 0
+                    self.lklh[0, s_1, s2_s1, 2, :, index] = 1
+                    self.lklh[0, s_1, s2_s1, 2, s_1, index] = 0
 
                     # for s2[s1] == 1 (grey)
                     # -----------------------
@@ -134,21 +136,21 @@ class BayesianModelComps:
                     # -----------------------
                     # will return same color as already unveiled
                     s2_s1 = 2
-                    self.lklh[0, s1, s2_s1, 2, :, index] = 1
-                    self.lklh[0, s1, s2_s1, 2, s1, index] = 0
+                    self.lklh[0, s_1, s2_s1, 2, :, index] = 1
+                    self.lklh[0, s_1, s2_s1, 2, s_1, index] = 0
 
                 # ---------for all a = 1---------------
 
                 # If s4[s1] == 0 (not hiding spot)
-                if s4_perm[s1] == 0:
+                if s4_perm[s_1] == 0:
                     # for s2[s1] == 0 (black)
                     # -----------------------
                     s2_s1 = 0
 
                     # For s3 == s1, lklh(o == 0 (black)) = 0,
                     # else lklh(o == 0 (black)) = 1
-                    self.lklh[1, s1, s2_s1, 0, :, index] = 1
-                    self.lklh[1, s1, s2_s1, 0, s1, index] = 0
+                    self.lklh[1, s_1, s2_s1, 0, :, index] = 1
+                    self.lklh[1, s_1, s2_s1, 0, s_1, index] = 0
 
                     # all other observations ( o==1, o==2, o==3 remain 0)
 
@@ -158,8 +160,8 @@ class BayesianModelComps:
 
                     # For s3 == s1, lklh(o == 1 (grey)) = 0,
                     # else lklh(o == 1 (grey)) = 1
-                    self.lklh[1, s1, s2_s1, 1, :, index] = 1
-                    self.lklh[1, s1, s2_s1, 1, s1, index] = 0
+                    self.lklh[1, s_1, s2_s1, 1, :, index] = 1
+                    self.lklh[1, s_1, s2_s1, 1, s_1, index] = 0
 
                     # all other observations ( o==0, o==2, o==3 remain 0)
 
@@ -169,19 +171,19 @@ class BayesianModelComps:
                     # node color blue is impossible
 
                 # If s4[s1] == 1 (node is a hiding spot)
-                if s4_perm[s1] == 1:
+                if s4_perm[s_1] == 1:
                     # for s2[s1] == 0 (black)
                     # -----------------------
                     s2_s1 = 0
 
                     # For s3 == s1, lklh(o == 0 (black)) = 0,
                     # else lklh(o == 0 (black)) = 1
-                    self.lklh[1, s1, s2_s1, 0, :, index] = 1
-                    self.lklh[1, s1, s2_s1, 0, s1, index] = 0
+                    self.lklh[1, s_1, s2_s1, 0, :, index] = 1
+                    self.lklh[1, s_1, s2_s1, 0, s_1, index] = 0
 
                     # For s3 == 1, lklh(o == 3 (treasure)) = 1,
                     # else remain zero
-                    self.lklh[1, s1, s2_s1, 3, s1, index] = 1
+                    self.lklh[1, s_1, s2_s1, 3, s_1, index] = 1
 
                     # all other observations ( o==1, o==2 remain 0)
 
@@ -197,12 +199,12 @@ class BayesianModelComps:
 
                     # For s3 == s1, lklh(o == 2 (blue)) = 0,
                     # else lklh(o==2 (blue) = 1
-                    self.lklh[1, s1, s2_s1, 2, :, index] = 1
-                    self.lklh[1, s1, s2_s1, 2, s1, index] = 0
+                    self.lklh[1, s_1, s2_s1, 2, :, index] = 1
+                    self.lklh[1, s_1, s2_s1, 2, s_1, index] = 0
 
                     # For s3 == 1, lklh(o == 3 (treasure)) = 1,
                     # else remain zero
-                    self.lklh[1, s1, s2_s1, 3, s1, index] = 1
+                    self.lklh[1, s_1, s2_s1, 3, s_1, index] = 1
 
     def get_comps(self):
         """Create or load Bayesian beh_model components (prior and likelihood)
@@ -316,8 +318,8 @@ class BehavioralModel:
     a_t : array_like
         Action value in trial t
     """
-    p_a_giv_h: np.ndarray = None  # likelihood of action giv history and tau
-    rvs = None
+    p_a_giv_h: np.ndarray  # likelihood fucntion of action giv history and tau
+    rvs: np.ndarray
     log_likelihood: float = np.nan
     action_t = np.nan  # agent action
 
@@ -352,9 +354,10 @@ class BehavioralModel:
             self.action_t = self.agent.a_s1[action_index]
 
     def eval_p_a_giv_h_this_action(self, this_action):
-        """Evaluate the conditional probability distribution of this action
-        given the history of actions and observations and tau
-        aka. log likelihood of this tau"""
-        self.log_likelihood = np.log(
-            self.p_a_giv_h[np.where(self.agent.a_s1 == this_action)[0][0]]
-            )
+        """Evaluate the conditional probability of this action given the
+        history of actions and observations and tau aka. log likelihood of this
+          tau"""
+        self.log_likelihood = float(np.log(
+            self.p_a_giv_h[
+                np.where(self.agent.a_s1 == this_action)[0][0]]
+            ))

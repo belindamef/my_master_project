@@ -9,7 +9,7 @@ Author: Belinda Fleischmann
 import time
 from utilities.config import DirectoryManager, TaskConfigurator, get_arguments
 from utilities.simulation_methods import Simulator, SimulationParameters
-from utilities.modelling import AgentInitObject, BayesianModelComps
+from utilities.modelling import AgentInitObj, BayesianModelComps
 
 
 def define_simulation_parameters() -> SimulationParameters:
@@ -49,7 +49,7 @@ def main():
         sim_params.current_rep = repetition
 
         for agent_model in sim_params.agent_space_gen:
-            sim_params.current_agent_gen_attributes = AgentInitObject(
+            sim_params.current_agent_gen_init_obj = AgentInitObj(
                 agent_model).def_attributes()
             sim_params.current_agent_gen = agent_model
             # if not sim_params.current_agent_attributes.is_deterministic:

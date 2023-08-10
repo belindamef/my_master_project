@@ -10,6 +10,9 @@ from utilities.config import TaskConfigurator
 
 
 class RecoveryParameters:
+    """Class to store and manage candidate model and parameter spaces for model
+    recorvery
+    """
     agent_candidate_space: list
     tau_bf_cand_space: list
     lambda_bf_cand_space: list
@@ -17,6 +20,7 @@ class RecoveryParameters:
     def def_params_manually(self, agent_candidate_space: list = None,
                             tau_bf_cand_space: list = None,
                             lambda_bf_cand_space: list = None):
+
 
         if agent_candidate_space is None:
             self.agent_candidate_space = ["C1", "C2", "C3", "A1", "A2", "A3"]
@@ -44,9 +48,8 @@ class ParamAndModelRecoverer:
     tau_est_result_current_cand_agent: float = np.nan
     lambda_est_result_gen_agent: float = np.nan
     lambda_est_result_current_cand_agent: float = np.nan
-    llh_noparam_current_cand_agent: float = np.nan
-    llh_theta_hat_gen_agent: float = np.nan
-    llh_theta_hat_current_cand_agent: float = np.nan
+    max_llh_current_gen_agent: float = np.nan
+    max_llh_current_cand_agent: float = np.nan
 
     def instantiate_sim_obj(self, exp_data, task_configs: TaskConfigurator,
                             bayesian_comps: BayesianModelComps):
@@ -63,9 +66,8 @@ class ParamAndModelRecoverer:
         self.tau_est_result_current_cand_agent = np.nan
         self.lambda_est_result_gen_agent = np.nan
         self.lambda_est_result_current_cand_agent = np.nan
-        self.llh_noparam_current_cand_agent = np.nan
-        self.llh_theta_hat_gen_agent = np.nan
-        self.llh_theta_hat_current_cand_agent = np.nan
+        self.max_llh_current_gen_agent = np.nan
+        self.max_llh_current_cand_agent = np.nan
 
     def eval_llh_data_no_params(self, candidate_agent):
         llh = self.sim_object.sim_to_eval_llh(
@@ -73,7 +75,7 @@ class ParamAndModelRecoverer:
             candidate_lambda=np.nan,
             candidate_agent=candidate_agent
         )
-        self.llh_noparam_current_cand_agent = llh
+        self.max_llh_current_cand_agent = llh
 
     def eval_llh_function_tau(self, candidate_agent: str):
         """Evaluate log_likelihood function for given tau parameter space, and
@@ -128,15 +130,15 @@ class ParamAndModelRecoverer:
             candidate_agent=candidate_agent)
 
         # Identify tau with maximum likelihood
-        maximum_likelihood_tau = self.recov_params.tau_bf_cand_space[
+        ml_tau = self.recov_params.tau_bf_cand_space[
             np.argmax(llh_function)]
 
         if self.current_cand_agent == self.sim_object.data.iloc[0]["agent"]:
-            self.tau_est_result_gen_agent = maximum_likelihood_tau
-            self.llh_theta_hat_gen_agent = np.max(llh_function)
+            self.tau_est_result_gen_agent = ml_tau
+            self.max_llh_current_gen_agent = np.max(llh_function)
         else:
-            self.tau_est_result_current_cand_agent = maximum_likelihood_tau
-            self.llh_theta_hat_current_cand_agent = np.max(llh_function)
+            self.tau_est_result_current_cand_agent = ml_tau
+            self.max_llh_current_cand_agent = np.max(llh_function)
 
     def eval_brute_force_tau_lambda(self, candidate_agent: str):
         """Evaluate the maximum likelihood estimation of the decision noise
@@ -148,26 +150,25 @@ class ParamAndModelRecoverer:
             candidate_agent=candidate_agent)
 
         # Identify theta=(tau,lambda) with max likelihood
-        max_llh_two_dim_index = np.unravel_index(
-            llh_function.argmax(), llh_function.shape)
-        max_llh_tau_index = max_llh_two_dim_index[0]
-        max_llh_lambda_index = max_llh_two_dim_index[1]
+        ml_two_dim_index = np.unravel_index(llh_function.argmax(),
+                                            llh_function.shape)
+        ml_tau_index = ml_two_dim_index[0]
+        ml_lambda_index = ml_two_dim_index[1]
 
-        max_llh_tau = self.recov_params.tau_bf_cand_space[max_llh_tau_index]
-        max_llh_lambda = self.recov_params.lambda_bf_cand_space[
-            max_llh_lambda_index]
+        ml_tau = self.recov_params.tau_bf_cand_space[ml_tau_index]
+        ml_lambda = self.recov_params.lambda_bf_cand_space[ml_lambda_index]
 
         if self.current_cand_agent == self.sim_object.data.iloc[0]["agent"]:
-            self.tau_est_result_gen_agent = max_llh_tau
-            self.lambda_est_result_gen_agent = max_llh_lambda
-            self.llh_theta_hat_gen_agent = np.max(llh_function)
+            self.tau_est_result_gen_agent = ml_tau
+            self.lambda_est_result_gen_agent = ml_lambda
+            self.max_llh_current_gen_agent = np.max(llh_function)
         else:
-            self.tau_est_result_current_cand_agent = max_llh_tau
-            self.lambda_est_result_current_cand_agent = max_llh_lambda
-            self.llh_theta_hat_current_cand_agent = np.min(llh_function)
+            self.tau_est_result_current_cand_agent = ml_tau
+            self.lambda_est_result_current_cand_agent = ml_lambda
+            self.max_llh_current_cand_agent = np.max(llh_function)
 
     def estimate_tau(self, method: str, candidate_agent: str):
-        # TODO: llh comutation is a side product! NOT NICE, no no
+        # TODO: llh comutation is a side product! NOT NICE
 
         if method == "brute_force":
             self.eval_brute_force_est_tau(candidate_agent=candidate_agent)
@@ -204,6 +205,15 @@ class ParamAndModelRecoverer:
             self.estimate_tau_lambda(method=method,
                                      candidate_agent=candidate_agent)
 
+    def determine_n_parameters(self, agent_model_name: str) -> int:
+        if "C" in agent_model_name:
+            n_params = 0
+        elif agent_model_name == "A3":
+            n_params = 2
+        else:
+            n_params = 1
+        return n_params
+
     def eval_bic_giv_theta_hat(self,
                                llh_theta_hat: float,
                                n_params: int,
@@ -221,30 +231,16 @@ class ParamAndModelRecoverer:
         for agent_model in self.recov_params.agent_candidate_space:
             self.current_cand_agent = agent_model
 
-            if "C" in agent_model:
-                n_params = 0
-            elif agent_model == "A3":
-                n_params = 2
-            else:
-                n_params = 1
-
+            n_params = self.determine_n_parameters(agent_model)
             n_valid_choices = self.sim_object.data.a.count()
 
-            if "C" in agent_model:
-
+            if ("A" in agent_model and
+                    agent_model == self.sim_object.data.iloc[0]["agent"]):
+                llh_data = self.max_llh_current_gen_agent
+            else:
                 self.eval_llh_data(candidate_agent=agent_model,
                                    method=est_method)
-                llh_data = self.llh_noparam_current_cand_agent
-
-            elif "A" in agent_model:
-
-                if agent_model == self.sim_object.data.iloc[0]["agent"]:
-                    llh_data = self.llh_theta_hat_gen_agent
-
-                else:
-                    self.eval_llh_data(candidate_agent=agent_model,
-                                       method=est_method)
-                    llh_data = self.llh_theta_hat_current_cand_agent
+                llh_data = self.max_llh_current_cand_agent  # for theta_hat
 
             agent_specific_bic_s[
                 f"BIC_{agent_model}"] = self.eval_bic_giv_theta_hat(

@@ -49,6 +49,7 @@ def main():
             agent]["mean"].values
         agent_n_tr_stds[agent] = agent_performance_group_averages.loc[
             agent]["std"].values
+    
     # ----------------------------------------------------------
     #       Prepare figure
     # ----------------------------------------------------------
@@ -127,15 +128,9 @@ def main():
 
     axes[0].legend(loc='upper right', fontsize=15)
 
-    # ------Figure B----------------------------------------–
+    # ------Figure B----------------------------------------
 
-    color_indices = np.flip(np.round(np.linspace(3, 19, 11)))
-    color_indices = np.round(color_indices)
-    viridis_20 = palettable.matplotlib.Viridis_20.colors
-    a3_viridis_colors = [viridis_20[int(i)] for i in color_indices]
-    a3_colors = [
-        [value / 255 for value in list_]
-        for list_ in a3_viridis_colors]
+    a3_colors = plotter.define_a3_colors()
 
     for index, lambda_gen in enumerate(lambda_gen_values):
         agent_n_tr_means["A3"] = agent_performance_group_averages.loc[
@@ -167,23 +162,21 @@ def main():
         # axex[1].set_title(label=r"A3 $\lambda$ = " + f"{lambda_gen}",
         #                     loc="left", fontsize=20)
 
-    plotter.config_axes(axes[1], y_label=r"\textit{N} treasures",
-                                x_label=r"$\tau$",
-                                # title=f"A3_lambda = {lambda_gen}",
-                                title_font=20,
-                                axix_label_size=28,
-                                ticksize=18,
-                                xticks=np.round(np.arange(0, max(tau_gen_values) + 0.05, 0.05), 2),
-                                xticklabels=np.round(np.arange(0, max(tau_gen_values)+0.05, 0.05), 2),
-                                yticks=np.arange(0, 11, 2),
-                                ytickslabels=np.arange(0, 11, 2),
-                                y_lim=(0, 10))
+    plotter.config_axes(
+        axes[1], y_label=r"\textit{N} treasures",
+        x_label=r"$\tau$",
+        # title=f"A3_lambda = {lambda_gen}",
+        title_font=20,
+        axix_label_size=28,
+        ticksize=18,
+        xticks=np.round(np.arange(0, max(tau_gen_values) + 0.05, 0.05), 2),
+        xticklabels=np.round(np.arange(0, max(tau_gen_values)+0.05, 0.05), 2),
+        yticks=np.arange(0, 11, 2),
+        ytickslabels=np.arange(0, 11, 2),
+        y_lim=(0, 10))
 
     # Print subject level descriptive figure
-    fig.tight_layout()
-    fig_fn = os.path.join(dir_mgr.paths.figures, FIGURE_FILENAME)
-    fig.savefig(f"{fig_fn}.png", dpi=200, format='png')
-    fig.savefig(f"{fig_fn}.pdf", dpi=200, format='pdf')
+    plotter.save_figure(fig=fig, figure_filename=FIGURE_FILENAME)
 
 
 if __name__ == "__main__":

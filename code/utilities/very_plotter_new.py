@@ -5,12 +5,14 @@ import palettable
 from utilities.config import Paths
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
+import os
 
 
 class VeryPlotter:
 
     def __init__(self, paths: Paths) -> None:
         self.paths = paths
+        self.rcParams = None
 
     def get_pyplot_object(self):
         """This function sets some plt defaults and returns blue and red color
@@ -26,13 +28,13 @@ class VeryPlotter:
         """
 
         # plt default parameters
-        rcParams = {
+        self.rcParams = {
             'text.usetex': 'True',
             'axes.spines.top': 'False',
             'axes.spines.right': 'False',
             'yaxis.labellocation': 'bottom'
         }
-        plt.rcParams.update(rcParams)
+        plt.rcParams.update(self.rcParams)
         return plt
 
 
@@ -59,19 +61,35 @@ class VeryPlotter:
                     # wesanderson.color_palettes['Hotel Chevalier'][0][3],
                     wesanderson.color_palettes['Isle of Dogs'][1][2]]
         elif control_color == "grey":
-            col_C = ['0.7', '0.85', '0.99']
+            col_C = ['0.35', '0.6', '0.85']
         
         return col_A, col_C
+
+    def define_a3_colors(self):
+        color_indices = np.flip(np.round(np.linspace(3, 19, 11)))
+        color_indices = np.round(color_indices)
+        viridis_20 = palettable.matplotlib.Viridis_20.colors
+
+        a3_viridis_colors = [viridis_20[int(i)] for i in color_indices]
+        a3_colors = [
+            [value / 255 for value in list_]
+            for list_ in a3_viridis_colors]
+
+        return a3_colors
 
 
     def config_axes(self, ax, y_label=None, y_lim=None, title=None, x_label=None,
                     x_lim=None, xticks=None, xticklabels=None, yticks=None,
-                    ytickslabels=None, title_font=18, ticksize=13,
+                    ytickslabels=None, title_font=18,
+                    title_color=None, ticksize=13,
                     axix_label_size=14):
         """Set basic setting for plot axes"""
         ax.grid(True, axis='y', linewidth=.3, color=[.9, .9, .9])
         if title is not None:
-            ax.set_title(title, size=title_font)
+            if title_color is None:
+                title_color = "black"
+            ax.set_title(title, size=title_font,
+                         fontdict={'color': title_color})
         if y_label is not None:
             ax.set_ylabel(y_label, fontsize=axix_label_size, loc='center')
         if y_lim is not None:
@@ -129,7 +147,6 @@ class VeryPlotter:
         ax.scatter(y_x_pos, y_values, alpha=0.4, s=6, color=color, zorder=1,
                 clip_on=False)
 
-
     def add_letters(self, ax):
         """Add letters to subplots"""
         for key, value in ax.items():
@@ -137,5 +154,8 @@ class VeryPlotter:
                     transform=value.transAxes,
                     size=30, weight='bold')
 
-
-    #def save_figure(self):
+    def save_figure(self, fig, figure_filename: str):
+        fig.tight_layout()
+        fn = os.path.join(self.paths.figures, figure_filename)
+        fig.savefig(f"{fn}.png", dpi=200, format='png')
+        fig.savefig(f"{fn}.pdf", dpi=200, format='pdf')

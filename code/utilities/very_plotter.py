@@ -51,7 +51,7 @@ def get_agent_colors(control_color="orange"):
                 # wesanderson.color_palettes['Hotel Chevalier'][0][3],
                 wesanderson.color_palettes['Isle of Dogs'][1][2]]
     elif control_color == "grey":
-        col_C = ['0.7', '0.85', '0.99']
+        col_C = ['0.4', '0.6', '0.8']
     
     return col_A, col_C
 
