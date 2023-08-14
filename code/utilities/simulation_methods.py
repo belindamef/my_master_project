@@ -230,6 +230,7 @@ class Timer:
         self.this_repetition = sim_params.current_rep
         self.agent_model = sim_params.current_agent_gen
         self.tau_gen = sim_params.current_tau_gen
+        self.lambda_gen = sim_params.current_lambda_gen
         self.participant = sim_params.current_part
 
     def start(self):
@@ -242,7 +243,7 @@ class Timer:
         print(f"Starting simulation for agent {self.agent_model}, "
               f"participant {self.participant}, "
               f"repetition no. {self.this_repetition} with "
-              f"tau: {self.tau_gen}")
+              f"tau: {self.tau_gen}, lambda: {self.lambda_gen}")
         return self
 
     def end(self):

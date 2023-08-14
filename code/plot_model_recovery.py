@@ -47,7 +47,11 @@ def main():
     plt = plotter.get_pyplot_object()
     col_agents, col_controls = plotter.get_agent_colors(
         control_color="grey")
-    lambda_gen_values = all_bics_df["lambda_gen"].unique()
+    lambda_gen_values = np.delete(
+        all_bics_df["lambda_gen"].unique(),
+        np.where(np.isnan(all_bics_df.lambda_gen.unique())))
+    lambda_gen_values.sort()
+
 
     color_dict = {"C1": col_controls[0],
                   "C2": col_controls[1],
@@ -57,34 +61,24 @@ def main():
                   "A3": col_agents[2]}
     axes = {}
     fig = plt.figure(figsize=(26, 9), layout="constrained")
-    gridspecstrum = gridspec.GridSpec(2, n_agents)
+    gridspecstrum = gridspec.GridSpec(2, n_agents-1)
 
+# ------ Figure A --------------------------------
     i = 0
     for gen_agent in control_gen_agents:
         axes[i] = plt.subplot(gridspecstrum[0, i])
-        x = range(len(analyzing_models))
-        y = []
-        e = []
+        x_ticks = range(1, len(analyzing_models)+1)
         x_tick_labels = []
         colors = []
 
         j = 0
         for analyzing_model in analyzing_models:
 
-            mean_value = np.mean(bic_group_averages.loc[
-                gen_agent][f"BIC_{analyzing_model}", "mean"])
             x_tick_labels.append(analyzing_model)
-            y.append(mean_value)
 
-            e.append(
-                np.mean(
-                    bic_group_averages.loc[
-                        gen_agent][f"BIC_{analyzing_model}", "std"])
-                    )
             colors.append(color_dict[analyzing_model])
             axes[i].errorbar(j+1,
-                             np.mean(bic_group_averages.loc[
-                                   gen_agent][
+                             np.mean(bic_group_averages.loc[gen_agent][
                                        f"BIC_{analyzing_model}", "mean"]),
                              alpha=0.7, markersize=7,
                              color=color_dict[analyzing_model],
@@ -95,10 +89,10 @@ def main():
                                     f"BIC_{analyzing_model}", "std"]))
             j += 1
 
-        plotter.config_axes(ax=axes[i],  # y_label="tau_est", x_label="tau_gen",
+        plotter.config_axes(ax=axes[i],
                             title=f"{gen_agent}",
                             title_color=color_dict[f"{gen_agent}"],
-                            xticks=x,
+                            xticks=x_ticks,
                             xticklabels=x_tick_labels,
                             yticks=np.round(
                                 np.linspace(
@@ -121,11 +115,11 @@ def main():
 
     i = len(control_gen_agents)
 
-    tau_gen_values = np.delete(
+    tau_gen_values = np.delete(  # TODO: redundant?
         all_bics_df.tau_gen.unique(),
         np.where(np.isnan(all_bics_df.tau_gen.unique())))
 
-    for gen_agent in Bayesian_gen_agents:
+    for gen_agent in [agent for agent in Bayesian_gen_agents if agent != "A3"]:
         axes[i] = plt.subplot(gridspecstrum[0, i])
         tau_gen_values = np.array(
             bic_group_averages.loc[gen_agent].index.get_level_values("tau_gen")
@@ -133,7 +127,7 @@ def main():
 
         for analyzing_model in analyzing_models:
             
-            bic_values = bic_group_averages.loc[
+            bic_values_this_analyzing_agent = bic_group_averages.loc[
                 gen_agent][f"BIC_{analyzing_model}", "mean"]
 
             stds = (np.mean(bic_group_averages.loc[
@@ -142,7 +136,7 @@ def main():
             this_agents_color = color_dict[analyzing_model]
             axes[i].errorbar(
                 tau_gen_values,
-                bic_values,
+                bic_values_this_analyzing_agent,
                 alpha=0.7, markersize=7,
                 color=this_agents_color,
                 fmt='o',
@@ -176,20 +170,21 @@ def main():
                             )
         i += 1
 
-    i = 0
+    axes[0].legend(loc="lower right", fontsize=14)
 
+# ------ Figure B-------------------------------------------------
+    i = 0
     if "A3" in bic_group_averages.index.get_level_values("agent"):
         for lambda_gen in lambda_gen_values:
             axes[i] = plt.subplot(gridspecstrum[1, i])
             tau_gen_values = np.array(
                 bic_group_averages.loc[
-                    "A3", lambda_gen].index.get_level_values("tau_gen")
-                )
+                    "A3", :, lambda_gen].index.get_level_values("tau_gen"))
 
             for analyzing_model in analyzing_models:
                 
-                bic_values = bic_group_averages.loc[
-                    "A3"][f"BIC_{analyzing_model}", "mean"]
+                bic_values_this_analyzing_agent = bic_group_averages.loc[
+                    "A3",: , lambda_gen][f"BIC_{analyzing_model}", "mean"]
 
                 stds = (np.mean(bic_group_averages.loc[
                             "A3"][f"BIC_{analyzing_model}", "std"])
@@ -197,7 +192,7 @@ def main():
                 this_agents_color = color_dict[analyzing_model]
                 axes[i].errorbar(
                     tau_gen_values,
-                    bic_values,
+                    bic_values_this_analyzing_agent,
                     alpha=0.7, markersize=7,
                     color=this_agents_color,
                     fmt='o',
@@ -207,8 +202,8 @@ def main():
                     yerr=stds
                     )
 
-            plotter.config_axes(ax=axes[i],  # y_label="tau_est", x_label="tau_gen",
-                                title=r"A3 $\lambda=${lambda_gen}",
+            plotter.config_axes(ax=axes[i],
+                                title=r"A3 $\lambda= $" + f"{lambda_gen}",
                                 title_color=color_dict[f"A3"],
                                 yticks=np.round(
                                     np.linspace(
@@ -233,7 +228,7 @@ def main():
 
     plotter.config_axes(ax=axes[0], y_label="BIC", axix_label_size=22)
     fig.align_ylabels(axs=list(axes.values()))
-    axes[0].legend(loc="lower right", fontsize=18)
+
     plotter.save_figure(fig=fig, figure_filename=FIGURE_FILENAME)
 
 if __name__ == "__main__":
