@@ -134,8 +134,8 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     TASK_CONFIG_LABEL = "exp_msc"
-    OUT_DIR_LABEL = "exp_msc_test_parallel"
-    VERSION_NO = 1
+    OUT_DIR_LABEL = f"{TASK_CONFIG_LABEL}_test_parallel"
+    VERSION_NO = 2
 
     # Define Simulation parameters
     N_REPS = 1
@@ -145,8 +145,8 @@ if __name__ == "__main__":
     LAMBDA_GEN_SPACE = np.linspace(0, 1, 5).tolist()
 
     AGENT_CAND_SPACE = ["C1", "C2", "C3", "A1", "A2", "A3"]
-    TAU_CAND_SPACE = np.linspace(0.01, 0.3, 3).tolist()
-    LAMBDA_CAND_SPACE = np.linspace(0.25, 0.75, 3).tolist()
+    TAU_CAND_SPACE = np.linspace(0.01, 0.3, 6).tolist()
+    LAMBDA_CAND_SPACE = np.linspace(0.25, 0.75, 6).tolist()
 
     IS_QUICK_TEST = False
     TEST_N_BLOCKS = 1

@@ -10,6 +10,50 @@ import pandas as pd
 from utilities.config import DirectoryManager, DataLoader
 
 
+def find_central_value(lst):
+    sorted_lst = sorted(lst)
+    n = len(sorted_lst)
+
+    if n % 2 == 1:
+        central_index = n // 2
+        central_value = sorted_lst[central_index]
+    else:
+        middle_right = n // 2
+        middle_left = middle_right - 1
+        central_value = (sorted_lst[middle_left] + sorted_lst[middle_right]) / 2
+
+    return central_value
+
+
+def find_value_closest_to_half_max(lst):
+    max_val = max(lst)
+    half_max = max_val / 2
+
+    closest_val = None
+    min_distance = float('inf')
+
+    for val in lst:
+        distance = abs(val - half_max)
+        if distance < min_distance:
+            closest_val = val
+            min_distance = distance
+
+    return closest_val
+
+
+def pick_values(lst):
+    if len(lst) < 3:
+        raise ValueError("Input list must contain at least 3 values")
+
+    min_val = min(lst)
+    max_val = max(lst)
+
+    # Pick one value from the remaining list
+    middle = find_value_closest_to_half_max(lst)
+
+    return [min_val, middle, max_val]
+
+
 def main():
     # Prepare data
     dir_mgr = DirectoryManager()
@@ -51,7 +95,6 @@ def main():
         all_bics_df["lambda_gen"].unique(),
         np.where(np.isnan(all_bics_df.lambda_gen.unique())))
     lambda_gen_values.sort()
-
 
     color_dict = {"C1": col_controls[0],
                   "C2": col_controls[1],
@@ -126,7 +169,7 @@ def main():
             )
 
         for analyzing_model in analyzing_models:
-            
+
             bic_values_this_analyzing_agent = bic_group_averages.loc[
                 gen_agent][f"BIC_{analyzing_model}", "mean"]
 
@@ -146,7 +189,9 @@ def main():
                 yerr=stds
                 )
 
-        plotter.config_axes(ax=axes[i],  # y_label="tau_est", x_label="tau_gen",
+        three_tau_values = pick_values(list(tau_gen_values))
+
+        plotter.config_axes(ax=axes[i],
                             title=f"{gen_agent}",
                             title_color=color_dict[f"{gen_agent}"],
                             yticks=np.round(
@@ -161,8 +206,8 @@ def main():
                                     bic_max_for_yaxis,
                                     5),
                                 decimals=2),
-                            xticks=np.round(tau_gen_values, decimals=2),
-                            xticklabels=np.round(tau_gen_values, decimals=2),
+                            xticks=np.round(three_tau_values, decimals=2),
+                            xticklabels=np.round(three_tau_values, decimals=2),
                             x_label=r"$\tau$",
                             title_font=20,
                             axix_label_size=22,
@@ -184,7 +229,7 @@ def main():
             for analyzing_model in analyzing_models:
                 
                 bic_values_this_analyzing_agent = bic_group_averages.loc[
-                    "A3",: , lambda_gen][f"BIC_{analyzing_model}", "mean"]
+                    "A3", :, lambda_gen][f"BIC_{analyzing_model}", "mean"]
 
                 stds = (np.mean(bic_group_averages.loc[
                             "A3"][f"BIC_{analyzing_model}", "std"])
@@ -202,6 +247,7 @@ def main():
                     yerr=stds
                     )
 
+            three_tau_values = pick_values(list(tau_gen_values))
             plotter.config_axes(ax=axes[i],
                                 title=r"A3 $\lambda= $" + f"{lambda_gen}",
                                 title_color=color_dict[f"A3"],
@@ -217,8 +263,8 @@ def main():
                                         bic_max_for_yaxis,
                                         5),
                                     decimals=2),
-                                xticks=np.round(tau_gen_values, decimals=2),
-                                xticklabels=np.round(tau_gen_values, decimals=2),
+                                xticks=np.round(three_tau_values, decimals=2),
+                                xticklabels=np.round(three_tau_values, decimals=2),
                                 x_label=r"$\tau$",
                                 title_font=20,
                                 axix_label_size=22,
@@ -233,9 +279,9 @@ def main():
 
 if __name__ == "__main__":
 
-    EXP_LABEL = "exp_msc_test_allagents"
-    VERSION_NO = 1
-    FIGURE_FILENAME = f"figure_model_recov_test_{VERSION_NO}"
+    EXP_LABEL = "exp_msc"
+    VERSION_NO = "test_parallel_1"
+    FIGURE_FILENAME = f"figure_model_recov_{VERSION_NO}"
     N_BLOCKS = 3
 
     main()
