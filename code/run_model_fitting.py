@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 This script evaluates and visualizes beh_model recovery analyses.
 
@@ -7,10 +8,11 @@ Author: Belinda Fleischmann
 import time
 import os
 import numpy as np
-from utilities.config import DirectoryManager, TaskConfigurator, get_arguments
+from utilities.config import DirectoryManager, DataLoader
+from utilities.config import TaskConfigurator, get_arguments
 from utilities.simulation_methods import Simulator, SimulationParameters
-from utilities.modelling import BayesianModelComps, AgentInitObj
-from utilities.validation_methods import Validator
+from utilities.modelling import BayesianModelComps
+from utilities.model_fit_methods import ModelFitter
 
 
 def define_simulation_parameters() -> SimulationParameters:
@@ -60,10 +62,10 @@ def define_lambda_gen_space(sim_params: SimulationParameters):
         sim_params.lambda_gen_space = LAMBDA_GEN_SPACE
 
 
-def define_model_recovery_parameters(valdidator_object: Validator):
+def define_model_recovery_parameters(model_fitting_object: ModelFitter):
     """Function to set candidate model and parameter spaces for model recovery
     as hardcoded under the if_name==main idiom."""
-    valdidator_object.estimator.est_params.def_params_manually(
+    model_fitting_object.estimator.est_params.def_params_manually(
         agent_candidate_space=AGENT_CAND_SPACE,
         tau_bf_cand_space=TAU_CAND_SPACE,
         lambda_bf_cand_space=LAMBDA_CAND_SPACE
@@ -82,7 +84,7 @@ def check_output_existence(out_filename: str) -> bool:
     """
     outfile_exists = os.path.exists(f"{out_filename}.tsv")
     if outfile_exists:
-        print(f"Skipping recovery Routine for {out_filename}, "
+        print(f"Skipping model fitting Routine for {out_filename}, "
               "output file already exists")
     return outfile_exists
 
@@ -90,10 +92,16 @@ def check_output_existence(out_filename: str) -> bool:
 def main():
     """Main function that runs model validation routine."""
     dir_mgr = DirectoryManager()
-    dir_mgr.define_val_results_path(dir_label=OUT_DIR_LABEL,
-                                    version=VERSION_NO,
-                                    make_dir=True)
-    task_config = TaskConfigurator(dir_mgr.paths).get_config(TASK_CONFIG_LABEL)
+    dir_mgr.define_raw_beh_data_out_path(data_type="exp",
+                                         out_dir_label=EXP_LABEL,
+                                         make_dir=False)
+    dir_mgr.define_model_fitting_results_path(dir_label=EXP_LABEL,
+                                              version=VERSION,
+                                              make_dir=True)
+    data_loader = DataLoader(dir_mgr.paths, EXP_LABEL)
+    exp_ev_all_subs_df = data_loader.load_exp_events()
+
+    task_config = TaskConfigurator(dir_mgr.paths).get_config(EXP_LABEL)
     bayesian_comps = BayesianModelComps(task_config.params).get_comps()
 
     if IS_QUICK_TEST:
@@ -101,42 +109,40 @@ def main():
 
     sim_params = define_simulation_parameters()
     simulator = Simulator(task_config, bayesian_comps, sim_params)
-    validator = Validator(sim_params, simulator, dir_mgr)
-    define_model_recovery_parameters(validator)
+    model_fitter = ModelFitter(sim_params, simulator, dir_mgr)
+    define_model_recovery_parameters(model_fitter)
+
+    if arguments.parallel_computing:
+        participant_list = arguments.participant
+    else:
+        participant_list = exp_ev_all_subs_df.sub_id.unique().tolist()
 
     for repetition in sim_params.repetition_numbers:
         sim_params.current_rep = repetition + 1
 
-        for gen_agent in sim_params.agent_space_gen:
-            sim_params.current_agent_gen_init_obj = AgentInitObj(gen_agent)
-            sim_params.current_agent_gen = gen_agent
-            if not arguments.parallel_computing:
-                define_tau_gen_space(sim_params)
+        for participant in participant_list:
+            sim_params.current_part = participant
 
-            for tau_gen in sim_params.tau_space_gen:
-                sim_params.current_tau_gen = tau_gen
-                if not arguments.parallel_computing:
-                    define_lambda_gen_space(sim_params)
+            this_participants_data = exp_ev_all_subs_df[
+                exp_ev_all_subs_df.sub_id == participant]
+            this_participants_data = this_participants_data.rename(
+                columns={"action": "a", "round": "round_"})
 
-                for lambda_gen in sim_params.lambda_gen_space:
-                    sim_params.current_lambda_gen = lambda_gen
+            dir_mgr.define_model_fit_results_filename(sub_id=participant)
 
-                    for participant in sim_params.participant_numbers:
-                        sim_params.current_part = participant + 1
-                        dir_mgr.create_agent_sub_id(sim_params)
-                        dir_mgr.define_val_results_filename()
-                        outfile_thisparams_exists = check_output_existence(
-                            dir_mgr.paths.this_sub_val_result_fn)
-                        if not outfile_thisparams_exists:
-                            validator.run_param_model_recovery_routine()
+            outfile_thisparams_exists = check_output_existence(
+                dir_mgr.paths.this_sub_model_fit_results_fn)
+
+            if not outfile_thisparams_exists:
+                model_fitter.run_model_fitting_routine(
+                    data=this_participants_data)
 
 
 if __name__ == "__main__":
     arguments = get_arguments()
 
-    TASK_CONFIG_LABEL = "exp_msc"
-    OUT_DIR_LABEL = "exp_msc_test_parallel"
-    VERSION_NO = "debug"
+    EXP_LABEL = "exp_msc"
+    VERSION = "test_1"
 
     # Define Simulation parameters
     N_REPS = 1
@@ -149,7 +155,7 @@ if __name__ == "__main__":
     TAU_CAND_SPACE = np.linspace(0.01, 0.3, 3).tolist()
     LAMBDA_CAND_SPACE = np.linspace(0.25, 0.75, 3).tolist()
 
-    IS_QUICK_TEST = False
+    IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1
     TEST_N_ROUNDS = 1
     TEST_N_TRIALS = 12

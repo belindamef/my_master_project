@@ -395,16 +395,15 @@ class Simulator():
         self.data = recorder.sim_data
 
     def sim_to_eval_llh(self, candidate_tau: float, candidate_lambda: float,
-                        candidate_agent: str) -> float:
+                        candidate_agent: str, data: pd.DataFrame) -> float:
         """Simulate trialwise interactions between agent and task to evaluate
         the llh function value for a given tau and lambda and given data,
         as sum over all trials
         """
 
-        # Read task configuration parameters from given dataset
-        n_blocks = self.data.block.max()
-        n_rounds = self.data.round_.max()
-        n_trials = self.data.trial.max() - 1  # subtract 1 bc data trials = 13
+        n_blocks = data.block.max()
+        n_rounds = data.round_.max()
+        n_trials = data.trial.max() - 1  # subtract 1 bc data trials = 13
 
         llhs_all_blocks = np.full((n_blocks, 1), np.nan)
 
@@ -417,9 +416,9 @@ class Simulator():
 
                 llhs_all_trials = np.full((n_trials, 1), np.nan)
 
-                data_this_round = self.data[(
-                            self.data.block == block + 1) & (
-                            self.data.round_ == round_ + 1)]
+                data_this_round = data[(
+                            data.block == block + 1) & (
+                            data.round_ == round_ + 1)]
 
                 self.task.start_new_round(block, round_)
                 self.agent.start_new_round(round_)

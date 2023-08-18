@@ -64,7 +64,7 @@ def main():
                     for participant in sim_params.participant_numbers:
                         sim_params.current_part = participant
 
-                        dir_mgr.prepare_beh_output(sim_params)
+                        dir_mgr.prepare_sim_beh_output(sim_params)
 
                         simulator.simulate_beh_data()
 

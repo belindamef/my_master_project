@@ -5,16 +5,15 @@ Author: Belinda Fleischmann
 """
 
 from utilities.simulation_methods import Simulator, SimulationParameters
-from utilities.estimation_methods import ParamAndModelRecoverer
+from utilities.estimation_methods import Estimator
 from utilities.config import DirectoryManager
-import numpy as np
 import pandas as pd
 import time
 
 
 class Validator:
     data_dic: dict
-    recoverer: ParamAndModelRecoverer = ParamAndModelRecoverer()
+    estimator: Estimator = Estimator()
 
     def __init__(self, sim_params: SimulationParameters,
                  simulator: Simulator, dir_mgr: DirectoryManager):
@@ -28,7 +27,7 @@ class Validator:
             "tau_gen": [], "tau_mle": [],
             "lambda_gen": [], "lambda_mle": []}
 
-        for agent in self.recoverer.recov_params.agent_candidate_space:
+        for agent in self.estimator.est_params.agent_candidate_space:
             self.data_dic[f"BIC_{agent}"] = []
 
     def record_data_generating_sim_params(self):
@@ -53,7 +52,7 @@ class Validator:
         self.data_dic["lambda_mle"].append(lambda_estimate)
 
     def record_bics(self, bics: dict):
-        for agent in self.recoverer.recov_params.agent_candidate_space:
+        for agent in self.estimator.est_params.agent_candidate_space:
             self.data_dic[f"BIC_{agent}"].append(bics[f"BIC_{agent}"])
 
     def save_results(self):
@@ -67,32 +66,25 @@ class Validator:
             tsv_file.write(mle_df.to_csv(sep="\t", na_rep="nan", index=False))
 
     def estimate_parameter_values(self):
-        self.recoverer.instantiate_sim_obj(
-            exp_data=self.simulator.data,
-            task_configs=self.simulator.task_configs,
-            bayesian_comps=self.simulator.bayesian_comps
-            )
 
-        # Embed simulation params in estimator sim object
-        self.recoverer.sim_object.sim_params = self.sim_params
-
-        # Set candidate agent model to generating agent
-        self.recoverer.current_cand_agent = self.sim_params.current_agent_gen
-
-        self.recoverer.reset_result_variables_to_nan()  # TODO hübscher
-
-        self.recoverer.estimate_parameters(
+        self.estimator.estimate_parameters(
+            data=self.simulator.data,
             method="brute_force",
-            candidate_agent=self.sim_params.current_agent_gen)
+            candidate_agent=self.sim_params.current_agent_gen,
+            task_configs=self.simulator.task_configs,
+            bayesian_comps=self.simulator.bayesian_comps,
+            sim_params=self.sim_params)
 
-        mle_tau_est = self.recoverer.tau_est_result_gen_agent
-        mle_lambda_est = self.recoverer.lambda_est_result_gen_agent
+        mle_tau_est = self.estimator.tau_est_result_gen_agent
+        mle_lambda_est = self.estimator.lambda_est_result_gen_agent
 
         self.record_tau_estimate(mle_tau_est)
         self.record_lambda_estimate(mle_lambda_est)
 
     def evaluate_model_recovery_performance(self):
-        bics = self.recoverer.evaluate_bic_s(est_method="brute_force")
+        bics = self.estimator.evaluate_bic_s(est_method="brute_force",
+                                             data=self.simulator.data,
+                                             data_type="sim")
         self.record_bics(bics)
 
     def run_param_model_recovery_routine(self):
