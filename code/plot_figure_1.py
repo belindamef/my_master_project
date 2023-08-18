@@ -7,57 +7,17 @@ import pandas as pd
 from matplotlib import gridspec
 from matplotlib import pyplot
 from utilities import very_plotter
-from utilities.config import DirectoryManager, Paths
-
-
-class DataLoader:
-
-    def __init__(self, paths: Paths, exp_label):
-        exp_proc_data_dir = os.path.join(
-            paths.data, 'processed_data', 'exp', f'{exp_label}')
-        sim_proc_data_dir = os.path.join(
-            paths.data, 'processed_data', 'sim', f'sim_{exp_label}')
-
-        self.events_exp_fn = os.path.join(exp_proc_data_dir,
-                                          'sub-all_task-th_run-all_beh')
-        self.ev_sim_run_fn = os.path.join(sim_proc_data_dir,
-                                          'sub-all_task-th_run-')
-
-        self.ds_exp_fn = os.path.join(paths.descr_stats, 'exp',
-                                      f'{exp_label}', 'descr_stats')
-        self.grp_stats_exp_fn = os.path.join(
-            paths.descr_stats, 'exp', f'{exp_label}', 'grp_lvl_stats')
-        self.grp_stats_sim_fn = os.path.join(
-            paths.descr_stats, 'sim', f'sim_{exp_label}', 'grp_lvl_stats')
-        self.grp_stats_sim_100_fn = os.path.join(
-            paths.descr_stats, 'sim', 'sim_100_msc', 'grp_lvl_stats')
-        self.tw_exp_fn = os.path.join(
-            paths.descr_stats, 'exp', f'{exp_label}', 't_wise_stats')
-        self.tw_sim_100_fn = os.path.join(
-            paths.descr_stats, 'sim', 'sim_100_msc', 't_wise_stats')
-
-    def load_exp_events(self):
-        return pd.read_pickle(f'{self.events_exp_fn}.pkl')
-
-    def load_sim100_group_lvl_stats(self):
-        return pd.read_pickle(f'{self.grp_stats_sim_100_fn}.pkl')
-
-    def load_sim100_trialwise_stats(self):
-        tw_sim_100_aw = {}  # trial wise stats each agent over all blocks
-        for agent in ['A1', 'A2', 'A3']:
-            tw_sim_100_aw[agent] = pd.read_pickle(
-                f'{self.tw_sim_100_fn}_agent-Agent {agent}.pkl')
-        return tw_sim_100_aw
+from utilities.config import DirectoryManager, DataLoader
 
 
 def main():
     dir_mgr = DirectoryManager()
     dir_mgr.define_raw_beh_data_out_path(data_type="sim",
-                                        out_dir_label=EXP_LABEL,
-                                        make_dir=False)
+                                         out_dir_label=EXP_LABEL,
+                                         make_dir=False)
     dir_mgr.define_raw_beh_data_out_path(data_type="exp",
-                                        out_dir_label=EXP_LABEL,
-                                        make_dir=False)
+                                         out_dir_label=EXP_LABEL,
+                                         make_dir=False)
 
     data_loader = DataLoader(dir_mgr.paths, EXP_LABEL)
     exp_ev_all_subs_df = data_loader.load_exp_events()

@@ -22,7 +22,7 @@ def main():
                                     make_dir=True)
     dir_mgr.define_stats_filenames()
 
-    data_loader = DataLoader(dir_mgr.paths, EXP_LABEL)
+    data_loader = DataLoader(dir_mgr.paths)
     subj_lvl_stats_df = data_loader.load_sim_subj_lvl_stats()
 
     # Prepare group level stats

@@ -57,10 +57,10 @@ def pick_values(lst):
 def main():
     # Prepare data
     dir_mgr = DirectoryManager()
-    dir_mgr.define_val_out_path(dir_label=EXP_LABEL, version=VERSION_NO)
-    data_loader = DataLoader(dir_mgr.paths, EXP_LABEL)
-    all_bics_df = data_loader.load_data_in_folder(
-        folder_path=dir_mgr.paths.this_val_out_dir
+    dir_mgr.define_val_results_path(dir_label=EXP_LABEL, version=VERSION_NO)
+    data_loader = DataLoader(dir_mgr.paths, exp_label=EXP_LABEL)
+    all_bics_df = data_loader.load_data_in_one_folder(
+        folder_path=dir_mgr.paths.this_val_results_dir
         )
 
     agent_gen_models = all_bics_df.agent.unique().tolist()
