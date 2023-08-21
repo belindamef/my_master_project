@@ -26,7 +26,7 @@ paths = config.Paths()
 fig_fn = os.path.join(paths.figures, 'figure_param_recov_test.png')
 
 
-data_dir = find_most_recent_data_dir(paths.val_out)
+data_dir = find_most_recent_data_dir(paths.val_results)
 
 all_files = glob.glob(os.path.join(data_dir, "*"))
 

@@ -63,7 +63,7 @@ def define_lambda_gen_space(sim_params: SimulationParameters):
 def define_model_recovery_parameters(valdidator_object: Validator):
     """Function to set candidate model and parameter spaces for model recovery
     as hardcoded under the if_name==main idiom."""
-    valdidator_object.recoverer.recov_params.def_params_manually(
+    valdidator_object.estimator.est_params.def_params_manually(
         agent_candidate_space=AGENT_CAND_SPACE,
         tau_bf_cand_space=TAU_CAND_SPACE,
         lambda_bf_cand_space=LAMBDA_CAND_SPACE
@@ -81,17 +81,18 @@ def check_output_existence(out_filename: str) -> bool:
         True, if file exists, False, else
     """
     outfile_exists = os.path.exists(f"{out_filename}.tsv")
-    print(f"Skipping recovery Routine for {out_filename}, "
-          "output file already exists"
-          )
+    if outfile_exists:
+        print(f"Skipping recovery Routine for {out_filename}, "
+              "output file already exists")
     return outfile_exists
 
 
 def main():
     """Main function that runs model validation routine."""
     dir_mgr = DirectoryManager()
-    dir_mgr.define_val_out_path(dir_label=OUT_DIR_LABEL, version=VERSION_NO,
-                                make_dir=True)
+    dir_mgr.define_val_results_path(dir_label=OUT_DIR_LABEL,
+                                    version=VERSION_NO,
+                                    make_dir=True)
     task_config = TaskConfigurator(dir_mgr.paths).get_config(TASK_CONFIG_LABEL)
     bayesian_comps = BayesianModelComps(task_config.params).get_comps()
 
@@ -134,8 +135,8 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     TASK_CONFIG_LABEL = "exp_msc"
-    OUT_DIR_LABEL = "exp_msc_test_allagents"
-    VERSION_NO = 1
+    OUT_DIR_LABEL = "exp_msc_test_parallel"
+    VERSION_NO = "debug"
 
     # Define Simulation parameters
     N_REPS = 1

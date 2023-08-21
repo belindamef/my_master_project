@@ -50,18 +50,21 @@ class Paths:
     exp_rawdata = os.path.join(data, "rawdata", "exp")
     results = os.path.join(project, "results")
     descr_stats = os.path.join(results, 'descr_stats')
-    val_out = os.path.join(results, "validation")
+    val_results = os.path.join(results, "validation")
+    model_fit_results = os.path.join(results, "model_fit")
     this_config: str = None  # the particular config used in this simulation
 
     # Raw behavioral data or estimation results directories
     this_exp_rawdata_dir: str = None
     this_sim_rawdata_dir: str = None
-    this_val_out_dir: str = None
+    this_val_results_dir: str = None
+    this_model_fit_results_dir: str = None
 
     # Subject-specific directories and filenames
     this_sub_dir: str = None
     this_sub_beh_out_filename: str = None
     this_sub_val_result_fn: str = None
+    this_sub_model_fit_results_fn: str = None
 
     # Processed data and descriptive stats directories
     this_analyses_raw_data_path: str = None
@@ -190,28 +193,28 @@ class DirectoryManager:
             self.paths.this_analyses_descr_stats_path, "r_wise_stats"
         )
 
-    def define_val_out_path(self, dir_label: str = "not_given", version=1,
+    def define_val_results_path(self, dir_label: str = "not_given", version=1,
                             make_dir: bool = False):
         if dir_label == "not_given":
             while True:
                 try:
                     dir_name = input(
                         "Enter label for validation output directory: ")
-                    self.paths.this_val_out_dir = os.path.join(
+                    self.paths.this_val_results_dir = os.path.join(
                         self.paths.sim_rawdata, dir_name)
-                    os.makedirs(self.paths.this_val_out_dir)
+                    os.makedirs(self.paths.this_val_results_dir)
                     break
                 except FileExistsError:
                     print('Validation output directory with this name already '
                           'exists.')
         else:
-            self.paths.this_val_out_dir = os.path.join(
-                self.paths.val_out, f"{dir_label}_{version}")
+            self.paths.this_val_results_dir = os.path.join(
+                self.paths.val_results, f"{dir_label}_{version}")
 
         if make_dir:
             try:
-                if not os.path.exists(self.paths.this_val_out_dir):
-                    os.makedirs(self.paths.this_val_out_dir)
+                if not os.path.exists(self.paths.this_val_results_dir):
+                    os.makedirs(self.paths.this_val_results_dir)
                 else:
                     print("Output directory for validation results already exists."
                           " Skipping makedirs. results will be written to "
@@ -219,6 +222,35 @@ class DirectoryManager:
             except FileExistsError:
                 print("Output directory for validation results already exists. "
                       "Skipping makedirs. results will be written to "
+                      "existing directory.")
+
+    def define_model_fitting_results_path(self, dir_label: str, version="main",
+                                          make_dir: bool = False):
+        """Define path variable for directory containing model fitting results
+
+        Parameters
+        ----------
+        dir_label: str
+          "sim" or "exp"
+        version: int or str
+            Version number, only needed during debugging
+        make_dir: bool
+          if True, creates physical directory
+          directory"""
+        self.paths.this_model_fit_results_dir = os.path.join(
+            self.paths.model_fit_results, f"{dir_label}_{version}")
+
+        if make_dir:
+            try:
+                if not os.path.exists(self.paths.this_model_fit_results_dir):
+                    os.makedirs(self.paths.this_model_fit_results_dir)
+                else:
+                    print("Output directory for model fitting results already "
+                          "exists. Skipping makedirs. results will be written "
+                          "to existing directory.")
+            except FileExistsError:
+                print("Output directory for model fitting results already exists."
+                      " Skipping makedirs. results will be written to "
                       "existing directory.")
 
     def create_agent_sub_id(self, sim_params):
@@ -242,6 +274,7 @@ class DirectoryManager:
     def define_and_make_sub_beh_out_dir(self):
         """Define paths to subject specific output directory and make
         directory if not existent"""
+
         self.paths.this_sub_dir = os.path.join(
             self.paths.this_sim_rawdata_dir, f"sub-{self.sub_id}", "beh")
         if not os.path.exists(self.paths.this_sub_dir):
@@ -254,10 +287,16 @@ class DirectoryManager:
 
     def define_val_results_filename(self):
         self.paths.this_sub_val_result_fn = os.path.join(
-            self.paths.this_val_out_dir,
+            self.paths.this_val_results_dir,
             f"val_results_sub-{self.sub_id}")
+        
+    def define_model_fit_results_filename(self, sub_id: str):
+        self.paths.this_sub_model_fit_results_fn = os.path.join(
+            self.paths.this_model_fit_results_dir,
+            f"model_fit_results_sub-{sub_id}"
+        )
 
-    def prepare_beh_output(self, sim_params):
+    def prepare_sim_beh_output(self, sim_params):
         self.create_agent_sub_id(sim_params)
         self.define_and_make_sub_beh_out_dir()
         self.define_beh_out_filename()
@@ -276,9 +315,31 @@ class DirectoryManager:
 
 
 class DataLoader:
-    def __init__(self, paths: Paths, exp_label):
+    def __init__(self, paths: Paths, exp_label: str):
         self.paths = paths
-        self.exp_label = exp_label
+
+        exp_proc_data_dir = os.path.join(
+            paths.data, 'processed_data', 'exp', f'{exp_label}')
+        sim_proc_data_dir = os.path.join(
+            paths.data, 'processed_data', 'sim', f'sim_{exp_label}')
+
+        self.events_exp_fn = os.path.join(exp_proc_data_dir,
+                                          'sub-all_task-th_run-all_beh')
+        self.ev_sim_run_fn = os.path.join(sim_proc_data_dir,
+                                          'sub-all_task-th_run-')
+
+        self.ds_exp_fn = os.path.join(paths.descr_stats, 'exp',
+                                      f'{exp_label}', 'descr_stats')
+        self.grp_stats_exp_fn = os.path.join(
+            paths.descr_stats, 'exp', f'{exp_label}', 'grp_lvl_stats')
+        self.grp_stats_sim_fn = os.path.join(
+            paths.descr_stats, 'sim', f'sim_{exp_label}', 'grp_lvl_stats')
+        self.grp_stats_sim_100_fn = os.path.join(
+            paths.descr_stats, 'sim', 'sim_100_msc', 'grp_lvl_stats')
+        self.tw_exp_fn = os.path.join(
+            paths.descr_stats, 'exp', f'{exp_label}', 't_wise_stats')
+        self.tw_sim_100_fn = os.path.join(
+            paths.descr_stats, 'sim', 'sim_100_msc', 't_wise_stats')
 
     def load_sim_subj_lvl_stats(self) -> pd.DataFrame:
         subj_lvl_stats_df = pd.read_pickle(
@@ -288,15 +349,28 @@ class DataLoader:
     def create_list_of_files_in_folder(self, folder_path) -> list:
         return glob.glob(os.path.join(folder_path, "*"))
 
-    def load_data_in_folder(self, folder_path) -> pd.DataFrame:
+    def load_data_in_one_folder(self, folder_path) -> pd.DataFrame:
         file_list = self.create_list_of_files_in_folder(
             folder_path=folder_path)
-        
+
         dataframe = pd.concat(
             (pd.read_csv(f, sep="\t") for f in file_list),
             ignore_index=True)
-        
         return dataframe
+
+    def load_exp_events(self):
+        return pd.read_pickle(f'{self.events_exp_fn}.pkl')
+
+    def load_sim100_group_lvl_stats(self):
+        return pd.read_pickle(f'{self.grp_stats_sim_100_fn}.pkl')
+
+    def load_sim100_trialwise_stats(self):
+        tw_sim_100_aw = {}  # trial wise stats each agent over all blocks
+        for agent in ['A1', 'A2', 'A3']:
+            tw_sim_100_aw[agent] = pd.read_pickle(
+                f'{self.tw_sim_100_fn}_agent-Agent {agent}.pkl')
+        return tw_sim_100_aw
+
 
 
 @dataclass
