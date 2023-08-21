@@ -2,8 +2,8 @@ import copy as cp
 import os
 import json
 import numpy as np
+from utilities.config import TaskConfigurator
 from .config import Paths
-from .modelling import BehavioralModel
 
 
 class Task:
@@ -11,94 +11,20 @@ class Task:
 
     A task object can interact with an agent object within an
     agent-based behavioral modelling framework.
-
-    Attributes
-    ----------
-    n_rounds : int
-        Number of rounds within one block
-    n_trials : int
-        Number of trials within one round
-    dim : int
-        Dimensionality of the gridworld
-    n_nodes : int
-        Number of nodes in the gridworld
-    n_hides : int
-        Number of hiding spots
-    behavioral_model : object
-        Object of class BehavioralModel, directly linked
-        (i.e. attributes will change, when behavioral_model attributes change)
-    s1_t : int
-        State s1, scalar denoting the position in trial t
-    s2_t : array_like
-        State s2, (25x1)-dimensional array denoting each nodes color
-        (0:black, 1:grey, 2:blue) in trial t, initial value: 0 = black
-    s3_c : int
-        State s3, scalar denoting the treasure location in round c
-    s4 : array_like
-        State s4, (25x1)-dimensional array denoting each nodes hiding spot
-        status (0:non-hiding spot, 1:hiding spot)
-    a_set : array_like
-        Action set, (5x1)-dimensional array with all actions available in the
-        treasure hunt task
-    o_t : int
-        Observation in trial t
-    r_t : int
-        Variable denoting whether or not the treasure was found in trial t
-        (0: not found, 1:found)
-    hides_loc : array_like
-        Hiding spot locations (n_hides x 1)-dimensional array
-    n_black : int
-        Number of black nodes
-    n_grey : int
-        Number of grey nodes
-    n_blue : int
-        Number of blue nodes
-    n_hides_left : int
-        Number of hiding spots that haven't been unveiled in trial t
-    drill_finding : any
-        Variable denoting the result of drilling in trial t
-    tr_found_on_blue : any
-        Variable denoting whether the treasure (if found) was found on
-        a blue node
-    shortest_dist_dic : dict
-        Shortest distance between two nodes
-
-    Methods
-    -------
-    evaluate_shortest_distances()
-        Evaluates the shortest distances between all nodes
-    eval_s_4()
-        Evaluates s_4 values according to hides_loc
-    start_new_round()
-        Resets trial-wise changing attributes to initial values for t=0
-        in a new round
-    start_new_trial()
-        Resets dynamic attributes to initial values for each trial t
-    return_observations()
-        Returns observation given states and action in trial t
-    perform_state_transition_f()
-        Performs state transitions given prior states and action in
-        trial t
-    eval_whether_treasure()
-        Evaluates whether the new position s_{t+1} is the treasure
-        location
-    eval_action()
-        Evaluates the action in trial t
     """
 
     def __init__(self, task_configs):
+        """_summary_
+
+        Args:
+            task_configs (TaskConfigurator): configuration e.g. hiding spots, 
+                treasure location, starting nodes etc
         """
 
-        Parameters
-        ----------
-        task_configs: TaskConfigurator
-        """
-        self.task_configs = task_configs
+        self.task_configs: TaskConfigurator = task_configs
         self.dim = task_configs.params.dim
-        self.n_nodes = self.dim ** 2  # Number of fields
+        self.n_nodes: int = self.dim ** 2  # Number of fields
         self.n_hides = task_configs.params.n_hides
-
-        self.beh_model: BehavioralModel = None
 
         # Initialize task beh_model components
         self.s1_t = np.nan
@@ -283,13 +209,13 @@ class Task:
         elif self.r_t == 1:
             self.o_t = 3
 
-    def perform_state_transition_f(self):
+    def perform_state_transition_f(self, action_t):
         """Perform the state transition function f"""
         # Move to new position (transition s_1)
-        self.s1_t += int(self.beh_model.action_t)
+        self.s1_t += int(action_t)
 
         # After informative actions
-        if self.beh_model.action_t == 0:
+        if action_t == 0:
 
             # Change node colors (transition s_2)
             if self.s4[self.s1_t] == 0:  # If s_1 not hiding spot
@@ -323,14 +249,14 @@ class Task:
         else:
             self.r_t = 0
 
-    def eval_action(self):
+    def eval_action(self, action_t):
         """Evaluate beh_model action and update affected task states"""
 
-        self.perform_state_transition_f()
+        self.perform_state_transition_f(action_t)
 
         # If participant decides to take a step
         # -----------------------------------------------------
-        if self.beh_model.action_t != 0:
+        if action_t != 0:
 
             # Evaluate whether new position is treasure location
             self.eval_whether_treasure()

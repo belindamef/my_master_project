@@ -193,8 +193,8 @@ class DirectoryManager:
             self.paths.this_analyses_descr_stats_path, "r_wise_stats"
         )
 
-    def define_val_results_path(self, dir_label: str = "not_given", version=1,
-                            make_dir: bool = False):
+    def define_val_results_path(self, dir_label: str = "not_given",
+                                version="1", make_dir: bool = False):
         if dir_label == "not_given":
             while True:
                 try:
@@ -392,12 +392,12 @@ class TaskDesignParameters:
     n_nodes : int
         number of fields in the grid world
     """
-    n_blocks = 1
-    n_rounds = 10
-    n_trials = 12
-    dim = 5
-    n_hides = 6
-    n_nodes = dim ** 2
+    n_blocks: int = 1
+    n_rounds: int = 10
+    n_trials: int = 12
+    dim: int = 5
+    n_hides: int = 6
+    n_nodes: int = dim ** 2
 
 
 class TaskConfigurator:

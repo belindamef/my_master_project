@@ -1,5 +1,45 @@
 import copy as cp
 import numpy as np
+from utilities.task import Task
+
+
+class AgentAttributes:
+    """A class to create object that stores creates and stores all necessary
+    information to create an agent class instance
+    """
+    is_bayesian: bool
+    is_explorative: bool
+    is_deterministic: bool
+
+    def __init__(self, agent_model: str):
+        self.name = agent_model
+        self.def_attributes()
+
+    def def_attributes(self):
+        """Define agent attributes dependent on beh_model
+
+        Returns
+        -------
+        AgentInitObject
+        """
+        # Control models
+        if self.name in ['C1', 'C2', 'C3']:
+            self.is_bayesian = False
+            self.is_explorative = False
+            self.is_deterministic = False
+
+        # Bayesian models
+        elif self.name == 'A1':
+            self.is_bayesian = True
+            self.is_explorative = False
+            self.is_deterministic = True
+
+        # Bayesian models using explorative strategy
+        elif self.name in ['A2', 'A3']:
+            self.is_bayesian = True
+            self.is_explorative = True
+            self.is_deterministic = True
+        return self
 
 
 class Agent:
@@ -9,16 +49,16 @@ class Agent:
 
     """
 
-    def __init__(self, agent_attributes, task_object, lambda_of_interest):
-        self.agent_name = agent_attributes.name
-        self.is_bayesian = agent_attributes.is_bayesian
-        self.is_explorative = agent_attributes.is_explorative
-        self.task = task_object
-        self.lambda_ = lambda_of_interest
+    def __init__(self, agent_attr: AgentAttributes,
+                 task_object: Task, lambda_):
+        self.agent_attr = agent_attr
+
+        self.task: Task = task_object
+        self.lambda_ = lambda_
 
         # Initialize dynamic agent attributes
-        self.current_round = np.nan  # hunting round counter
-        self.current_trial = np.nan  # this_trial counter
+        self.current_round: int = 0
+        self.current_trial: int = 0
         self.moves = self.task.task_configs.params.n_trials
         self.a_s1: np.ndarray = np.array(np.nan)  # state-dependent action-set
         self.o_s2 = np.nan  # state-dependent observation-set
@@ -34,7 +74,7 @@ class Agent:
         self.marg_s4_prior = np.full(self.task.n_nodes, np.nan)
         self.zero_sum_denominator = 0
 
-        if self.is_bayesian:
+        if self.agent_attr.is_bayesian:
             # Unpack bayesian beh_model components
             self.s4_perms = None
             self.s4_perm_node_indices = None
@@ -159,7 +199,7 @@ class Agent:
         self.moves = cp.deepcopy(self.task.task_configs.params.n_trials)
         self.current_round = round_number
         # Reset belief states if not first round, if bayesian agent
-        if self.is_bayesian and self.current_round > 0:
+        if self.agent_attr.is_bayesian and self.current_round > 0:
             self.eval_prior_subs_rounds()
 
         # Uncomment for debugg
@@ -174,7 +214,7 @@ class Agent:
 
     def update_belief_state(self, current_action):
         """Update belief state"""
-        if self.is_bayesian:
+        if self.agent_attr.is_bayesian:
             if self.current_round == 0 and self.current_trial == 0:
                 self.p_s_giv_o = self.eval_posterior(self.prior_c0, 1,
                                                      self.task.s1_t,
@@ -373,13 +413,13 @@ class Agent:
 
         # 'C1' Valence for random choice agent
         # ---------------------------------------------------------------------
-        if self.agent_name == 'C1':
+        if self.agent_attr.name == 'C1':
             # Allocate equal valences over all available actions
             self.valence_t[:] = 1 / len(self.a_s1)
 
         # 'C2' Valence for random exploiter agent
         # ---------------------------------------------------------------------
-        if self.agent_name == 'C2':
+        if self.agent_attr.name == 'C2':
             # Allocate equal valences over all avail. actions (excl. drill)
             self.valence_t[:] = 1 / (len(self.a_s1) - 1)
 
@@ -388,7 +428,7 @@ class Agent:
 
         # 'C3' Valence for 50% random exploit and 50% random explore beh_model
         # ---------------------------------------------------------------------
-        if self.agent_name == 'C3':
+        if self.agent_attr.name == 'C3':
             # Allocate 50% times equal valences for all avail. actions (excl.
             # drill)
             self.valence_t[:] = 1 / 2 * (1 / (len(self.a_s1) - 1))
@@ -398,7 +438,7 @@ class Agent:
 
         # 'A1' belief state-based, exploit, max. immediate reward (LOOK-AHEAD)
         # --------------------------------------------------------------------------
-        if self.agent_name == 'A1':
+        if self.agent_attr.name == 'A1':
 
             self.valence_t[:] = 0
 
@@ -430,7 +470,7 @@ class Agent:
 
         # 'A2' pure explorer agent
         # --------------------------------------------------------------------------
-        if self.agent_name == 'A2':
+        if self.agent_attr.name == 'A2':
 
             # Iterate over possible actions (i.e. state-dependent actions)
             for i, action_i in np.ndenumerate(self.a_s1):
@@ -448,7 +488,7 @@ class Agent:
 
         # 'A3' belief state based explorer-exploit agent (LOOK-AHEAD)
         # ---------------------------------------------------------------------
-        if self.agent_name == 'A3':
+        if self.agent_attr.name == 'A3':
 
             self.valence_t[:] = 0
 
@@ -491,12 +531,12 @@ class Agent:
 
         # Random choice agents C1, C2, C3
         # ---------------------------------------------------------------------
-        if self.agent_name in ['C1', 'C2', 'C3']:
+        if self.agent_attr.name in ['C1', 'C2', 'C3']:
             self.decision_t = np.random.choice(self.a_s1, 1, p=self.valence_t)
 
         # Belief state based
         # ---------------------------------------------------------------------
-        if self.agent_name in ['A1', 'A2', 'A3', 'A4']:
+        if self.agent_attr.name in ['A1', 'A2', 'A3', 'A4']:
             self.decision_t = self.a_s1[np.argmax(self.valence_t)]
 
     def make_decision(self):
@@ -509,10 +549,10 @@ class Agent:
         self.valence_t = np.full(len(self.a_s1), np.nan)
 
         # -------Identify closest nodes with maximum s3 belief values----------
-        if self.is_bayesian:
+        if self.agent_attr.is_bayesian:
             self.eval_closest_max_s3_b_nodes()
 
-        if self.is_explorative:
+        if self.agent_attr.is_explorative:
             self.eval_p_o_giv_o()
             self.eval_kl()
 

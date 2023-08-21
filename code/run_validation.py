@@ -9,7 +9,8 @@ import os
 import numpy as np
 from utilities.config import DirectoryManager, TaskConfigurator, get_arguments
 from utilities.simulation_methods import Simulator, SimulationParameters
-from utilities.modelling import BayesianModelComps, AgentInitObj
+from utilities.modelling import BayesianModelComps
+from utilities.agent import AgentAttributes
 from utilities.validation_methods import Validator
 
 
@@ -108,7 +109,7 @@ def main():
         sim_params.current_rep = repetition + 1
 
         for gen_agent in sim_params.agent_space_gen:
-            sim_params.current_agent_gen_init_obj = AgentInitObj(gen_agent)
+            sim_params.current_agent_gen_init_obj = AgentAttributes(gen_agent)
             sim_params.current_agent_gen = gen_agent
             if not arguments.parallel_computing:
                 define_tau_gen_space(sim_params)

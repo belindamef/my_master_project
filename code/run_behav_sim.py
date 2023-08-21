@@ -9,10 +9,16 @@ Author: Belinda Fleischmann
 import time
 from utilities.config import DirectoryManager, TaskConfigurator, get_arguments
 from utilities.simulation_methods import Simulator, SimulationParameters
-from utilities.modelling import AgentInitObj, BayesianModelComps
+from utilities.modelling import BayesianModelComps
+from utilities.agent import AgentAttributes
 
 
 def define_simulation_parameters() -> SimulationParameters:
+    """_summary_
+
+    Returns:
+        SimulationParameters: _description_
+    """
     sim_parameters = SimulationParameters()
 
     if arguments.parallel_computing:
@@ -24,13 +30,19 @@ def define_simulation_parameters() -> SimulationParameters:
     return sim_parameters
 
 
-def adjust_total_trial_numbers(task_configuration_object: object):
+def adjust_total_trial_numbers(task_configuration_object: TaskConfigurator):
+    """_summary_
+
+    Args:
+        task_configuration_object (TaskConfigurator): _description_
+    """
     task_configuration_object.params.n_blocks = TEST_N_BLOCKS
     task_configuration_object.params.n_rounds = TEST_N_ROUNDS
     task_configuration_object.params.n_trials = TEST_N_TRIALS
 
 
 def main():
+    """Main function"""
     dir_mgr = DirectoryManager()
     dir_mgr.define_raw_beh_data_out_path(data_type="sim",
                                          out_dir_label=OUT_DIR_LABEL,
@@ -49,11 +61,9 @@ def main():
         sim_params.current_rep = repetition
 
         for agent_model in sim_params.agent_space_gen:
-            sim_params.current_agent_gen_init_obj = AgentInitObj(
+            sim_params.current_agent_gen_init_obj = AgentAttributes(
                 agent_model).def_attributes()
             sim_params.current_agent_gen = agent_model
-            # if not sim_params.current_agent_attributes.is_deterministic:
-            #     n_participants = 50  # TODO: nochmal checken, ob benötigt!
 
             for tau_gen in sim_params.tau_space_gen:
                 sim_params.current_tau_gen = tau_gen
@@ -76,12 +86,12 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     TASK_CONFIG_LABEL = "exp_msc"
-    OUT_DIR_LABEL = "exp_msc_50parts_new"
+    OUT_DIR_LABEL = "test_08_21"
 
-    IS_QUICK_TEST = False
+    IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1
-    TEST_N_ROUNDS = 10
-    TEST_N_TRIALS = 12
+    TEST_N_ROUNDS = 1
+    TEST_N_TRIALS = 2
 
     main()
 

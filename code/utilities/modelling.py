@@ -9,44 +9,6 @@ from .agent import Agent
 from .config import Paths
 
 
-class AgentInitObj:
-    """A class to create object that stores creates and stores all necessary
-    information to create an agent class instance
-    """
-    is_bayesian: bool
-    is_explorative: bool
-    is_deterministic: bool
-
-    def __init__(self, agent_model: str):
-        self.name = agent_model
-        self.def_attributes()
-
-    def def_attributes(self):
-        """Define agent attributes dependent on beh_model
-
-        Returns
-        -------
-        AgentInitObject
-        """
-        # Control models
-        if self.name in ['C1', 'C2', 'C3']:
-            self.is_bayesian = False
-            self.is_explorative = False
-            self.is_deterministic = False
-
-        # Bayesian models
-        elif self.name == 'A1':
-            self.is_bayesian = True
-            self.is_explorative = False
-            self.is_deterministic = True
-
-        # Bayesian models using explorative strategy
-        elif self.name in ['A2', 'A3']:
-            self.is_bayesian = True
-            self.is_explorative = True
-            self.is_deterministic = True
-        return self
-
 
 class BayesianModelComps:
     """A Class to create task configurations given a set of task parameters.
@@ -352,6 +314,8 @@ class BehavioralModel:
             self.eval_rvs()
             action_index = self.rvs.argmax()
             self.action_t = self.agent.a_s1[action_index]
+        
+        return self.action_t
 
     def eval_p_a_giv_h_this_action(self, this_action):
         """Evaluate the conditional probability of this action given the

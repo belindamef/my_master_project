@@ -9,8 +9,8 @@ import time
 import pandas as pd
 import numpy as np
 from .task import Task
-from .agent import Agent
-from .modelling import BehavioralModel, AgentInitObj, BayesianModelComps
+from .agent import AgentAttributes, Agent
+from .modelling import BehavioralModel, BayesianModelComps
 from .config import TaskConfigurator
 np.set_printoptions(linewidth=500)
 
@@ -156,7 +156,7 @@ class SimulationParameters:
     tau_space_gen: list
     lambda_gen_space: list
     current_rep: int
-    current_agent_gen_init_obj: AgentInitObj
+    current_agent_gen_init_obj: AgentAttributes
     current_agent_gen: str
     current_tau_gen: float
     current_lambda_gen: float
@@ -295,7 +295,7 @@ class Simulator():
         if agent_name is None:
             agent_attributes = self.sim_params.current_agent_gen_init_obj
         else:
-            agent_attributes = AgentInitObj(agent_name)
+            agent_attributes = AgentAttributes(agent_name)
         self.task = Task(self.task_configs)
         self.task.start_new_block(this_block)
         self.agent = Agent(agent_attributes, self.task, lambda_gen)
@@ -304,8 +304,6 @@ class Simulator():
             self.agent.add_bayesian_model_components(self.bayesian_comps)
         self.beh_model = BehavioralModel(tau_gen, self.agent)
 
-        # Connect interacting model
-        self.task.beh_model = self.beh_model
 
     def simulate_trial_start(self, this_trial: int):
         """Simulate agent task interaction at beginning of a new trial
@@ -323,8 +321,8 @@ class Simulator():
         action, and task state transition
         """
         self.agent.make_decision()
-        self.beh_model.return_action()
-        self.task.eval_action()
+        action_t = self.beh_model.return_action()
+        self.task.eval_action(action_t)
 
     def simulate_trial_interation_for_llh_evaluation(self, data_s_action):
         """Method to simulate trial-wise interaction between agent, task and
@@ -348,7 +346,7 @@ class Simulator():
         # Embedd data action in behavioral and task model, so that next
         # iteraton in trial simulation has same state as in data
         self.beh_model.action_t = data_s_action
-        self.task.eval_action()
+        self.task.eval_action(data_s_action)
 
     def simulate_beh_data(self):
         """Run behavioral data simulation routine. Saves data to instance
