@@ -3,7 +3,7 @@
 import os
 import numpy as np
 import pandas as pd
-from utilities.very_plotter_new import VeryPlotter
+from code.utilities.very_plotter import VeryPlotter
 from utilities.config import DirectoryManager, DataLoader
 from matplotlib import gridspec
 import palettable

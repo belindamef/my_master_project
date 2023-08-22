@@ -3,7 +3,7 @@ import math
 import numpy as np
 from matplotlib import gridspec
 from matplotlib import pyplot
-from utilities.very_plotter_new import VeryPlotter
+from code.utilities.very_plotter import VeryPlotter
 import pandas as pd
 from utilities.config import DirectoryManager, DataLoader
 
