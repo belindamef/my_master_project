@@ -4,7 +4,7 @@ import matplotlib.gridspec as gridspec
 import pandas as pd
 import os
 import glob
-import utilities.very_plotter as very_plotter
+from code.utilities.very_plotter import VeryPlotter
 
 """This script plots figure 1, only part c"""
 
@@ -137,9 +137,10 @@ n_tr_max = int(n_blocks * n_rounds)
 n_tr_b = n_rounds
 
 # Initialize figure
-plt = very_plotter.get_fig_template(pyplot)
-col_exp = very_plotter.get_exp_group_colors()
-col_A, col_C = very_plotter.get_agent_colors
+plotter = VeryPlotter(paths=dir_mgr.paths)
+plt = plotter.get_pyplot_object()
+col_exp = plotter.get_exp_group_colors()
+col_A, col_C = plotter.get_agent_colors()
 
 ax = {}
 fig = plt.figure(figsize=(14, 4))
@@ -209,7 +210,7 @@ for agent, ev_thisagent_df in ev_sim_bw[block].groupby('sub_id'):
 this_ax.vlines(vlines, colors=[0.75, 0.75 , 0.75], linewidth=1.2, ymin=0,
                ymax=1, linestyles="--")
 vlines.append(120)  # Add last boundary, to have 12 xticklabels
-very_plotter.config_axes(
+plotter.config_axes(
     this_ax,
     #title=r"\textbf{Experimental task configuration}", title_font=title_f,
     x_lim=[0, 120], x_label='Trial', xticks=vlines,

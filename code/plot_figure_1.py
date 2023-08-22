@@ -5,8 +5,7 @@ import glob
 import numpy as np
 import pandas as pd
 from matplotlib import gridspec
-from matplotlib import pyplot
-from utilities import very_plotter
+from code.utilities.very_plotter import VeryPlotter
 from utilities.config import DirectoryManager, DataLoader
 
 
@@ -71,10 +70,12 @@ def main():
             f'{data_loader.ev_sim_run_fn}{this_block:02d}_beh.pkl')
         grp_lvl_stats_bw_sim[this_block] = pd.read_pickle(
             f'{data_loader.grp_stats_sim_fn}_run-{this_block:02d}.pkl')
-        grp_lvl_stats_bw_sim_agents[this_block] = grp_lvl_stats_bw_sim[this_block][
+        grp_lvl_stats_bw_sim_agents[this_block] = grp_lvl_stats_bw_sim[
+            this_block][
             grp_lvl_stats_bw_sim[this_block]['sub_id'].isin(
                 ['Agent A1', 'Agent A2', 'Agent A3'])]
-        grp_lvl_stats_bw_sim_controls[this_block] = grp_lvl_stats_bw_sim[this_block][
+        grp_lvl_stats_bw_sim_controls[this_block] = grp_lvl_stats_bw_sim[
+            this_block][
             grp_lvl_stats_bw_sim[this_block]['sub_id'].isin(
                 ['Agent C1', 'Agent C2', 'Agent C3'])]
 
@@ -83,9 +84,11 @@ def main():
     # ----------------------------------------------------------
     # Create general figure components
     sub_label_beh = [s_dir[(s_dir.find('sub-') + 4):]
-                    for s_dir in glob.glob(dir_mgr.paths.this_exp_rawdata_dir + '/sub-*')]
+                     for s_dir in glob.glob(
+        dir_mgr.paths.this_exp_rawdata_dir + '/sub-*')]
     sub_label_sim = [s_dir[(s_dir.find('sub-') + 4):]
-                    for s_dir in glob.glob(dir_mgr.paths.this_sim_rawdata_dir + '/sub-*')]
+                     for s_dir in glob.glob(
+        dir_mgr.paths.this_sim_rawdata_dir + '/sub-*')]
     sub_label_beh.sort()
     sub_label_sim.sort()
 
@@ -94,9 +97,10 @@ def main():
     n_rounds = np.max(exp_ev_all_subs_df['round'])
 
     # Initialize figure
-    plt = very_plotter.get_fig_template(pyplot)
-    col_exp = very_plotter.get_exp_group_colors()
-    col_A, col_C = very_plotter.get_agent_colors
+    plotter = VeryPlotter(paths=dir_mgr.paths)
+    plt = plotter.get_pyplot_object()
+    col_exp = plotter.get_exp_group_colors()
+    col_A, col_C = plotter.get_agent_colors()
 
     ax = {}
     fig = plt.figure(figsize=(16, 10))
@@ -116,31 +120,33 @@ def main():
         block = block_ + 1
 
         # Experimental group
-        very_plotter.plot_bar(
+        plotter.plot_bar(
             ax=this_ax, x=0,
             height=grp_lvl_stats_bw_exp[block]['mean_tr_over_subs'],
             colors=col_exp[0],
             yerr=grp_lvl_stats_bw_exp[block]['std_tr_over_subs'])
-        very_plotter.plot_bar_scatter(
+        plotter.plot_bar_scatter(
             this_ax, descr_stats_exp_bw[block]['n_tr'], color=col_exp[1],
             bar_width=bar_width)
 
         # Bayesian agents
-        very_plotter.plot_bar(
+        plotter.plot_bar(
             ax=this_ax, x=[1, 1.5, 2],
-            height=grp_lvl_stats_bw_sim_agents[block]['mean_tr_over_subs'].values,
+            height=grp_lvl_stats_bw_sim_agents[block][
+                'mean_tr_over_subs'].values,
             colors=col_A, bar_width=half_bar_width)
 
         # Control agents
-        very_plotter.plot_bar(
+        plotter.plot_bar(
             ax=this_ax, x=[2.5, 3, 3.5],
-            height=grp_lvl_stats_bw_sim_controls[block]['mean_tr_over_subs'].values,
+            height=grp_lvl_stats_bw_sim_controls[block][
+                'mean_tr_over_subs'].values,
             colors=col_C, bar_width=half_bar_width,
             yerr=grp_lvl_stats_bw_sim_controls[block]['std_tr_over_subs'],
             errorbar_size=3)
 
         # Configure axis
-        very_plotter.config_axes(
+        plotter.config_axes(
             this_ax, y_label="Number of Treasures", y_lim=[0, n_rounds],
             xticks=[0, 1, 1.5, 2, 2.5, 3, 3.5],
             xticklabels=['Part.', 'A1', 'A2', 'A3', 'C1', 'C2', 'C3'],
@@ -149,11 +155,11 @@ def main():
             ytickslabels=[0, 2, 4, 6, 8, 10])
 
     # Add letter and title
-    very_plotter.config_axes(
+    plotter.config_axes(
         ax[0], title="Task performance\n " + r"\textit{exp. run 1}")
-    very_plotter.config_axes(ax[1], title=" \n " + r"\textit{exp. run 2}")
-    very_plotter.config_axes(ax[2], title=" \n " + r"\textit{exp. run 3}")
-    # very_plotter.add_letters({0: ax[0]})
+    plotter.config_axes(ax[1], title=" \n " + r"\textit{exp. run 2}")
+    plotter.config_axes(ax[2], title=" \n " + r"\textit{exp. run 3}")
+    # plotter.add_letters({0: ax[0]})
     ax[0].text(-0.15, 1.25, 'a', transform=ax[0].transAxes, size=32, weight='bold')
 
     # ------Average choice rates--------------------------------------------
@@ -163,23 +169,23 @@ def main():
         block += 1
 
         # Experimental Group
-        very_plotter.plot_bar(
+        plotter.plot_bar(
             ax=this_ax, x=0,
             height=grp_lvl_stats_bw_exp[block]['mean_drills_over_subs'],
             colors=col_exp[0],
             yerr=grp_lvl_stats_bw_exp[block]['std_drills_over_subs'])
-        very_plotter.plot_bar_scatter(
+        plotter.plot_bar_scatter(
             this_ax, descr_stats_all_subs_bw_exp[block]['mean_drills'],
             color=col_exp[1], bar_width=bar_width)
 
         # Bayesian agents
-        very_plotter.plot_bar(
+        plotter.plot_bar(
             ax=this_ax, x=[1, 1.5, 2],
             height=grp_lvl_stats_bw_sim_agents[block]['mean_drills_over_subs'].values,
             colors=col_A, bar_width=half_bar_width)
 
         # Control agents
-        very_plotter.plot_bar(
+        plotter.plot_bar(
             ax=this_ax, x=[2.5, 3, 3.5],
             height=grp_lvl_stats_bw_sim_controls[block]['mean_drills_over_subs'].values,
             colors=col_C, bar_width=half_bar_width,
@@ -187,7 +193,7 @@ def main():
             errorbar_size=3)
 
         # Configure axis
-        very_plotter.config_axes(
+        plotter.config_axes(
             this_ax, y_label="\%", y_lim=[0, 1],
             xticks=[0, 1, 1.5, 2, 2.5, 3, 3.5],
             xticklabels=['Part.', 'A1', 'A2', 'A3', 'C1', 'C2', 'C3'],
@@ -197,11 +203,11 @@ def main():
             ytickslabels=[0, 20, 40, 60, 80, 100])
 
     # Add letter and title
-    very_plotter.config_axes(
+    plotter.config_axes(
         ax[0], title="Informative choice rates\n " + r"\textit{exp. run 1}")
-    very_plotter.config_axes(ax[1], title="\n " + r"\textit{exp. run 2}")
-    very_plotter.config_axes(ax[2], title="\n " + r"\textit{exp. run 3}")
-    # very_plotter.add_letters({1: ax[0]})
+    plotter.config_axes(ax[1], title="\n " + r"\textit{exp. run 2}")
+    plotter.config_axes(ax[2], title="\n " + r"\textit{exp. run 3}")
+    # plotter.add_letters({1: ax[0]})
     ax[0].text(-0.25, 1.25, 'b', transform=ax[0].transAxes, size=32, weight='bold')
 
     # ------Trial-by-trial/round-wise average choice rates------------------
@@ -253,7 +259,7 @@ def main():
         this_ax.vlines(
             vlines, colors=[.9, .9, .9], linewidth=.4, ymin=0, ymax=1)
         vlines.append(120)  # Add last boundary, to have 12 xticklabels
-        very_plotter.config_axes(
+        plotter.config_axes(
             this_ax, x_lim=[0, 120], x_label='Trial', xticks=vlines,
             xticklabels=np.around((np.linspace(1, 120, 11))).astype(int),
             y_label="\%", y_lim=[0, 1], yticks=np.linspace(0, 1.0, 6),
@@ -264,14 +270,14 @@ def main():
     ax[1].legend(
         bbox_to_anchor=(1.30, 1), loc='upper right', borderaxespad=0, fontsize=13)
 
-    very_plotter.config_axes(
+    plotter.config_axes(
         ax[1],
         title="Trial-by-trial/roundwise informative choice rates\n "
             + r"\textit{exp. run 1}")
-    very_plotter.config_axes(ax[2], title="\n " + r"\textit{exp. run 2}")
-    very_plotter.config_axes(ax[3], title="\n " + r"\textit{exp. run 3}")
+    plotter.config_axes(ax[2], title="\n " + r"\textit{exp. run 2}")
+    plotter.config_axes(ax[3], title="\n " + r"\textit{exp. run 3}")
     # Add letter
-    # very_plotter.add_letters({2: ax[1]})
+    # plotter.add_letters({2: ax[1]})
     ax[1].text(-0.01, 1.25, 'c', transform=ax[1].transAxes, size=32, weight='bold')
 
     # -----------------------------------------------------------------
@@ -283,21 +289,21 @@ def main():
     block += 1
 
     # Bayesian agents
-    very_plotter.plot_bar(
+    plotter.plot_bar(
         ax=this_ax, x=[1, 1.5, 2],
         height=grp_lvl_stats_sim_100_agents['mean_tr_over_b'].values,
         yerr=grp_lvl_stats_sim_100_agents['std_tr_over_b'], errorbar_size=3,
         colors=col_A, bar_width=half_bar_width)
 
     # Control agents
-    very_plotter.plot_bar(
+    plotter.plot_bar(
         ax=this_ax, x=[2.5, 3, 3.5],
         height=grp_lvl_stats_sim_100_controls['mean_tr_over_b'].values,
         yerr=grp_lvl_stats_sim_100_controls['std_tr_over_b'], colors=col_C,
         bar_width=half_bar_width, errorbar_size=3)
 
     # Configure axis
-    very_plotter.config_axes(
+    plotter.config_axes(
         this_ax, title="Task performance\n " + r"\textit{sim 100}",
         # title=r"\textit{100 task configurations}",
         y_label="Number of Treasures", y_lim=[0, n_rounds],
@@ -308,7 +314,7 @@ def main():
         ytickslabels=[0, 2, 4, 6, 8, 10])
 
     # Add letter
-    # very_plotter.add_letters({3: ax[4]})
+    # plotter.add_letters({3: ax[4]})
     ax[4].text(-0.15, 1.25, 'd', transform=ax[4].transAxes, size=32, weight='bold')
 
     # ------Average choice rates--------------------------------------------
@@ -316,21 +322,21 @@ def main():
     this_ax = ax[5]
 
     # Bayesian agents
-    very_plotter.plot_bar(
+    plotter.plot_bar(
         ax=this_ax, x=[1, 1.5, 2],
         height=grp_lvl_stats_sim_100_agents['mean_drills_over_b'].values,
         colors=col_A, bar_width=half_bar_width,
         yerr=grp_lvl_stats_sim_100_agents['std_drills_over_b'], errorbar_size=3)
 
     # Control agents
-    very_plotter.plot_bar(
+    plotter.plot_bar(
         ax=this_ax, x=[2.5, 3, 3.5],
         height=grp_lvl_stats_sim_100_controls['mean_drills_over_b'].values,
         colors=col_C, bar_width=half_bar_width,
         yerr=grp_lvl_stats_sim_100_controls['std_drills_over_b'].values, errorbar_size=3)
 
     # Configure axis
-    very_plotter.config_axes(
+    plotter.config_axes(
         this_ax, title="Informative choice rates\n " + r"\textit{sim 100}",
         # title=r"\textit{100 task configurations}",
         y_label="\%", y_lim=[0, 1], xticks=[1, 1.5, 2, 2.5, 3, 3.5],
@@ -366,7 +372,7 @@ def main():
     # Add vertical lines
     this_ax.vlines(vlines, colors=[.9, .9, .9], linewidth=.4, ymin=0, ymax=1)
     vlines.append(120)  # Add last boundary, to have 12 xticklabels
-    very_plotter.config_axes(
+    plotter.config_axes(
         this_ax, title="Roundwise informative choice rates\n "
                     + r"\textit{sim 100}",
         # title=r"\textit{100 task configurations}",

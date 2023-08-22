@@ -5,7 +5,7 @@ from utilities import very_plotter
 import pandas as pd
 import os
 import glob
-import utilities.very_plotter as very_plotter
+import utilities.very_plotter as plotter
 import utilities.config as config
 
 """This script plots figure 2"""
@@ -24,9 +24,9 @@ data = pd.read_csv(data_fn, sep="\t")
 # ----------------------------------------------------------
 
 # Initialize figure
-plt = very_plotter.get_fig_template(pyplot)
-col_exp = very_plotter.get_exp_group_colors()
-col_A, col_C = very_plotter.get_agent_colors
+plt = plotter.get_fig_template(pyplot)
+col_exp = plotter.get_exp_group_colors()
+col_A, col_C = plotter.get_agent_colors
 
 fig = plt.figure(figsize=(20, 6))
 gs = gridspec.GridSpec(1, 5)
@@ -45,7 +45,7 @@ for i, gen_model in enumerate(["C2", "C3", "A1", "A2", "A3"]):
                 fmt='o', linestyle=None, clip_on=False,
                 label=f"{gen_model}", yerr=e)
     ax[i].legend(loc='upper right')
-    very_plotter.config_axes(ax[i], y_label="tau_est", x_label="tau_gen",
+    plotter.config_axes(ax[i], y_label="tau_est", x_label="tau_gen",
                              xticks=np.linspace(0.25,2,10),
                              yticks=np.round(np.linspace(0.25,2,10),1))
     ax[i].set_xticklabels(np.round(np.linspace(0.25,2,10),1), fontsize=10)
