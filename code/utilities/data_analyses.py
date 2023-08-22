@@ -1,3 +1,4 @@
+"""Modul containing classes and methods to compute descriptive statistics."""
 import numpy as np
 import pandas as pd
 
@@ -343,7 +344,13 @@ class ConditionalFrequencies:
 
 
 class DescrStats(Demographics, Counts, ConditionalFrequencies):
+    """_summary_
 
+    Args:
+        Demographics (_type_): _description_
+        Counts (_type_): _description_
+        ConditionalFrequencies (_type_): _description_
+    """
     def __init__(self, events_df, dataset, subject=np.nan, part_fn=None):
         self.dataset = dataset  # 'beh' or 'sim'
         # self.subject = subject  # Can either be sub-ID or group
@@ -462,7 +469,15 @@ class GroupStats(DescrStats):
 
         return r_wise_stats_df
 
-    def perform_group_descr_stats(self, group_by):
+    def perform_group_descr_stats(self, group_by: str) -> pd.DataFrame:
+        """Method to compute group level descriptive stats
+
+        Args:
+            group_by (str): _description_
+
+        Returns:
+            pd.Dataframe: _description_
+        """
         group_descr_stats_df = pd.DataFrame()
 
         for group_, group_df in self.events_df.groupby([group_by]):

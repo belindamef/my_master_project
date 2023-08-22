@@ -9,8 +9,7 @@ Author: Belinda Fleischmann
 import time
 from utilities.config import DirectoryManager, TaskConfigurator, get_arguments
 from utilities.simulation_methods import Simulator, SimulationParameters
-from utilities.modelling import BayesianModelComps
-from utilities.agent import AgentAttributes
+from utilities.agent import AgentAttributes, BayesianModelComps
 
 
 def define_simulation_parameters() -> SimulationParameters:
@@ -74,7 +73,8 @@ def main():
                     for participant in sim_params.participant_numbers:
                         sim_params.current_part = participant
 
-                        dir_mgr.prepare_sim_beh_output(sim_params)
+                        sub_id = simulator.create_agent_sub_id()
+                        dir_mgr.define_sim_beh_output_paths(sub_id)
 
                         simulator.simulate_beh_data()
 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     TASK_CONFIG_LABEL = "exp_msc"
-    OUT_DIR_LABEL = "test_08_21"
+    OUT_DIR_LABEL = "test_debug_08_22"
 
     IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1

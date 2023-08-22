@@ -9,8 +9,7 @@ import os
 import numpy as np
 from utilities.config import DirectoryManager, TaskConfigurator, get_arguments
 from utilities.simulation_methods import Simulator, SimulationParameters
-from utilities.modelling import BayesianModelComps
-from utilities.agent import AgentAttributes
+from utilities.agent import AgentAttributes, BayesianModelComps
 from utilities.validation_methods import Validator
 
 
@@ -124,19 +123,19 @@ def main():
 
                     for participant in sim_params.participant_numbers:
                         sim_params.current_part = participant + 1
-                        dir_mgr.create_agent_sub_id(sim_params)
-                        dir_mgr.define_val_results_filename()
+                        sub_id = simulator.create_agent_sub_id()
+                        dir_mgr.define_val_results_filename(sub_id)
                         outfile_thisparams_exists = check_output_existence(
                             dir_mgr.paths.this_sub_val_result_fn)
                         if not outfile_thisparams_exists:
-                            validator.run_param_model_recovery_routine()
+                            validator.run_param_model_recovery_routine(sub_id)
 
 
 if __name__ == "__main__":
     arguments = get_arguments()
 
     TASK_CONFIG_LABEL = "exp_msc"
-    OUT_DIR_LABEL = "exp_msc_test_parallel"
+    OUT_DIR_LABEL = "exp_msc_test_debug_0822"
     VERSION_NO = "debug"
 
     # Define Simulation parameters
@@ -150,10 +149,10 @@ if __name__ == "__main__":
     TAU_CAND_SPACE = np.linspace(0.01, 0.3, 3).tolist()
     LAMBDA_CAND_SPACE = np.linspace(0.25, 0.75, 3).tolist()
 
-    IS_QUICK_TEST = False
+    IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1
     TEST_N_ROUNDS = 1
-    TEST_N_TRIALS = 12
+    TEST_N_TRIALS = 2
 
     start = time.time()
     main()

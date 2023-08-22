@@ -11,7 +11,7 @@ import numpy as np
 from utilities.config import DirectoryManager, DataLoader
 from utilities.config import TaskConfigurator, get_arguments
 from utilities.simulation_methods import Simulator, SimulationParameters
-from utilities.modelling import BayesianModelComps
+from utilities.agent import BayesianModelComps
 from utilities.model_fit_methods import ModelFitter
 
 

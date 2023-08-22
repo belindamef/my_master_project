@@ -27,8 +27,7 @@ import json
 from utilities.config import Paths
 from code.utilities.archive.create_task_config import TaskConfigurator
 from utilities.create_stimuli import StimulusCreation
-from utilities.rowcol_to_xy import rowcol_to_xy
-from utilities.node_to_rowcol import node_to_rowcol
+from utilities.create_stimuli import rowcol_to_xy, node_to_rowcol
 
 np.set_printoptions(linewidth=500)
 

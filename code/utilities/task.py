@@ -1,8 +1,9 @@
-import copy as cp
+"""_This module contains the treasure hunt task class to simulate agent
+task interaction."""
 import os
 import json
 import numpy as np
-from utilities.config import TaskConfigurator
+from utilities.config import TaskConfigurator, TaskDesignParameters
 from .config import Paths
 
 
@@ -14,38 +15,38 @@ class Task:
     """
 
     def __init__(self, task_configs):
-        """_summary_
+        """A class to represent the tresaure hunt task
 
         Args:
-            task_configs (TaskConfigurator): configuration e.g. hiding spots, 
+            task_configs (TaskConfigurator): configuration e.g. hiding spots,
                 treasure location, starting nodes etc
         """
 
         self.task_configs: TaskConfigurator = task_configs
-        self.dim = task_configs.params.dim
-        self.n_nodes: int = self.dim ** 2  # Number of fields
-        self.n_hides = task_configs.params.n_hides
+        self.task_params = TaskDesignParameters()
+
+        self.current_trial: int = 0
+        self.current_round: int = 0
+        self.moves: int = self.task_configs.params.n_trials
 
         # Initialize task beh_model components
-        self.s1_t = np.nan
-        self.s2_t = np.full(self.n_nodes, 0)
+        self.s1_t: int = -999
+        self.s2_t = np.full(self.task_params.n_nodes, 0)
         self.s3_c = np.full(1, np.nan)
-        self.s4 = np.full(self.n_nodes, 0)
-        self.a_set = np.array([0, -self.dim, 1, self.dim, -1])
+        self.s4_b = np.full(self.task_params.n_nodes, 0)
+        self.a_set = np.array(
+            [0, -self.task_params.dim, 1, self.task_params.dim, -1])
         self.o_t = np.full(1, np.nan)
 
         # Initialize variables for computations
         self.r_t = 0  # treasure discovery at s1 initial value: 0
         self.hides_loc = np.full(  # hiding spots of current block/task
-            self.n_hides, np.nan)
-        self.n_black = cp.deepcopy(self.n_nodes)
+            self.task_params.n_hides, np.nan)
+        self.n_black = self.task_params.n_nodes
         self.n_blue = 0
         self.n_grey = 0
-        self.n_hides_left = cp.deepcopy(self.n_hides)
         self.drill_finding = np.nan
         self.tr_found_on_blue = np.nan
-
-        self.t = np.nan
 
         # Get the shortest distances between two nodes from json or evaluate
         # save to json if not existent
@@ -57,15 +58,15 @@ class Task:
         paths = Paths()
         short_dist_fn = os.path.join(
             paths.code, 'utilities',
-            f'shortest_dist_dim-{self.dim}.json')
+            f'shortest_dist_dim-{self.task_params.dim}.json')
         # Read in json file as dic if existent for given dimensionality
         if os.path.exists(short_dist_fn):
-            with open(short_dist_fn) as json_file:
+            with open(short_dist_fn, encoding="utf8") as json_file:
                 self.shortest_dist_dic = json.load(json_file)
         # Create new json file if not yet existent and
         else:
             self.eval_shortest_distances()
-            with open(short_dist_fn, 'w') as json_file:
+            with open(short_dist_fn, 'w', encoding="utf8") as json_file:
                 json.dump(self.shortest_dist_dic, json_file, indent=4)
 
     def eval_shortest_distances(self):
@@ -75,9 +76,9 @@ class Task:
         reach the end node when standing on a given start node
         """
         # ------Initialize variables / objects--------------------------------
-        n_nodes = cp.deepcopy(self.n_nodes)  # number of nodes in the graph
-        dim = cp.deepcopy(self.dim)  # dimension of the grid world
-        moves = cp.deepcopy(self.a_set[:4])  # possible moves / actions
+        n_nodes = self.task_params.n_nodes  # number of nodes in the graph
+        dim = self.task_params.dim  # dimension of the grid world
+        moves = self.a_set[:4]  # possible moves / actions
 
         # ------Create adjacency matrix---------------------------------------
         adj_matrix = []  # Initialize adjacency matrix
@@ -88,7 +89,8 @@ class Task:
                 if ((i + move) >= 0) and ((i + move) < n_nodes):
                     if ((i % dim != 0) and move == -1) or \
                             ((((i + 1) % dim) != 0) and (move == 1)) or \
-                            (move == self.dim or move == -self.dim):
+                            (move == self.task_params.dim
+                             or move == -self.task_params.dim):
                         row[i + move] = 1
             adj_matrix.append(list(row))
 
@@ -101,7 +103,8 @@ class Task:
                 if ((i + move) >= 0) and ((i + move) < n_nodes):
                     if ((i % dim != 0) and move == -1) or \
                             ((((i + 1) % dim) != 0) and (move == 1)) or \
-                            (move == self.dim or move == -self.dim):
+                            (move in [self.task_params.dim,
+                                      -self.task_params.dim]):
                         row_list.append(i + move)
                         row_list.sort()
             adj_list.update({i: row_list})
@@ -128,10 +131,10 @@ class Task:
                         # Pop the first path from the queue
                         path = queue.pop(0)
                         # Get the last node from path
-                        node = int(cp.deepcopy(path[-1]))
+                        node = path[-1]
 
                         if node not in explored:
-                            neighbours = cp.deepcopy(adj_list[node])
+                            neighbours = adj_list[node]
 
                             # Go through all neighbouring nodes, construct new
                             # path and push into queue
@@ -162,7 +165,7 @@ class Task:
     def eval_s_4(self):
         """Evaluate s_4 values according to hides_loc"""
         for node in self.hides_loc:
-            self.s4[node] = 1
+            self.s4_b[node] = 1
 
     def start_new_block(self, block_number):
         """Start new block with new task_configuration
@@ -172,21 +175,23 @@ class Task:
         task_config : TaskConfigurator
         """
         self.hides_loc = self.task_configs.states["hides"][block_number]
-        # TODO: not ideal, would be better to index block first, then state?
         self.eval_s_4()
 
-    def start_new_round(self, block_number, round_number):
+    def start_new_round(self, block_number, round_number: int):
         """Fetch configuration-specific initial task states and reset
         dynamic states to initial values for a new round"""
+        self.current_round = round_number
+        self.moves = self.task_configs.params.n_trials
         self.s1_t = self.task_configs.states["s_1"][block_number, round_number]
         self.s3_c = self.task_configs.states["s_3"][block_number, round_number]
         self.r_t = 0  # reward
         self.tr_found_on_blue = np.nan
 
-    def start_new_trial(self, trial_number):
+    def start_new_trial(self, trial_number: int):
         """Reset dynamic states to initial values for a new trial"""
+        self.current_trial = trial_number
+        self.moves -= 1
         self.drill_finding = np.nan
-        self.t = trial_number
 
     def return_observation(self):
         """Return observation, i.e. each node current status (color) and
@@ -218,7 +223,7 @@ class Task:
         if action_t == 0:
 
             # Change node colors (transition s_2)
-            if self.s4[self.s1_t] == 0:  # If s_1 not hiding spot
+            if self.s4_b[self.s1_t] == 0:  # If s_1 not hiding spot
                 if self.s2_t[self.s1_t] == 0:  # If node is (was) black
                     self.drill_finding = 0
                 else:
@@ -227,7 +232,7 @@ class Task:
                     self.drill_finding = 3
                     # Change color to grey (not a hiding spot)
                 self.s2_t[self.s1_t] = 1
-            elif self.s4[self.s1_t] == 1:  # Elif s_1 is hiding spot
+            elif self.s4_b[self.s1_t] == 1:  # Elif s_1 is hiding spot
                 if self.s2_t[self.s1_t] == 0:  # If node is (was) black
                     self.drill_finding = 1
                 else:
@@ -269,6 +274,3 @@ class Task:
             self.n_black = np.count_nonzero(self.s2_t == 0)
             self.n_grey = np.count_nonzero(self.s2_t == 1)
             self.n_blue = np.count_nonzero(self.s2_t == 2)
-
-            # Update number of hides left
-            self.n_hides_left = self.n_hides - self.n_blue

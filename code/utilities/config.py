@@ -5,21 +5,28 @@ from dataclasses import dataclass
 import os
 import argparse
 import copy as cp
+import glob
 import numpy as np
 import pandas as pd
-import glob
 
 
-def get_user_yes_no(question):
+def get_user_yes_no(question: str) -> bool:
+    """Function to get user input
+
+    Args:
+        question (str): Question to be printed to user
+
+    Returns:
+        bool: user answer
+    """
     reply = input(question + " (Y/N): ").lower().strip()
     try:
         if reply[:1] == 'y':
             return True
-        elif reply[:1] == 'n':
+        if reply[:1] == 'n':
             return False
-        else:
-            print('Invalid answer. Please answer with (Y/N). ')
-            return get_user_yes_no(question)
+        print('Invalid answer. Please answer with (Y/N). ')
+        return get_user_yes_no(question)
     except TypeError as error:
         print("Please enter valid inputs")
         print(error)
@@ -52,32 +59,32 @@ class Paths:
     descr_stats = os.path.join(results, 'descr_stats')
     val_results = os.path.join(results, "validation")
     model_fit_results = os.path.join(results, "model_fit")
-    this_config: str = None  # the particular config used in this simulation
+    this_config: str = "not defined"  # particular config currently used
 
     # Raw behavioral data or estimation results directories
-    this_exp_rawdata_dir: str = None
-    this_sim_rawdata_dir: str = None
-    this_val_results_dir: str = None
-    this_model_fit_results_dir: str = None
+    this_exp_rawdata_dir: str = "not defined"
+    this_sim_rawdata_dir: str = "not defined"
+    this_val_results_dir: str = "not defined"
+    this_model_fit_results_dir: str = "not defined"
 
     # Subject-specific directories and filenames
-    this_sub_dir: str = None
-    this_sub_beh_out_filename: str = None
-    this_sub_val_result_fn: str = None
-    this_sub_model_fit_results_fn: str = None
+    this_sub_dir: str = "not defined"
+    this_sub_beh_out_filename: str = "not defined"
+    this_sub_val_result_fn: str = "not defined"
+    this_sub_model_fit_results_fn: str = "not defined"
 
     # Processed data and descriptive stats directories
-    this_analyses_raw_data_path: str = None
-    this_analyses_proc_data_path: str = None
-    this_analyses_descr_stats_path: str = None
+    this_analyses_raw_data_path: str = "not defined"
+    this_analyses_proc_data_path: str = "not defined"
+    this_analyses_descr_stats_path: str = "not defined"
 
     # Filenames
-    part_fn: str = None
-    events_all_subs_fn: str = None
-    subj_lvl_descr_stats_fn: str = None
-    grp_lvl_descr_stats_fn: str = None
-    t_wise_stats_fn: str = None
-    r_wise_stats_fn: str = None
+    part_fn: str = "not defined"
+    events_all_subs_fn: str = "not defined"
+    subj_lvl_descr_stats_fn: str = "not defined"
+    grp_lvl_descr_stats_fn: str = "not defined"
+    t_wise_stats_fn: str = "not defined"
+    r_wise_stats_fn: str = "not defined"
 
 
 class DirectoryManager:
@@ -87,7 +94,7 @@ class DirectoryManager:
     sub_id: str
 
     def define_raw_beh_data_out_path(self, data_type: str,
-                                     out_dir_label: str = None,
+                                     out_dir_label: str = "not defined",
                                      make_dir: bool = False,):
         """
         Create path variable for output directoy containing behavioral data
@@ -106,13 +113,13 @@ class DirectoryManager:
         else:
             data_directory = self.paths.exp_rawdata
 
-        while not out_dir_label:
+        while out_dir_label == "not defined":
             out_dir_label = input(
                 "Enter label for raw behav. data output directory: ")
             if os.path.exists(os.path.join(data_directory, out_dir_label)):
                 print("A directory with this name already exists. "
                       "Please choose a different name.")
-                out_dir_label = None
+                out_dir_label = "not defined"
 
         raw_data_path = os.path.join(data_directory, out_dir_label)
 
@@ -173,6 +180,8 @@ class DirectoryManager:
                 os.makedirs(self.paths.this_analyses_descr_stats_path)
 
     def define_stats_filenames(self):
+        """Function to define filenames that store descriptive statistics
+        """
         self.paths.part_fn = os.path.join(
             self.paths.this_analyses_raw_data_path, "participants.tsv"
             )
@@ -195,6 +204,18 @@ class DirectoryManager:
 
     def define_val_results_path(self, dir_label: str = "not_given",
                                 version="1", make_dir: bool = False):
+        """Method to define the path variable for the directory containing
+        validation results.
+
+        Args:
+            dir_label (str, optional): Name for this validation run.
+                Defaults to "not_given".
+            version (str, optional): Version for a given validation run.
+                Two runs with the same label can be different versions.
+                Defaults to "1".
+            make_dir (bool, optional): If True, makes the directory defined
+                in this method. Defaults to False.
+        """
         if dir_label == "not_given":
             while True:
                 try:
@@ -216,12 +237,12 @@ class DirectoryManager:
                 if not os.path.exists(self.paths.this_val_results_dir):
                     os.makedirs(self.paths.this_val_results_dir)
                 else:
-                    print("Output directory for validation results already exists."
-                          " Skipping makedirs. results will be written to "
-                          "existing directory.")
+                    print("Output directory for validation results already "
+                          "exists. Skipping makedirs. results will be written "
+                          "to existing directory.")
             except FileExistsError:
-                print("Output directory for validation results already exists. "
-                      "Skipping makedirs. results will be written to "
+                print("Output directory for validation results already exists."
+                      " Skipping makedirs. results will be written to "
                       "existing directory.")
 
     def define_model_fitting_results_path(self, dir_label: str, version="main",
@@ -249,57 +270,52 @@ class DirectoryManager:
                           "exists. Skipping makedirs. results will be written "
                           "to existing directory.")
             except FileExistsError:
-                print("Output directory for model fitting results already exists."
-                      " Skipping makedirs. results will be written to "
+                print("Output directory for model fitting results already "
+                      "exists. Skipping makedirs. results will be written to "
                       "existing directory.")
 
-    def create_agent_sub_id(self, sim_params):
-        """Create id for this subject. More than one subject id per agent
-        possible if >1 repetition per agent
-
-        Parameters
-        ----------
-        sim_obj: Simulator
-        """
-        self.sub_id = (
-            f"{sim_params.current_agent_gen_init_obj.name}_" +
-            f"rep-{sim_params.current_rep}_" +
-            "tau-" + f"{sim_params.current_tau_gen * 1000}"[:4] + "_" +
-            "lambda-" + f"{sim_params.current_lambda_gen * 1000}"[:4] + "_" +
-            f"part-{sim_params.current_part}"
-            ).replace(".", "")
-
-        self.sub_id.replace(".", "")
-
-    def define_and_make_sub_beh_out_dir(self):
+    def define_and_make_sub_beh_out_dir(self, sub_id: str):
         """Define paths to subject specific output directory and make
         directory if not existent"""
 
         self.paths.this_sub_dir = os.path.join(
-            self.paths.this_sim_rawdata_dir, f"sub-{self.sub_id}", "beh")
+            self.paths.this_sim_rawdata_dir, f"sub-{sub_id}", "beh")
         if not os.path.exists(self.paths.this_sub_dir):
             os.makedirs(self.paths.this_sub_dir)
 
-    def define_beh_out_filename(self):
+    def define_beh_out_filename(self, sub_id):
+        """Method to define the filename for this subjects behavioral data."""
         self.paths.this_sub_beh_out_filename = os.path.join(
             self.paths.this_sub_dir,
-            f"sub-{self.sub_id}_task-th_beh")
+            f"sub-{sub_id}_task-th_beh")
 
-    def define_val_results_filename(self):
+    def define_val_results_filename(self, sub_id: str):
+        """Method to define the filename for this subjects validation restuls.
+        """
         self.paths.this_sub_val_result_fn = os.path.join(
             self.paths.this_val_results_dir,
-            f"val_results_sub-{self.sub_id}")
-        
+            f"val_results_sub-{sub_id}")
+
     def define_model_fit_results_filename(self, sub_id: str):
+        """Method to define the filename for the model estimation results for
+        the data of subject <sub_id>
+
+        Args:
+            sub_id (str): Subject ID
+        """
         self.paths.this_sub_model_fit_results_fn = os.path.join(
             self.paths.this_model_fit_results_dir,
             f"model_fit_results_sub-{sub_id}"
         )
 
-    def prepare_sim_beh_output(self, sim_params):
-        self.create_agent_sub_id(sim_params)
-        self.define_and_make_sub_beh_out_dir()
-        self.define_beh_out_filename()
+    def define_sim_beh_output_paths(self, sub_id: str):
+        """Method to define output paths and filename variables
+
+        Args:
+            sub_id (str): Subject ID
+        """
+        self.define_and_make_sub_beh_out_dir(sub_id)
+        self.define_beh_out_filename(sub_id)
 
     def save_data_to_tsv(self, data):
         """Safe dataframe to a .tsv file
@@ -315,6 +331,7 @@ class DirectoryManager:
 
 
 class DataLoader:
+    """Class to load data or descriptive stats"""
     def __init__(self, paths: Paths, exp_label: str):
         self.paths = paths
 
@@ -342,14 +359,35 @@ class DataLoader:
             paths.descr_stats, 'sim', 'sim_100_msc', 't_wise_stats')
 
     def load_sim_subj_lvl_stats(self) -> pd.DataFrame:
+        """_summary_
+
+        Returns:
+            pd.DataFrame: _description_
+        """
         subj_lvl_stats_df = pd.read_pickle(
             f"{self.paths.subj_lvl_descr_stats_fn}.pkl")
         return subj_lvl_stats_df
 
-    def create_list_of_files_in_folder(self, folder_path) -> list:
+    def create_list_of_files_in_folder(self, folder_path: str) -> list:
+        """_summary_
+
+        Args:
+            folder_path (str): _description_
+
+        Returns:
+            list: _description_
+        """
         return glob.glob(os.path.join(folder_path, "*"))
 
-    def load_data_in_one_folder(self, folder_path) -> pd.DataFrame:
+    def load_data_in_one_folder(self, folder_path: str) -> pd.DataFrame:
+        """_summary_
+
+        Args:
+            folder_path (str): _description_
+
+        Returns:
+            pd.DataFrame: _description_
+        """
         file_list = self.create_list_of_files_in_folder(
             folder_path=folder_path)
 
@@ -358,19 +396,34 @@ class DataLoader:
             ignore_index=True)
         return dataframe
 
-    def load_exp_events(self):
+    def load_exp_events(self) -> pd.DataFrame:
+        """Method to load trialwise events
+
+        Returns:
+            pd.DataFrame: Dataframe containing events
+        """
         return pd.read_pickle(f'{self.events_exp_fn}.pkl')
 
-    def load_sim100_group_lvl_stats(self):
+    def load_sim100_group_lvl_stats(self) -> pd.DataFrame:
+        """Method to load stats
+
+        Returns:
+            pd.DataFrame: dataframe with group level stats
+        """
         return pd.read_pickle(f'{self.grp_stats_sim_100_fn}.pkl')
 
-    def load_sim100_trialwise_stats(self):
+    def load_sim100_trialwise_stats(self) -> dict:
+        """Method to load trialwise descriptive statistics of the simulation
+        with 100 different task configurations.
+
+        Returns:
+            dict: Dictiorany containting stats in dataframes
+        """
         tw_sim_100_aw = {}  # trial wise stats each agent over all blocks
         for agent in ['A1', 'A2', 'A3']:
             tw_sim_100_aw[agent] = pd.read_pickle(
                 f'{self.tw_sim_100_fn}_agent-Agent {agent}.pkl')
         return tw_sim_100_aw
-
 
 
 @dataclass

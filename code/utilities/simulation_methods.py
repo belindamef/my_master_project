@@ -9,8 +9,8 @@ import time
 import pandas as pd
 import numpy as np
 from .task import Task
-from .agent import AgentAttributes, Agent
-from .modelling import BehavioralModel, BayesianModelComps
+from .agent import AgentAttributes, Agent, BayesianModelComps
+from .modelling import BehavioralModel
 from .config import TaskConfigurator
 np.set_printoptions(linewidth=500)
 
@@ -75,7 +75,7 @@ class Recorder:
         self.data_one_round["s1"][trial] = task.s1_t
         self.data_one_round["s2"][trial] = task.s2_t
         self.data_one_round["s3"][trial] = task.s3_c
-        self.data_one_round["s4"][trial] = task.s4
+        self.data_one_round["s4"][trial] = task.s4_b
         self.data_one_round["n_black"][trial] = task.n_black
         self.data_one_round["n_grey"][trial] = task.n_grey
         self.data_one_round["n_blue"][trial] = task.n_blue
@@ -282,6 +282,27 @@ class Simulator():
         self.bayesian_comps = bayesian_comps
         self.sim_params = sim_params
 
+    def create_agent_sub_id(self) -> str:
+        """Create id for this subject. More than one subject id per agent
+        possible if >1 repetition per agent
+
+        Returns:
+            str: Subject ID
+        """
+        sub_id = (
+            f"{self.sim_params.current_agent_gen_init_obj.name}_" +
+            f"rep-{self.sim_params.current_rep}_" +
+            "tau-" + f"{self.sim_params.current_tau_gen * 1000}"[:4] +
+            "_" +
+            "lambda-" + f"{self.sim_params.current_lambda_gen * 1000}"[:4] +
+            "_" +
+            f"part-{self.sim_params.current_part}"
+            ).replace(".", "")
+
+        sub_id.replace(".", "")
+
+        return sub_id
+
     def create_interacting_objects(self, agent_name: str, this_block: int,
                                    tau_gen: float, lambda_gen: float):
         """Create beh_model objects that interact in each trial
@@ -298,12 +319,12 @@ class Simulator():
             agent_attributes = AgentAttributes(agent_name)
         self.task = Task(self.task_configs)
         self.task.start_new_block(this_block)
-        self.agent = Agent(agent_attributes, self.task, lambda_gen)
 
+        self.agent = Agent(agent_attributes, self.task, lambda_gen)
         if agent_attributes.is_bayesian:
             self.agent.add_bayesian_model_components(self.bayesian_comps)
-        self.beh_model = BehavioralModel(tau_gen, self.agent)
 
+        self.beh_model = BehavioralModel(tau_gen, self.agent)
 
     def simulate_trial_start(self, this_trial: int):
         """Simulate agent task interaction at beginning of a new trial
@@ -312,7 +333,7 @@ class Simulator():
             this_trial (int): Trial number
         """
         self.task.start_new_trial(this_trial)
-        self.agent.start_new_trial(this_trial)
+        self.agent.start_new_trial()
         self.task.return_observation()
         self.agent.update_belief_state(self.beh_model.action_t)
 
@@ -440,7 +461,6 @@ class Simulator():
                         break
 
                     if np.isnan(candidate_tau):
-                        # TODO: eleganter?!!!!
                         prob_data_giv_action = self.agent.valence_t
                         prob_data_giv_action[prob_data_giv_action == 0] = 0.001
                         prob_data_giv_action = prob_data_giv_action / sum(

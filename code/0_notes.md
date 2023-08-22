@@ -8,7 +8,7 @@ sys.stdout = out_file
 
 ## Optional value with typehint:
 
-```python
+```Python
 from typing import Optional
 
 class MyClass:

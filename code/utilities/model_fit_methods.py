@@ -1,17 +1,15 @@
+"""This script contains classes and methods for model validation given
+participant data.
 """
-This script contains classes and methods for model validation analyses.
-
-Author: Belinda Fleischmann
-"""
-
+import time
+import pandas as pd
 from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.estimation_methods import Estimator
 from utilities.config import DirectoryManager
-import pandas as pd
-import time
 
 
 class ModelFitter:
+    """Class to perform model fitting"""
     data_dic: dict
     estimator: Estimator = Estimator()
 
@@ -22,6 +20,8 @@ class ModelFitter:
         self.dir_mgr: DirectoryManager = dir_mgr
 
     def init_data_dic(self):
+        """_summary_
+        """
         self.data_dic = {
             "participant": [],
             }
@@ -30,15 +30,24 @@ class ModelFitter:
             self.data_dic[f"BIC_{agent}"] = []
 
     def record_participant_number(self):
+        """_summary_
+        """
         self.data_dic["participant"].append(self.sim_params.current_part)
 
     def record_bics(self, bics: dict):
+        """_summary_
+
+        Args:
+            bics (dict): _description_
+        """
         for agent in self.estimator.est_params.agent_candidate_space:
             self.data_dic[f"BIC_{agent}"].append(bics[f"BIC_{agent}"])
 
     def save_results(self):
+        """_summary_
+        """
         self.dir_mgr.define_model_fit_results_filename(
-            sub_id=self.sim_params.current_part)
+            sub_id=str(self.sim_params.current_part))
 
         mle_df = pd.DataFrame(self.data_dic)
 
@@ -47,7 +56,8 @@ class ModelFitter:
             tsv_file.write(mle_df.to_csv(sep="\t", na_rep="nan", index=False))
 
     def estimate_parameter_values(self):
-
+        """_summary_
+        """
         self.estimator.estimate_parameters(
             data=self.simulator.data,
             method="brute_force",
@@ -57,6 +67,11 @@ class ModelFitter:
             sim_params=self.sim_params)
 
     def evaluate_model_fitting_performance(self, data: pd.DataFrame):
+        """_summary_
+
+        Args:
+            data (pd.DataFrame): _description_
+        """
         bics = self.estimator.evaluate_bic_s(
             data=data, est_method="brute_force", data_type="exp")
         self.record_bics(bics)

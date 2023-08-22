@@ -6,7 +6,7 @@ Author: Belinda Fleischmann
 import numpy as np
 import pandas as pd
 from utilities.simulation_methods import Simulator, SimulationParameters
-from utilities.modelling import BayesianModelComps
+from utilities.agent import BayesianModelComps
 from utilities.config import TaskConfigurator
 
 
@@ -18,11 +18,19 @@ class EstimationParameters:
     tau_bf_cand_space: list
     lambda_bf_cand_space: list
 
-    def def_params_manually(self, agent_candidate_space: list = None,
-                            tau_bf_cand_space: list = None,
-                            lambda_bf_cand_space: list = None):
+    def def_params_manually(self, agent_candidate_space=None,
+                            tau_bf_cand_space=None,
+                            lambda_bf_cand_space=None):
+        """_summary_
 
-
+        Args:
+            agent_candidate_space (list, optional): _description_. Defaults to
+                None.
+            tau_bf_cand_space (list, optional): _description_.
+                Defaults to None.
+            lambda_bf_cand_space (list, optional): _description_. Defaults to
+                None.
+        """
         if agent_candidate_space is None:
             self.agent_candidate_space = ["C1", "C2", "C3", "A1", "A2", "A3"]
         else:
@@ -63,6 +71,8 @@ class Estimator:
         self.sim_object.data = exp_data
 
     def reset_result_variables_to_nan(self):
+        """Name says it all
+        """
         self.tau_est_result_gen_agent = np.nan
         self.tau_est_result_current_cand_agent = np.nan
         self.lambda_est_result_gen_agent = np.nan
@@ -70,8 +80,14 @@ class Estimator:
         self.max_llh_current_gen_agent = np.nan
         self.max_llh_current_cand_agent = np.nan
 
-    def eval_llh_data_no_params(self, candidate_agent,
+    def eval_llh_data_no_params(self, candidate_agent: str,
                                 data: pd.DataFrame):
+        """Method to ecalute the "likelihood" of data if no parameters given
+
+        Args:
+            candidate_agent (str): Agent name
+            data (pd.DataFrame): Behavioral data, trialwise events
+        """
         llh = self.sim_object.sim_to_eval_llh(
             candidate_tau=np.nan,
             candidate_lambda=np.nan,
@@ -127,7 +143,7 @@ class Estimator:
         return loglikelihood_function
 
     def eval_brute_force_est_tau(self, candidate_agent: str,
-                                 data: pd.DataFrame) -> float:
+                                 data: pd.DataFrame):
         """Evaluate the maximum likelihood estimation of the decision noise
         parameter tau  based on dataset of one participant with brute force
         method.
@@ -180,7 +196,15 @@ class Estimator:
 
     def estimate_tau(self, method: str, candidate_agent: str,
                      data: pd.DataFrame):
-        # TODO: llh comutation is a side product! NOT NICE
+        """Estimate tau parameter value with given dataset. Brute-force
+        estimation method will first evaluate likelihood function for different
+        candidate parameter values.
+
+        Args:
+            method (str): _description_
+            candidate_agent (str): _description_
+            data (pd.DataFrame): _description_
+        """
 
         if method == "brute_force":
             self.eval_brute_force_est_tau(candidate_agent=candidate_agent,
@@ -199,7 +223,16 @@ class Estimator:
                             task_configs: TaskConfigurator,
                             bayesian_comps: BayesianModelComps,
                             sim_params: SimulationParameters):
+        """_summary_
 
+        Args:
+            data (pd.DataFrame): _description_
+            method (str): _description_
+            candidate_agent (str): _description_
+            task_configs (TaskConfigurator): _description_
+            bayesian_comps (BayesianModelComps): _description_
+            sim_params (SimulationParameters): _description_
+        """
         self.instantiate_sim_obj(
             exp_data=data,
             task_configs=task_configs,
@@ -211,7 +244,7 @@ class Estimator:
         # Set candidate agent model to generating agent
         self.current_cand_agent = candidate_agent
 
-        self.reset_result_variables_to_nan()  # TODO hübscher
+        self.reset_result_variables_to_nan()
 
         if "C" in candidate_agent:
             pass
@@ -225,8 +258,15 @@ class Estimator:
                                      candidate_agent=candidate_agent,
                                      data=data)
 
-    def eval_llh_data(self, candidate_agent, method: str, data: pd.DataFrame):
+    def eval_llh_data(self, candidate_agent: str, method: str,
+                      data: pd.DataFrame):
+        """_summary_
 
+        Args:
+            candidate_agent (str): _description_
+            method (str): _description_
+            data (pd.DataFrame): _description_
+        """
         if "C" in candidate_agent:
             self.eval_llh_data_no_params(
                 candidate_agent=candidate_agent,
@@ -243,6 +283,14 @@ class Estimator:
                                      data=data)
 
     def determine_n_parameters(self, agent_model_name: str) -> int:
+        """_summary_
+
+        Args:
+            agent_model_name (str): _description_
+
+        Returns:
+            int: _description_
+        """
         if "C" in agent_model_name:
             n_params = 0
         elif agent_model_name == "A3":
@@ -255,12 +303,31 @@ class Estimator:
                                llh_theta_hat: float,
                                n_params: int,
                                n_valid_actions: int):
+        """_summary_
 
+        Args:
+            llh_theta_hat (float): _description_
+            n_params (int): _description_
+            n_valid_actions (int): _description_
+
+        Returns:
+            float: BIC value for model validation with given parameters values
+        """
         this_bic = llh_theta_hat - n_params/2 * np.log(n_valid_actions)
         return this_bic
 
     def evaluate_bic_s(self, data: pd.DataFrame, est_method: str,
                        data_type: str) -> dict:
+        """_summary_
+
+        Args:
+            data (pd.DataFrame): _description_
+            est_method (str): _description_
+            data_type (str): _description_
+
+        Returns:
+            dict: _description_
+        """
         agent_specific_bic_s = {
             "BIC_C1": np.nan, "BIC_C2": np.nan, "BIC_C3": np.nan,
             "BIC_A1": np.nan, "BIC_A2": np.nan, "BIC_A3": np.nan
