@@ -5,7 +5,7 @@ import glob
 import numpy as np
 import pandas as pd
 from matplotlib import gridspec
-from code.utilities.very_plotter import VeryPlotter
+from utilities.very_plotter import VeryPlotter
 from utilities.config import DirectoryManager, DataLoader
 
 

@@ -350,7 +350,7 @@ class DataLoader:
         self.grp_stats_exp_fn = os.path.join(
             paths.descr_stats, 'exp', f'{exp_label}', 'grp_lvl_stats')
         self.grp_stats_sim_fn = os.path.join(
-            paths.descr_stats, 'sim', f'sim_{exp_label}', 'grp_lvl_stats')
+            paths.descr_stats, 'sim', f'{exp_label}', 'grp_lvl_stats')
         self.grp_stats_sim_100_fn = os.path.join(
             paths.descr_stats, 'sim', 'sim_100_msc', 'grp_lvl_stats')
         self.tw_exp_fn = os.path.join(
