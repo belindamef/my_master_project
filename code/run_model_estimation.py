@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""
-This script evaluates and visualizes beh_model recovery analyses.
-
-Author: Belinda Fleischmann
-"""
+"""This script evaluates beh_model recovery analyses."""
 
 import time
 import os

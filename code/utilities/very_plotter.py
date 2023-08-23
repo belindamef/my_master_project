@@ -36,7 +36,6 @@ class VeryPlotter:
         plt.rcParams.update(self.rcParams)
         return plt
 
-
     def get_exp_group_colors(self):
         viridis_20 = palettable.matplotlib.Viridis_20.colors
 

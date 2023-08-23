@@ -17,7 +17,7 @@ notification   = Error
 
 # Execution
 initial_dir    = /home/data/treasure_hunt/treasure-hunt/code
-executable     = /home/data/treasure_hunt/treasure-hunt/code/wrapper_script_validation.sh\n"
+executable     = /home/data/treasure_hunt/treasure-hunt/code/wrapper_script_recovery.sh\n"
 
 # Make sure floating numbers are comma seperated
 export LC_NUMERIC="en_US.UTF-8"

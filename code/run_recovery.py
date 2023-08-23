@@ -1,8 +1,5 @@
-"""
-This script evaluates and visualizes beh_model recovery analyses.
-
-Author: Belinda Fleischmann
-"""
+#!/usr/bin/env python3
+"""This script evaluates and visualizes beh_model recovery analyses."""
 
 import time
 import os
@@ -138,17 +135,19 @@ if __name__ == "__main__":
     OUT_DIR_LABEL = "exp_msc_test_debug_0822"
     VERSION_NO = "debug"
 
-    # Define Simulation parameters
+    # Define Simulation parameters, and generating parameter sapce
     N_REPS = 1
     N_PARTS = 1
     AGENT_GEN_SPACE = ["C1", "C2", "C3", "A1", "A2", "A3"]
     TAU_GEN_SPACE = np.linspace(0.01, 0.5, 5).tolist()
     LAMBDA_GEN_SPACE = np.linspace(0, 1, 5).tolist()
 
+    # Define Estimation candidate space
     AGENT_CAND_SPACE = ["C1", "C2", "C3", "A1", "A2", "A3"]
     TAU_CAND_SPACE = np.linspace(0.01, 0.3, 3).tolist()
     LAMBDA_CAND_SPACE = np.linspace(0.25, 0.75, 3).tolist()
 
+    # Configure quick test
     IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1
     TEST_N_ROUNDS = 1
