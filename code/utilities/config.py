@@ -10,6 +10,27 @@ import numpy as np
 import pandas as pd
 
 
+def humanreadable_time(time_in_seconds: float) -> str:
+    """_summary_
+
+    Args:
+        time_in_seconds (float): _description_
+
+    Returns:
+        str: _description_
+    """
+    if time_in_seconds < 0.01:
+        hr_time = "< 0.01 sec."
+    # elif time_in_seconds < 1:
+    #     hr_time = f"{round(time_in_seconds, 2)} sec."
+    elif time_in_seconds < 60:
+        hr_time = f"{round(time_in_seconds, 2)} sec."
+    else:
+        hr_time = (f"{int(round(time_in_seconds/60, 0))}:" +
+                   f"{int(round(time_in_seconds%60, 0)):02d} min.")
+    return hr_time
+
+
 def get_user_yes_no(question: str) -> bool:
     """Function to get user input
 
@@ -57,8 +78,8 @@ class Paths:
     exp_rawdata = os.path.join(data, "rawdata", "exp")
     results = os.path.join(project, "results")
     descr_stats = os.path.join(results, 'descr_stats')
-    model_recov_results = os.path.join(results, "validation")
-    model_est_results = os.path.join(results, "model_fit")
+    model_recov_results = os.path.join(results, "model_recovery")
+    model_est_results = os.path.join(results, "model_estimation")
     this_config: str = ""  # particular config currently used
 
     # Raw behavioral data or estimation results directories

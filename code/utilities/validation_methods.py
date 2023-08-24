@@ -4,7 +4,7 @@ import time
 import pandas as pd
 from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.estimation_methods import Estimator, EstimationParameters
-from utilities.config import TaskConfigurator
+from utilities.config import TaskConfigurator, humanreadable_time
 from utilities.agent import BayesianModelComps
 
 
@@ -146,16 +146,10 @@ class Validator:
                                            datatype: str):
         """_summary_
         """
-        start = time.time()
         bics = self.estimator.evaluate_bic_s(est_method="brute_force",
                                              data=data,
                                              data_type=datatype)
         self.record_bics(bics)
-        end = time.time()
-        print(
-            "time needed for evaluatung mordel recovery performance for data",
-            f" from {self.sim_params.current_agent_gen} as generating agent: ",
-            f"{round((end-start), ndigits=2)} sec.")
 
     def run_model_recovery(self):
         """For each participant, simulate behavioral data, estimate parameter
@@ -172,16 +166,22 @@ class Validator:
 
         simulated_data = self.simulator.simulate_beh_data(self.sim_params)
 
+        print(f"Running ML parameter estimation with data from "
+              f"{self.sim_params.current_agent_gen} ...")
         start = time.time()
         self.estimate_parameter_values(data=simulated_data)
         end = time.time()
-        print("time needed for ML parameter estimation with "
-              f"{self.sim_params.current_agent_gen} as generating agent: "
-              f"{round((end-start), ndigits=2)} sec.")
+        print(" ... finished ML parameter estimation "
+              f"\n     time needed: {humanreadable_time(end-start)}")
 
+        print("Running model estimation with simulated data from",
+              f" {self.sim_params.current_agent_gen} ...")
+        start = time.time()
         self.evaluate_model_fitting_performance(data=simulated_data,
                                                 datatype="sim")
-
+        end = time.time()
+        print(" ... finished model estimationting ",
+              f"\n     time needed: {humanreadable_time(end-start)}")
         return pd.DataFrame(self.data_dic)
 
     def run_model_estimation(self, data: pd.DataFrame) -> pd.DataFrame:
@@ -195,5 +195,13 @@ class Validator:
             task_configs=self.simulator.task_configs,
             bayesian_comps=self.simulator.bayesian_comps
         )
+        print("Running model estimation with experimental data from ",
+              f" {self.val_params.current_part} ...")
+        start = time.time()
         self.evaluate_model_fitting_performance(data=data, datatype="exp")
+        end = time.time()
+        print("finished model fitting with experimental data from participant",
+              f" {self.val_params.current_part}, ",
+              f"repitition no. {self.val_params}",
+              f"\n     time needed: {humanreadable_time(end-start)}")
         return pd.DataFrame(self.data_dic)

@@ -180,7 +180,7 @@ def run_model_comparison_routine(val_params: ValidationParameters,
         data_handler (DataHandler): _description_
     """
     exp_ev_all_subs_df = data_handler.load_exp_events()
-    if arguments.parallel_computingself.current_part:
+    if arguments.parallel_computing:
         participant_list = arguments.participant
     else:
         participant_list = exp_ev_all_subs_df.sub_id.unique().tolist()
@@ -231,23 +231,25 @@ def main():
                           bayesian_comps=bayesian_comps,
                           est_params=est_params)
 
-    run_model_recovery_routine(sim_params=sim_params,
-                               val_params=val_params,
-                               validator=validator,
-                               dir_mgr=dir_mgr,
-                               data_handler=data_handler)
+    if RUN_RECOVERY:
+        run_model_recovery_routine(sim_params=sim_params,
+                                   val_params=val_params,
+                                   validator=validator,
+                                   dir_mgr=dir_mgr,
+                                   data_handler=data_handler)
 
-    run_model_comparison_routine(val_params=val_params,
-                                 dir_mgr=dir_mgr,
-                                 validator=validator,
-                                 data_handler=data_handler)
+    if RUN_ESTIMATION_EXP:
+        run_model_comparison_routine(val_params=val_params,
+                                     dir_mgr=dir_mgr,
+                                     validator=validator,
+                                     data_handler=data_handler)
 
 
 if __name__ == "__main__":
     arguments = get_arguments()
 
     EXP_LABEL = "exp_msc"
-    VERSION = "debug_0823"
+    VERSION = "debug_0824"
     OUT_DIR_LABEL = f"{EXP_LABEL}_{VERSION}"
 
     # Define repetition_parameters
@@ -256,19 +258,22 @@ if __name__ == "__main__":
 
     # Define Simulation parameters, and generating parameter sapce
     AGENT_GEN_SPACE = ["C1", "C2", "C3", "A1", "A2", "A3"]
-    TAU_GEN_SPACE = np.linspace(0.01, 0.5, 5).tolist()
-    LAMBDA_GEN_SPACE = np.linspace(0, 1, 5).tolist()
+    TAU_GEN_SPACE = np.linspace(0.01, 0.5, 2).tolist()
+    LAMBDA_GEN_SPACE = np.linspace(0, 1, 2).tolist()
 
     # Define parameter estimation candidate space
     AGENT_CAND_SPACE = ["C1", "C2", "C3", "A1", "A2", "A3"]
-    TAU_CAND_SPACE = np.linspace(0.01, 0.3, 3).tolist()
-    LAMBDA_CAND_SPACE = np.linspace(0.25, 0.75, 3).tolist()
+    TAU_CAND_SPACE = np.linspace(0.01, 0.3, 2).tolist()
+    LAMBDA_CAND_SPACE = np.linspace(0.25, 0.75, 2).tolist()
 
     # Configure quick test
     IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1
     TEST_N_ROUNDS = 1
     TEST_N_TRIALS = 2
+
+    RUN_RECOVERY = True
+    RUN_ESTIMATION_EXP = False
 
     start = time.time()
     main()

@@ -7,7 +7,7 @@ import pickle
 import numpy as np
 import more_itertools
 from utilities.task import Task
-from utilities.config import Paths, TaskDesignParameters
+from utilities.config import Paths, TaskDesignParameters, humanreadable_time
 
 
 class BayesianModelComps:
@@ -178,27 +178,34 @@ class BayesianModelComps:
             f"h{self.task_design_params.n_hides}.pkl")
 
         if os.path.exists(s4_perms_fn_pkl):
+            print("Loading s4_perms ...")
             start = time.time()
             with open(s4_perms_fn_pkl, "rb") as file:
                 self.s4_perms = pickle.load(file)
             end = time.time()
-            print(f" ...loaded s4_perms, timed needed: "
-                  f"{round((end - start), ndigits=2)}")
+            print(
+                " ... finished loading s4_perms, timed needed: "
+                f"{humanreadable_time(end-start)}"
+                )
         else:
+            print("Computing s4_perms ...")
             start = time.time()
             self.s4_perms = []
             self.eval_s4_perms()
             end = time.time()
-            print(f" ... computed s4_perms, time needed: "
-                  f"{round((end - start), ndigits=2)}")
+            print(f" ... finished somputing s4_perms, time needed: "
+                  f"{humanreadable_time(end-start)}"
+                  )
+            print("Saving s4_perms ...")
             start = time.time()
             with open(s4_perms_fn_pkl, "wb") as file:
                 pickle.dump(self.s4_perms, file)
             end = time.time()
-            print(f" ... saved s4_perms as pickle, time needed: "
-                  f"{round((end-start), ndigits=2)}")
-
+            print(f" ... finisehd saving s4_perms to files, time needed: "
+                  f"{humanreadable_time(end-start)}"
+                  )
         # Create list with indices of all probs for each hide
+        print("Computing s4_marg_indices ...")
         start = time.time()
         for node in range(self.task_design_params.n_nodes):
             self.s4_perm_node_indices[node] = [
@@ -207,8 +214,9 @@ class BayesianModelComps:
             ]
             # --> 25 X 42504 indices per hide ( if 25 nodes and 6 hides)
         end = time.time()
-        print(f" ... computed s4_marg_indices, time needed: "
-              f"{round((end - start), ndigits=2)}")
+        print(f" ... finished computing s4_marg_indices, time needed: "
+              f"{humanreadable_time(end-start)}"
+              )
 
         # Evaluate number of s4 permutations
         self.n_s4_perms = len(self.s4_perms)
@@ -218,25 +226,31 @@ class BayesianModelComps:
                                 f"prior_dim-{self.task_design_params.dim}_"
                                 f"h{self.task_design_params.n_hides}.npy")
         if os.path.exists(prior_fn):
+            print("Loading prior array from file ...")
             start = time.time()
             self.prior_c0 = np.load(prior_fn)
             end = time.time()
-            print(f" ... loaded prior, time needed: "
-                  f"{round((end - start), ndigits=2)}")
+            print(f" ... finished loading prior, time needed: "
+                  f"{humanreadable_time(end-start)}"
+                  )
             # sum_p_c0 = np.sum(self.prior_c0)
         else:
+            print("Evaluating prior belief array for given task config ...")
             start = time.time()
             self.prior_c0 = np.full((self.task_design_params.n_nodes,
                                      self.n_s4_perms), 0.0)
             self.eval_prior()
             end = time.time()
-            print(f" ... evaluated prior, time needed: "
-                  f" {round((end - start), ndigits=2)}")
+            print(f" ... finished evaluating prior, time needed: "
+                  f"{humanreadable_time(end-start)}"
+                  )
+            print("Saving prior belief array to file ...")
             start = time.time()
             np.save(prior_fn, self.prior_c0)
             end = time.time()
-            print(f" ... saved prior, time needed:"
-                  f" {round((end - start), ndigits=2)}")
+            print(f" ... finished saving prior to file, time needed:"
+                  f"{humanreadable_time(end-start)}"
+                  )
 
         # Load/eval action-dep. state-cond. obs distribution ---(Likelihood)---
         lklh_fn = os.path.join(
@@ -246,12 +260,14 @@ class BayesianModelComps:
             f"h{self.task_design_params.n_hides}.npy"
         )
         if os.path.exists(lklh_fn):
+            print("Loading likelihood array from file ...")
             start = time.time()
             self.lklh = np.load(lklh_fn)
             end = time.time()
-            print(f" ... loaded lkhl, time needed: "
-                  f"{round((end - start), ndigits=2)}")
+            print(f" ... finished loading likelihood array, time needed: "
+                  f"{humanreadable_time(end-start)}")
         else:
+            print("Computing likelihood array for given task config ...")
             self.lklh = np.zeros(
                 (2, self.task_design_params.n_nodes, 3, 4,
                  self.task_design_params.n_nodes, self.n_s4_perms),
@@ -259,13 +275,14 @@ class BayesianModelComps:
             start = time.time()
             self.eval_likelihood()
             end = time.time()
-            print(f" ... computed lkhl, time needed: "
-                  f"{round((end - start), ndigits=2)}")
+            print(f" ... finished computing likelihood, time needed: "
+                  f"{humanreadable_time(end-start)}")
+            print("Saving likelihood array to file")
             start = time.time()
             np.save(lklh_fn, self.lklh)
             end = time.time()
-            print(f" ... saved lkhl, time needed: "
-                  f"{round((end - start), ndigits=2)}")
+            print(f" ... saved likelihood array to file, time needed: "
+                  f"{humanreadable_time(end-start)}")
         # start = time.time()
         return self
 
