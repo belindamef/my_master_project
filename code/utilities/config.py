@@ -57,44 +57,43 @@ class Paths:
     exp_rawdata = os.path.join(data, "rawdata", "exp")
     results = os.path.join(project, "results")
     descr_stats = os.path.join(results, 'descr_stats')
-    val_results = os.path.join(results, "validation")
-    model_fit_results = os.path.join(results, "model_fit")
-    this_config: str = "not defined"  # particular config currently used
+    model_recov_results = os.path.join(results, "validation")
+    model_comp_results = os.path.join(results, "model_fit")
+    this_config: str = ""  # particular config currently used
 
     # Raw behavioral data or estimation results directories
-    this_exp_rawdata_dir: str = "not defined"
-    this_sim_rawdata_dir: str = "not defined"
-    this_val_results_dir: str = "not defined"
-    this_model_fit_results_dir: str = "not defined"
+    this_exp_rawdata_dir: str = ""
+    this_sim_rawdata_dir: str = ""
+    this_model_recov_results_dir: str = ""
+    this_model_comp_results_dir: str = ""
 
     # Subject-specific directories and filenames
-    this_sub_dir: str = "not defined"
-    this_sub_beh_out_filename: str = "not defined"
-    this_sub_val_result_fn: str = "not defined"
-    this_sub_model_fit_results_fn: str = "not defined"
+    this_sub_dir: str = ""
+    this_sub_beh_out_filename: str = ""
+    this_sub_model_recov_result_fn: str = ""
+    this_sub_model_comp_results_fn: str = ""
 
     # Processed data and descriptive stats directories
-    this_analyses_raw_data_path: str = "not defined"
-    this_analyses_proc_data_path: str = "not defined"
-    this_analyses_descr_stats_path: str = "not defined"
+    this_analyses_raw_data_path: str = ""
+    this_analyses_proc_data_path: str = ""
+    this_analyses_descr_stats_path: str = ""
 
     # Filenames
-    part_fn: str = "not defined"
-    events_all_subs_fn: str = "not defined"
-    subj_lvl_descr_stats_fn: str = "not defined"
-    grp_lvl_descr_stats_fn: str = "not defined"
-    t_wise_stats_fn: str = "not defined"
-    r_wise_stats_fn: str = "not defined"
+    part_fn: str = ""
+    events_all_subs_fn: str = ""
+    subj_lvl_descr_stats_fn: str = ""
+    grp_lvl_descr_stats_fn: str = ""
+    t_wise_stats_fn: str = ""
+    r_wise_stats_fn: str = ""
 
 
 class DirectoryManager:
     """Class of methods to create or check for directories"""
 
     paths = Paths()
-    sub_id: str
 
     def define_raw_beh_data_out_path(self, data_type: str,
-                                     out_dir_label: str = "not defined",
+                                     out_dir_label: str = "",
                                      make_dir: bool = False,):
         """
         Create path variable for output directoy containing behavioral data
@@ -113,13 +112,13 @@ class DirectoryManager:
         else:
             data_directory = self.paths.exp_rawdata
 
-        while out_dir_label == "not defined":
+        while out_dir_label == "":
             out_dir_label = input(
                 "Enter label for raw behav. data output directory: ")
             if os.path.exists(os.path.join(data_directory, out_dir_label)):
                 print("A directory with this name already exists. "
                       "Please choose a different name.")
-                out_dir_label = "not defined"
+                out_dir_label = ""
 
         raw_data_path = os.path.join(data_directory, out_dir_label)
 
@@ -202,40 +201,40 @@ class DirectoryManager:
             self.paths.this_analyses_descr_stats_path, "r_wise_stats"
         )
 
-    def define_val_results_path(self, dir_label: str = "not_given",
-                                version="1", make_dir: bool = False):
+    def define_model_recov_results_path(self, dir_label: str = "",
+                                        version="1", make_dir: bool = False):
         """Method to define the path variable for the directory containing
-        validation results.
+        model recovery results.
 
         Args:
-            dir_label (str, optional): Name for this validation run.
-                Defaults to "not_given".
-            version (str, optional): Version for a given validation run.
+            dir_label (str, optional): Name for this model recovery run.
+                Defaults to "".
+            version (str, optional): Version for a given model recovery run.
                 Two runs with the same label can be different versions.
                 Defaults to "1".
             make_dir (bool, optional): If True, makes the directory defined
                 in this method. Defaults to False.
         """
-        if dir_label == "not_given":
+        if not dir_label:
             while True:
                 try:
                     dir_name = input(
-                        "Enter label for validation output directory: ")
-                    self.paths.this_val_results_dir = os.path.join(
+                        "Enter label for model recovery output directory: ")
+                    self.paths.this_model_recov_results_dir = os.path.join(
                         self.paths.sim_rawdata, dir_name)
-                    os.makedirs(self.paths.this_val_results_dir)
+                    os.makedirs(self.paths.this_model_recov_results_dir)
                     break
                 except FileExistsError:
-                    print('Validation output directory with this name already '
-                          'exists.')
+                    print('model recovery output directory with this name '
+                          'already exists.')
         else:
-            self.paths.this_val_results_dir = os.path.join(
-                self.paths.val_results, f"{dir_label}_{version}")
+            self.paths.this_model_recov_results_dir = os.path.join(
+                self.paths.model_recov_results, f"{dir_label}_{version}")
 
         if make_dir:
             try:
-                if not os.path.exists(self.paths.this_val_results_dir):
-                    os.makedirs(self.paths.this_val_results_dir)
+                if not os.path.exists(self.paths.this_model_recov_results_dir):
+                    os.makedirs(self.paths.this_model_recov_results_dir)
                 else:
                     print("Output directory for validation results already "
                           "exists. Skipping makedirs. results will be written "
@@ -245,8 +244,8 @@ class DirectoryManager:
                       " Skipping makedirs. results will be written to "
                       "existing directory.")
 
-    def define_model_fitting_results_path(self, dir_label: str, version="main",
-                                          make_dir: bool = False):
+    def define_model_comp_results_path(self, dir_label: str, version="main",
+                                       make_dir: bool = False):
         """Define path variable for directory containing model fitting results
 
         Parameters
@@ -258,13 +257,13 @@ class DirectoryManager:
         make_dir: bool
           if True, creates physical directory
           directory"""
-        self.paths.this_model_fit_results_dir = os.path.join(
-            self.paths.model_fit_results, f"{dir_label}_{version}")
+        self.paths.this_model_comp_results_dir = os.path.join(
+            self.paths.model_comp_results, f"{dir_label}_{version}")
 
         if make_dir:
             try:
-                if not os.path.exists(self.paths.this_model_fit_results_dir):
-                    os.makedirs(self.paths.this_model_fit_results_dir)
+                if not os.path.exists(self.paths.this_model_comp_results_dir):
+                    os.makedirs(self.paths.this_model_comp_results_dir)
                 else:
                     print("Output directory for model fitting results already "
                           "exists. Skipping makedirs. results will be written "
@@ -274,7 +273,7 @@ class DirectoryManager:
                       "exists. Skipping makedirs. results will be written to "
                       "existing directory.")
 
-    def define_and_make_sub_beh_out_dir(self, sub_id: str):
+    def define_and_make_agent_beh_out_dir(self, sub_id: str):
         """Define paths to subject specific output directory and make
         directory if not existent"""
 
@@ -289,22 +288,22 @@ class DirectoryManager:
             self.paths.this_sub_dir,
             f"sub-{sub_id}_task-th_beh")
 
-    def define_val_results_filename(self, sub_id: str):
+    def define_model_recov_results_filename(self, sub_id: str):
         """Method to define the filename for this subjects validation restuls.
         """
-        self.paths.this_sub_val_result_fn = os.path.join(
-            self.paths.this_val_results_dir,
+        self.paths.this_sub_model_recov_result_fn = os.path.join(
+            self.paths.this_model_recov_results_dir,
             f"val_results_sub-{sub_id}")
 
-    def define_model_fit_results_filename(self, sub_id: str):
+    def define_model_comp_results_filename(self, sub_id: str):
         """Method to define the filename for the model estimation results for
         the data of subject <sub_id>
 
         Args:
             sub_id (str): Subject ID
         """
-        self.paths.this_sub_model_fit_results_fn = os.path.join(
-            self.paths.this_model_fit_results_dir,
+        self.paths.this_sub_model_comp_results_fn = os.path.join(
+            self.paths.this_model_comp_results_dir,
             f"model_fit_results_sub-{sub_id}"
         )
 
@@ -314,23 +313,11 @@ class DirectoryManager:
         Args:
             sub_id (str): Subject ID
         """
-        self.define_and_make_sub_beh_out_dir(sub_id)
+        self.define_and_make_agent_beh_out_dir(sub_id)
         self.define_beh_out_filename(sub_id)
 
-    def save_data_to_tsv(self, data):
-        """Safe dataframe to a .tsv file
 
-        Parameters
-        ----------
-        data: pd.Dataframe
-            dataframe containting simulated behavioral data
-        """
-        with open(f"{self.paths.this_sub_beh_out_filename}.tsv", "w",
-                  encoding="utf8") as tsv_file:
-            tsv_file.write(data.to_csv(sep="\t", na_rep=np.NaN, index=False))
-
-
-class DataLoader:
+class DataHandler:
     """Class to load data or descriptive stats"""
     def __init__(self, paths: Paths, exp_label: str):
         self.paths = paths
@@ -357,6 +344,17 @@ class DataLoader:
             paths.descr_stats, 'exp', f'{exp_label}', 't_wise_stats')
         self.tw_sim_100_fn = os.path.join(
             paths.descr_stats, 'sim', 'sim_100_msc', 't_wise_stats')
+
+    def save_data_to_tsv(self, data: pd.DataFrame, filename: str):
+        """Safe dataframe to a .tsv file
+
+        Parameters
+        ----------
+        data: pd.Dataframe
+            dataframe containting simulated behavioral data
+        """
+        with open(f"{filename}.tsv", "w", encoding="utf8") as tsv_file:
+            tsv_file.write(data.to_csv(sep="\t", na_rep="nan", index=False))
 
     def load_sim_subj_lvl_stats(self) -> pd.DataFrame:
         """_summary_

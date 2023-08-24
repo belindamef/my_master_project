@@ -5,7 +5,7 @@ import time
 import os
 import numpy as np
 from utilities.config import DirectoryManager, TaskConfigurator, get_arguments
-from utilities.simulation_methods import Simulator, SimulationParameters
+from utilities.simulation_methods import SimulationParameters
 from utilities.agent import AgentAttributes, BayesianModelComps
 from utilities.validation_methods import Validator
 
@@ -87,9 +87,9 @@ def check_output_existence(out_filename: str) -> bool:
 def main():
     """Main function that runs model validation routine."""
     dir_mgr = DirectoryManager()
-    dir_mgr.define_val_results_path(dir_label=OUT_DIR_LABEL,
-                                    version=VERSION_NO,
-                                    make_dir=True)
+    dir_mgr.define_model_recov_results_path(dir_label=OUT_DIR_LABEL,
+                                            version=VERSION_NO,
+                                            make_dir=True)
     task_config = TaskConfigurator(dir_mgr.paths).get_config(TASK_CONFIG_LABEL)
     bayesian_comps = BayesianModelComps(task_config.params).get_comps()
 
@@ -97,8 +97,7 @@ def main():
         adjust_total_trial_numbers(task_config)
 
     sim_params = define_simulation_parameters()
-    simulator = Simulator(task_config, bayesian_comps, sim_params)
-    validator = Validator(sim_params, simulator, dir_mgr)
+    validator = Validator(sim_params, task_config, bayesian_comps, dir_mgr)
     define_model_recovery_parameters(validator)
 
     for repetition in sim_params.repetition_numbers:
@@ -120,12 +119,13 @@ def main():
 
                     for participant in sim_params.participant_numbers:
                         sim_params.current_part = participant + 1
-                        sub_id = simulator.create_agent_sub_id()
-                        dir_mgr.define_val_results_filename(sub_id)
+                        sub_id = sim_params.create_agent_sub_id()
+                        dir_mgr.define_model_recov_results_filename(sub_id)
                         outfile_thisparams_exists = check_output_existence(
-                            dir_mgr.paths.this_sub_val_result_fn)
+                            dir_mgr.paths.this_sub_model_recov_result_fn)
                         if not outfile_thisparams_exists:
-                            validator.run_param_model_recovery_routine(sub_id)
+                            validator.run_model_recovery(
+                                validation_part="model_recovery")
 
 
 if __name__ == "__main__":

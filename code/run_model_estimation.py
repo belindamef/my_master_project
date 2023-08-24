@@ -4,7 +4,7 @@
 import time
 import os
 import numpy as np
-from utilities.config import DirectoryManager, DataLoader
+from utilities.config import DirectoryManager, DataHandler
 from utilities.config import TaskConfigurator, get_arguments
 from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.agent import BayesianModelComps
@@ -91,10 +91,10 @@ def main():
     dir_mgr.define_raw_beh_data_out_path(data_type="exp",
                                          out_dir_label=EXP_LABEL,
                                          make_dir=False)
-    dir_mgr.define_model_fitting_results_path(dir_label=EXP_LABEL,
-                                              version=VERSION,
-                                              make_dir=True)
-    data_loader = DataLoader(dir_mgr.paths, EXP_LABEL)
+    dir_mgr.define_model_comp_results_path(dir_label=EXP_LABEL,
+                                           version=VERSION,
+                                           make_dir=True)
+    data_loader = DataHandler(dir_mgr.paths, EXP_LABEL)
     exp_ev_all_subs_df = data_loader.load_exp_events()
 
     task_config = TaskConfigurator(dir_mgr.paths).get_config(EXP_LABEL)
@@ -104,7 +104,7 @@ def main():
         adjust_total_trial_numbers(task_config)
 
     sim_params = define_simulation_parameters()
-    simulator = Simulator(task_config, bayesian_comps, sim_params)
+    simulator = Simulator(task_config, bayesian_comps)
     model_fitter = ModelFitter(sim_params, simulator, dir_mgr)
     define_model_recovery_parameters(model_fitter)
 
@@ -124,13 +124,13 @@ def main():
             this_participants_data = this_participants_data.rename(
                 columns={"action": "a", "round": "round_"})
 
-            dir_mgr.define_model_fit_results_filename(sub_id=participant)
+            dir_mgr.define_model_comp_results_filename(sub_id=participant)
 
             outfile_thisparams_exists = check_output_existence(
-                dir_mgr.paths.this_sub_model_fit_results_fn)
+                dir_mgr.paths.this_sub_model_comp_results_fn)
 
             if not outfile_thisparams_exists:
-                model_fitter.run_model_fitting_routine(
+                model_fitter.run_model_comp_routine(
                     data=this_participants_data)
 
 

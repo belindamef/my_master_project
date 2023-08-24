@@ -4,7 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 from code.utilities.very_plotter import VeryPlotter
-from utilities.config import DirectoryManager, DataLoader
+from utilities.config import DirectoryManager, DataHandler
 from matplotlib import gridspec
 import palettable
 
@@ -22,7 +22,7 @@ def main():
                                     make_dir=True)
     dir_mgr.define_stats_filenames()
 
-    data_loader = DataLoader(dir_mgr.paths)
+    data_loader = DataHandler(dir_mgr.paths)
     subj_lvl_stats_df = data_loader.load_sim_subj_lvl_stats()
 
     # Prepare group level stats

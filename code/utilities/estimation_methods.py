@@ -5,7 +5,7 @@ Author: Belinda Fleischmann
 """
 import numpy as np
 import pandas as pd
-from utilities.simulation_methods import Simulator, SimulationParameters
+from utilities.simulation_methods import Simulator
 from utilities.agent import BayesianModelComps
 from utilities.config import TaskConfigurator
 
@@ -60,7 +60,7 @@ class Estimator:
     max_llh_current_gen_agent: float = np.nan
     max_llh_current_cand_agent: float = np.nan
 
-    def instantiate_sim_obj(self, exp_data, task_configs: TaskConfigurator,
+    def instantiate_sim_obj(self, task_configs: TaskConfigurator,
                             bayesian_comps: BayesianModelComps):
         """
         Parameters
@@ -68,7 +68,6 @@ class Estimator:
         sim_object: Simulator
         """
         self.sim_object = Simulator(task_configs, bayesian_comps)
-        self.sim_object.data = exp_data
 
     def reset_result_variables_to_nan(self):
         """Name says it all
@@ -221,8 +220,7 @@ class Estimator:
     def estimate_parameters(self, data: pd.DataFrame,
                             method: str, candidate_agent: str,
                             task_configs: TaskConfigurator,
-                            bayesian_comps: BayesianModelComps,
-                            sim_params: SimulationParameters):
+                            bayesian_comps: BayesianModelComps):
         """_summary_
 
         Args:
@@ -234,12 +232,9 @@ class Estimator:
             sim_params (SimulationParameters): _description_
         """
         self.instantiate_sim_obj(
-            exp_data=data,
             task_configs=task_configs,
             bayesian_comps=bayesian_comps
             )
-
-        self.sim_object.sim_params = sim_params
 
         # Set candidate agent model to generating agent
         self.current_cand_agent = candidate_agent

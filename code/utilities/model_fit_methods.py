@@ -46,25 +46,14 @@ class ModelFitter:
     def save_results(self):
         """_summary_
         """
-        self.dir_mgr.define_model_fit_results_filename(
+        self.dir_mgr.define_model_comp_results_filename(
             sub_id=str(self.sim_params.current_part))
 
         mle_df = pd.DataFrame(self.data_dic)
 
-        with open(f"{self.dir_mgr.paths.this_sub_model_fit_results_fn}.tsv",
+        with open(f"{self.dir_mgr.paths.this_sub_model_comp_results_fn}.tsv",
                   "w", encoding="utf8") as tsv_file:
             tsv_file.write(mle_df.to_csv(sep="\t", na_rep="nan", index=False))
-
-    def estimate_parameter_values(self):
-        """_summary_
-        """
-        self.estimator.estimate_parameters(
-            data=self.simulator.data,
-            method="brute_force",
-            candidate_agent=self.sim_params.current_agent_gen,
-            task_configs=self.simulator.task_configs,
-            bayesian_comps=self.simulator.bayesian_comps,
-            sim_params=self.sim_params)
 
     def evaluate_model_fitting_performance(self, data: pd.DataFrame):
         """_summary_
@@ -76,7 +65,7 @@ class ModelFitter:
             data=data, est_method="brute_force", data_type="exp")
         self.record_bics(bics)
 
-    def run_model_fitting_routine(self, data: pd.DataFrame):
+    def run_model_comp_routine(self, data: pd.DataFrame):
         """For each participant, simulate behavioral data, estimate parameter
         values and evaluate model recovery performance"""
 

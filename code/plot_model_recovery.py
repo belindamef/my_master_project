@@ -7,7 +7,7 @@ from matplotlib import gridspec
 from matplotlib import pyplot
 from code.utilities.very_plotter import VeryPlotter
 import pandas as pd
-from utilities.config import DirectoryManager, DataLoader
+from utilities.config import DirectoryManager, DataHandler
 
 
 def find_central_value(lst):
@@ -57,10 +57,10 @@ def pick_values(lst):
 def main():
     # Prepare data
     dir_mgr = DirectoryManager()
-    dir_mgr.define_val_results_path(dir_label=EXP_LABEL, version=VERSION_NO)
-    data_loader = DataLoader(dir_mgr.paths, exp_label=EXP_LABEL)
+    dir_mgr.define_model_recov_results_path(dir_label=EXP_LABEL, version=VERSION_NO)
+    data_loader = DataHandler(dir_mgr.paths, exp_label=EXP_LABEL)
     all_bics_df = data_loader.load_data_in_one_folder(
-        folder_path=dir_mgr.paths.this_val_results_dir
+        folder_path=dir_mgr.paths.this_model_recov_results_dir
         )
 
     agent_gen_models = all_bics_df.agent.unique().tolist()

@@ -21,7 +21,7 @@ class Recorder:
     out_var_list = []
     data_one_round = {}
     sim_data_this_block: pd.DataFrame
-    sim_data = pd.DataFrame()
+    sim_data: pd.DataFrame = pd.DataFrame()
 
     def __init__(self, *args):
         self.define_sim_out_list(*args)
@@ -213,6 +213,27 @@ class SimulationParameters:
         else:
             self.lambda_gen_space = lambda_gen_space
 
+    def create_agent_sub_id(self) -> str:
+        """Create id for this subject. More than one subject id per agent
+        possible if >1 repetition per agent
+
+        Returns:
+            str: Subject ID
+        """
+        sub_id = (
+            f"{self.current_agent_gen_init_obj.name}_" +
+            f"rep-{self.current_rep}_" +
+            "tau-" + f"{self.current_tau_gen * 1000}"[:4] +
+            "_" +
+            "lambda-" + f"{self.current_lambda_gen * 1000}"[:4] +
+            "_" +
+            f"part-{self.current_part}"
+            ).replace(".", "")
+
+        sub_id.replace(".", "")
+
+        return sub_id
+
 
 class Timer:
     """Class to time start and stop of simulations"""
@@ -264,11 +285,9 @@ class Simulator():
     agent: Agent
     task: Task
     beh_model: BehavioralModel
-    data: pd.DataFrame
 
     def __init__(self, task_configs: TaskConfigurator,
-                 bayesian_comps: BayesianModelComps,
-                 sim_params=SimulationParameters()):
+                 bayesian_comps: BayesianModelComps):
         """_summary_
 
         Args:
@@ -280,28 +299,6 @@ class Simulator():
         """
         self.task_configs = task_configs
         self.bayesian_comps = bayesian_comps
-        self.sim_params = sim_params
-
-    def create_agent_sub_id(self) -> str:
-        """Create id for this subject. More than one subject id per agent
-        possible if >1 repetition per agent
-
-        Returns:
-            str: Subject ID
-        """
-        sub_id = (
-            f"{self.sim_params.current_agent_gen_init_obj.name}_" +
-            f"rep-{self.sim_params.current_rep}_" +
-            "tau-" + f"{self.sim_params.current_tau_gen * 1000}"[:4] +
-            "_" +
-            "lambda-" + f"{self.sim_params.current_lambda_gen * 1000}"[:4] +
-            "_" +
-            f"part-{self.sim_params.current_part}"
-            ).replace(".", "")
-
-        sub_id.replace(".", "")
-
-        return sub_id
 
     def create_interacting_objects(self, agent_name: str, this_block: int,
                                    tau_gen: float, lambda_gen: float):
@@ -313,10 +310,7 @@ class Simulator():
             tau_gen (float): Generating tau value
             lambda_gen (float): Generating lambda value
         """
-        if agent_name is None:
-            agent_attributes = self.sim_params.current_agent_gen_init_obj
-        else:
-            agent_attributes = AgentAttributes(agent_name)
+        agent_attributes = AgentAttributes(agent_name)
         self.task = Task(self.task_configs)
         self.task.start_new_block(this_block)
 
@@ -369,19 +363,22 @@ class Simulator():
         self.beh_model.action_t = data_s_action
         self.task.eval_action(data_s_action)
 
-    def simulate_beh_data(self):
+    def simulate_beh_data(self, sim_params) -> pd.DataFrame:
         """Run behavioral data simulation routine. Saves data to instance
         attribute self.data.
+
+        Returns:
+            pd.DataFrame: _description_
         """
         recorder = Recorder()
 
         for this_block in range(self.task_configs.params.n_blocks):
-            timer = Timer(self.sim_params, this_block).start()
+            timer = Timer(sim_params, this_block).start()
             recorder.create_rec_df_one_block()
-            self.create_interacting_objects(self.sim_params.current_agent_gen,
+            self.create_interacting_objects(sim_params.current_agent_gen,
                                             this_block,
-                                            self.sim_params.current_tau_gen,
-                                            self.sim_params.current_lambda_gen)
+                                            sim_params.current_tau_gen,
+                                            sim_params.current_lambda_gen)
 
             for this_round in range(self.task_configs.params.n_rounds):
                 recorder.create_rec_arrays_thisround(
@@ -408,16 +405,25 @@ class Simulator():
                     this_round, self.task_configs.params.n_trials)
             recorder.append_this_block_to_simdata_df(this_block)
             timer.end()
-        recorder.wrap_up_data(self.sim_params.current_tau_gen,
-                              self.sim_params.current_lambda_gen,
-                              self.sim_params.current_agent_gen)
-        self.data = recorder.sim_data
+        recorder.wrap_up_data(sim_params.current_tau_gen,
+                              sim_params.current_lambda_gen,
+                              sim_params.current_agent_gen)
+        return recorder.sim_data
 
     def sim_to_eval_llh(self, candidate_tau: float, candidate_lambda: float,
                         candidate_agent: str, data: pd.DataFrame) -> float:
         """Simulate trialwise interactions between agent and task to evaluate
         the llh function value for a given tau and lambda and given data,
         as sum over all trials
+
+        Args:
+            candidate_tau (float): _description_
+            candidate_lambda (float): _description_
+            candidate_agent (str): _description_
+            data (pd.DataFrame): _description_
+
+        Returns:
+            float: Model loglikelihood given candidate parameters
         """
 
         n_blocks = data.block.max()

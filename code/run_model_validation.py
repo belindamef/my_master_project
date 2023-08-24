@@ -5,7 +5,8 @@ import time
 import os
 import numpy as np
 from utilities.config import DirectoryManager, TaskConfigurator, get_arguments
-from utilities.simulation_methods import Simulator, SimulationParameters
+from utilities.config import DataHandler
+from utilities.simulation_methods import SimulationParameters
 from utilities.agent import AgentAttributes, BayesianModelComps
 from utilities.validation_methods import Validator
 
@@ -84,22 +85,38 @@ def check_output_existence(out_filename: str) -> bool:
     return outfile_exists
 
 
+def prepare_path_variables(dir_mgr_obj: DirectoryManager):
+    """_summary_
+
+    Args:
+        dir_mgr_obj (DirectoryManager): _description_
+    """
+    dir_mgr_obj.define_model_recov_results_path(dir_label=OUT_DIR_LABEL,
+                                                version=VERSION,
+                                                make_dir=True)
+    dir_mgr_obj.define_raw_beh_data_out_path(data_type="exp",
+                                             out_dir_label=EXP_LABEL,
+                                             make_dir=False)
+    dir_mgr_obj.define_model_comp_results_path(dir_label=EXP_LABEL,
+                                               version=VERSION,
+                                               make_dir=True)
+
+
 def main():
     """Main function that runs model validation routine."""
     dir_mgr = DirectoryManager()
-    dir_mgr.define_val_results_path(dir_label=OUT_DIR_LABEL,
-                                    version=VERSION_NO,
-                                    make_dir=True)
-    task_config = TaskConfigurator(dir_mgr.paths).get_config(TASK_CONFIG_LABEL)
+    prepare_path_variables(dir_mgr)
+    data_handler = DataHandler(dir_mgr.paths, EXP_LABEL)
+
+    task_config = TaskConfigurator(dir_mgr.paths).get_config(EXP_LABEL)
     bayesian_comps = BayesianModelComps(task_config.params).get_comps()
 
     if IS_QUICK_TEST:
         adjust_total_trial_numbers(task_config)
 
     sim_params = define_simulation_parameters()
-    simulator = Simulator(task_config, bayesian_comps, sim_params)
-    validator = Validator(sim_params, simulator, dir_mgr)
-    define_model_recovery_parameters(validator)
+    validator = Validator(sim_params, task_config, bayesian_comps, dir_mgr)
+    define_model_recovery_parameters(validator)  # TODO :maybe name "pass"
 
     for repetition in sim_params.repetition_numbers:
         sim_params.current_rep = repetition + 1
@@ -120,22 +137,26 @@ def main():
 
                     for participant in sim_params.participant_numbers:
                         sim_params.current_part = participant + 1
-                        sub_id = simulator.create_agent_sub_id()
-                        dir_mgr.define_val_results_filename(sub_id)
+                        sub_id = sim_params.create_agent_sub_id()
+                        dir_mgr.define_model_recov_results_filename(sub_id)
                         outfile_thisparams_exists = check_output_existence(
-                            dir_mgr.paths.this_sub_val_result_fn)
+                            dir_mgr.paths.this_sub_model_recov_result_fn)
                         if not outfile_thisparams_exists:
-                            validator.run_param_model_recovery_routine(sub_id)
+                            validation_results = validator.run_model_recovery(
+                                validation_part="model_recovery")
+                            data_handler.save_data_to_tsv(
+                                validation_results,
+                                dir_mgr.paths.this_sub_model_recov_result_fn
+                                )
 
 
 if __name__ == "__main__":
     arguments = get_arguments()
 
-    TASK_CONFIG_LABEL = "exp_msc"
-    OUT_DIR_LABEL = "exp_msc_test_debug_0822"
-    VERSION_NO = "debug"
-    # TODO: hier weiter: parameter recovery, model recovery und paremeter
-    # estimation und model comparison allss hier rein.
+    EXP_LABEL = "exp_msc"
+    VERSION = "debug_0823"
+    OUT_DIR_LABEL = f"{EXP_LABEL}_{VERSION}"
+
     # Define Simulation parameters, and generating parameter sapce
     N_REPS = 1
     N_PARTS = 1
@@ -143,7 +164,7 @@ if __name__ == "__main__":
     TAU_GEN_SPACE = np.linspace(0.01, 0.5, 5).tolist()
     LAMBDA_GEN_SPACE = np.linspace(0, 1, 5).tolist()
 
-    # Define Estimation candidate space
+    # Define parameter estimation candidate space
     AGENT_CAND_SPACE = ["C1", "C2", "C3", "A1", "A2", "A3"]
     TAU_CAND_SPACE = np.linspace(0.01, 0.3, 3).tolist()
     LAMBDA_CAND_SPACE = np.linspace(0.25, 0.75, 3).tolist()
@@ -160,4 +181,3 @@ if __name__ == "__main__":
 
     print(f"Total time for beh_model validation: "
           f"{round((end-start), ndigits=2)} sec.")
-    # out_file.close()

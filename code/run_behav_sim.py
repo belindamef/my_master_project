@@ -8,6 +8,7 @@ Author: Belinda Fleischmann
 
 import time
 from utilities.config import DirectoryManager, TaskConfigurator, get_arguments
+from utilities.config import DataHandler
 from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.agent import AgentAttributes, BayesianModelComps
 
@@ -47,14 +48,14 @@ def main():
                                          out_dir_label=OUT_DIR_LABEL,
                                          make_dir=True)
 
-    task_config = TaskConfigurator(dir_mgr.paths).get_config(TASK_CONFIG_LABEL)
+    task_config = TaskConfigurator(dir_mgr.paths).get_config(EXP_LABEL)
     bayesian_comps = BayesianModelComps(task_config.params).get_comps()
 
     if IS_QUICK_TEST:
         adjust_total_trial_numbers(task_config)
 
     sim_params = define_simulation_parameters()
-    simulator = Simulator(task_config, bayesian_comps, sim_params)
+    simulator = Simulator(task_config, bayesian_comps)
 
     for repetition in sim_params.repetition_numbers:
         sim_params.current_rep = repetition
@@ -73,20 +74,23 @@ def main():
                     for participant in sim_params.participant_numbers:
                         sim_params.current_part = participant
 
-                        sub_id = simulator.create_agent_sub_id()
+                        sub_id = sim_params.create_agent_sub_id()
                         dir_mgr.define_sim_beh_output_paths(sub_id)
 
-                        simulator.simulate_beh_data()
+                        simulated_data = simulator.simulate_beh_data(
+                            sim_params)
 
-                        dir_mgr.save_data_to_tsv(simulator.data)
+                        DataHandler(dir_mgr.paths, EXP_LABEL).save_data_to_tsv(
+                            simulated_data,
+                            dir_mgr.paths.this_sub_beh_out_filename)
 
 
 if __name__ == "__main__":
     start = time.time()
     arguments = get_arguments()
 
-    TASK_CONFIG_LABEL = "exp_msc"
-    OUT_DIR_LABEL = "test_debug_08_22"
+    EXP_LABEL = "exp_msc"
+    OUT_DIR_LABEL = "test_debug_08_23"
 
     IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1

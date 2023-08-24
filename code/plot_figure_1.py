@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import gridspec
 from utilities.very_plotter import VeryPlotter
-from utilities.config import DirectoryManager, DataLoader
+from utilities.config import DirectoryManager, DataHandler
 
 
 def main():
@@ -18,7 +18,7 @@ def main():
                                          out_dir_label=EXP_LABEL,
                                          make_dir=False)
 
-    data_loader = DataLoader(dir_mgr.paths, EXP_LABEL)
+    data_loader = DataHandler(dir_mgr.paths, EXP_LABEL)
     exp_ev_all_subs_df = data_loader.load_exp_events()
 
     grp_lvl_stats_sim_100 = data_loader.load_sim100_group_lvl_stats()
