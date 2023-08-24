@@ -1,6 +1,6 @@
 *data/*
 *defense*
-*results/*
+#*results/*
 #*figures/*
 *manuscript/*
 *code/test_manu*
