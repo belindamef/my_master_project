@@ -1,12 +1,8 @@
 """This script plots model recovery performance results: BICs"""
-import os
-import glob
 import math
 import numpy as np
 from matplotlib import gridspec
-from matplotlib import pyplot
-from code.utilities.very_plotter import VeryPlotter
-import pandas as pd
+from utilities.very_plotter import VeryPlotter
 from utilities.config import DirectoryManager, DataHandler
 
 
@@ -57,7 +53,8 @@ def pick_values(lst):
 def main():
     # Prepare data
     dir_mgr = DirectoryManager()
-    dir_mgr.define_model_recov_results_path(dir_label=EXP_LABEL, version=VERSION_NO)
+    dir_mgr.define_model_recov_results_path(dir_label=EXP_LABEL,
+                                            version=VERSION_NO)
     data_loader = DataHandler(dir_mgr.paths, exp_label=EXP_LABEL)
     all_bics_df = data_loader.load_data_in_one_folder(
         folder_path=dir_mgr.paths.this_model_recov_results_dir
@@ -86,7 +83,7 @@ def main():
     bic_max_for_yaxis = int(math.ceil(
         np.nanmax(bic_group_averages.loc[:]/ 100.0)) * 100)
     
-    # Preapre figure
+    # Prepare figure
     plotter = VeryPlotter(paths=dir_mgr.paths)
     plt = plotter.get_pyplot_object()
     col_agents, col_controls = plotter.get_agent_colors(
@@ -276,6 +273,7 @@ def main():
     fig.align_ylabels(axs=list(axes.values()))
 
     plotter.save_figure(fig=fig, figure_filename=FIGURE_FILENAME)
+
 
 if __name__ == "__main__":
 

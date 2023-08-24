@@ -53,7 +53,7 @@ class VeryPlotter:
             [value / 255 for value in list_]
             for list_ in [viridis_20[3], viridis_20[19], viridis_20[14]]]
         
-        if control_color == "organge":
+        if control_color == "orange":
             col_C = [wesanderson.color_palettes['Darjeeling Limited'][1][0],
                     wesanderson.color_palettes['Darjeeling Limited'][1][2],
                     # wesanderson.color_palettes['Hotel Chevalier'][0][3],

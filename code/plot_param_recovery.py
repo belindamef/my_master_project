@@ -4,7 +4,7 @@ import glob
 import numpy as np
 import re
 from matplotlib import gridspec
-from code.utilities.very_plotter import VeryPlotter
+from utilities.very_plotter import VeryPlotter
 import pandas as pd
 import utilities.config as config
 
@@ -22,7 +22,7 @@ def find_most_recent_data_dir(val_results_paths: str) -> str:
 
 # Specify directories and filenames
 paths = config.Paths()
-fig_fn = os.path.join(paths.figures, 'figure_param_recov_test.png')
+fig_fn = os.path.join(paths.figures, 'figure_param_recov_test_parallel_1.png')
 
 
 data_dir = find_most_recent_data_dir(paths.model_recov_results)
