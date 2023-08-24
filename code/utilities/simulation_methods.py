@@ -15,6 +15,69 @@ from .config import TaskConfigurator
 np.set_printoptions(linewidth=500)
 
 
+class SimulationParameters:
+    """Class to store and manage parameters for behavioral data simulation"""
+
+    agent_space_gen: list
+    tau_space_gen: list
+    lambda_gen_space: list
+    current_agent_gen_init_obj: AgentAttributes
+    current_agent_gen: str
+    current_tau_gen: float
+    current_lambda_gen: float
+
+    def get_params_from_args(self, args):
+        """Method to fetch simulation parameters from command line or bash
+        script arguments."""
+        self.agent_space_gen = args.agent_model
+        self.tau_space_gen = args.tau_value
+        self.lambda_gen_space = args.lambda_value
+        return self
+
+    def define_params_manually(self, agent_gen_space=None,
+                               tau_gen_space=None,
+                               lambda_gen_space=None):
+        """Method to manually set data generating model and parameter spacec.
+
+        """
+
+        if agent_gen_space is None:
+            self.agent_space_gen = ["C1", "C2", "C3", "A1", "A2", "A3"]
+        else:
+            self.agent_space_gen = agent_gen_space
+
+        if tau_gen_space is None:
+            self.tau_space_gen = np.linspace(0.01, 0.5, 20).tolist()
+        else:
+            self.tau_space_gen = tau_gen_space
+
+        if lambda_gen_space is None:
+            self.lambda_gen_space = np.linspace(0, 1, 20).tolist()
+        else:
+            self.lambda_gen_space = lambda_gen_space
+
+    def create_agent_sub_id(self, current_part: int, current_rep: int) -> str:
+        """Create id for this subject. More than one subject id per agent
+        possible if >1 repetition per agent
+
+        Returns:
+            str: Subject ID
+        """
+        sub_id = (
+            f"{self.current_agent_gen_init_obj.name}_" +
+            f"rep-{current_rep}_" +
+            "tau-" + f"{self.current_tau_gen * 1000}"[:4] +
+            "_" +
+            "lambda-" + f"{self.current_lambda_gen * 1000}"[:4] +
+            "_" +
+            f"part-{current_part}"
+            ).replace(".", "")
+
+        sub_id.replace(".", "")
+
+        return sub_id
+
+
 class Recorder:
     """A class to store and iteratively add trial-wise simulation data"""
 
@@ -145,114 +208,25 @@ class Recorder:
         self.sim_data.insert(0, "agent", agent_name)
 
 
-class SimulationParameters:
-    """Class to store and manage parameters for behavioral data simulation"""
-
-    n_repetitions: int
-    repetition_numbers: range
-    n_participants: int
-    participant_numbers: range
-    agent_space_gen: list
-    tau_space_gen: list
-    lambda_gen_space: list
-    current_rep: int
-    current_agent_gen_init_obj: AgentAttributes
-    current_agent_gen: str
-    current_tau_gen: float
-    current_lambda_gen: float
-    current_part: int
-
-    def get_params_from_args(self, args):
-        """Method to fetch simulation parameters from command line or bash
-        script arguments."""
-        self.repetition_numbers = args.repetition
-        self.agent_space_gen = args.agent_model
-        self.tau_space_gen = args.tau_value
-        self.lambda_gen_space = args.lambda_value
-        self.participant_numbers = args.participant
-        self.n_participants = len(self.participant_numbers)
-        self.n_repetitions = len(self.repetition_numbers)
-        return self
-
-    def define_n_reps_and_participants_manually(self, n_rep: int = 1,
-                                                n_part: int = 1,):
-        """Method to define pass number of repetitions and participants to
-        class instance.
-
-        Parameters
-        ----------
-        n_rep : int
-            Number of repetitions. Default value is 1
-        n_part : int
-            Number of participants. Default value is 1
-            """
-        self.n_repetitions = n_rep
-        self.repetition_numbers = range(self.n_repetitions)
-        self.n_participants = n_part
-        self.participant_numbers = range(self.n_participants)
-
-    def define_params_manually(self, agent_gen_space=None,
-                               tau_gen_space=None,
-                               lambda_gen_space=None):
-        """Method to manually set data generating model and parameter spacec.
-
-        """
-
-        if agent_gen_space is None:
-            self.agent_space_gen = ["C1", "C2", "C3", "A1", "A2", "A3"]
-        else:
-            self.agent_space_gen = agent_gen_space
-
-        if tau_gen_space is None:
-            self.tau_space_gen = np.linspace(0.01, 0.5, 20).tolist()
-        else:
-            self.tau_space_gen = tau_gen_space
-
-        if lambda_gen_space is None:
-            self.lambda_gen_space = np.linspace(0, 1, 20).tolist()
-        else:
-            self.lambda_gen_space = lambda_gen_space
-
-    def create_agent_sub_id(self) -> str:
-        """Create id for this subject. More than one subject id per agent
-        possible if >1 repetition per agent
-
-        Returns:
-            str: Subject ID
-        """
-        sub_id = (
-            f"{self.current_agent_gen_init_obj.name}_" +
-            f"rep-{self.current_rep}_" +
-            "tau-" + f"{self.current_tau_gen * 1000}"[:4] +
-            "_" +
-            "lambda-" + f"{self.current_lambda_gen * 1000}"[:4] +
-            "_" +
-            f"part-{self.current_part}"
-            ).replace(".", "")
-
-        sub_id.replace(".", "")
-
-        return sub_id
-
-
 class Timer:
     """Class to time start and stop of simulations"""
 
-    start_of_block: float
-    end_of_block: float
+    start_of_snippet: float
+    end_of_snippet: float
 
-    def __init__(self, sim_params: SimulationParameters, block):
+    def __init__(self, sim_params: SimulationParameters, block,
+                 current_rep, current_part):
         """
         Parameters
         ----------
         sim_obj: Simulator
         """
         self.this_block = block
-        self.this_repetition = sim_params.current_rep
+        self.this_repetition = current_rep
         self.agent_model = sim_params.current_agent_gen
         self.tau_gen = sim_params.current_tau_gen
         self.lambda_gen = sim_params.current_lambda_gen
-        self.participant = sim_params.current_part
+        self.participant = current_part
 
     def start(self):
         """Method to start timer.
@@ -260,7 +234,7 @@ class Timer:
         Returns:
             __self__: Class instance
         """
-        self.start_of_block = time.time()
+        self.start_of_snippet = time.time()
         print(f"Starting simulation for agent {self.agent_model}, "
               f"participant {self.participant}, "
               f"repetition no. {self.this_repetition} with "
@@ -269,8 +243,8 @@ class Timer:
 
     def end(self):
         """Method to end timer"""
-        self.end_of_block = time.time()
-        time_this_block = self.end_of_block - self.start_of_block
+        self.end_of_snippet = time.time()
+        time_this_block = self.end_of_snippet - self.start_of_snippet
         print(f"agent {self.agent_model} finished block "
               f"{self.this_block + 1} in"
               f" {round(time_this_block, ndigits=2)} sec")
@@ -373,7 +347,6 @@ class Simulator():
         recorder = Recorder()
 
         for this_block in range(self.task_configs.params.n_blocks):
-            timer = Timer(sim_params, this_block).start()
             recorder.create_rec_df_one_block()
             self.create_interacting_objects(sim_params.current_agent_gen,
                                             this_block,
@@ -404,7 +377,6 @@ class Simulator():
                 recorder.append_this_round_to_block_df(
                     this_round, self.task_configs.params.n_trials)
             recorder.append_this_block_to_simdata_df(this_block)
-            timer.end()
         recorder.wrap_up_data(sim_params.current_tau_gen,
                               sim_params.current_lambda_gen,
                               sim_params.current_agent_gen)

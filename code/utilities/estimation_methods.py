@@ -49,7 +49,6 @@ class EstimationParameters:
 
 class Estimator:
     """A class to evaluate Maximum Likelihood parameters estimations"""
-    est_params: EstimationParameters = EstimationParameters()
     sim_object: Simulator
 
     current_cand_agent: str
@@ -59,6 +58,9 @@ class Estimator:
     lambda_est_result_current_cand_agent: float = np.nan
     max_llh_current_gen_agent: float = np.nan
     max_llh_current_cand_agent: float = np.nan
+
+    def __init__(self, estim_params: EstimationParameters):
+        self.est_params = estim_params
 
     def instantiate_sim_obj(self, task_configs: TaskConfigurator,
                             bayesian_comps: BayesianModelComps):

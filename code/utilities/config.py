@@ -58,20 +58,20 @@ class Paths:
     results = os.path.join(project, "results")
     descr_stats = os.path.join(results, 'descr_stats')
     model_recov_results = os.path.join(results, "validation")
-    model_comp_results = os.path.join(results, "model_fit")
+    model_est_results = os.path.join(results, "model_fit")
     this_config: str = ""  # particular config currently used
 
     # Raw behavioral data or estimation results directories
     this_exp_rawdata_dir: str = ""
     this_sim_rawdata_dir: str = ""
     this_model_recov_results_dir: str = ""
-    this_model_comp_results_dir: str = ""
+    this_model_est_results_dir: str = ""
 
     # Subject-specific directories and filenames
     this_sub_dir: str = ""
     this_sub_beh_out_filename: str = ""
     this_sub_model_recov_result_fn: str = ""
-    this_sub_model_comp_results_fn: str = ""
+    this_sub_model_est_results_fn: str = ""
 
     # Processed data and descriptive stats directories
     this_analyses_raw_data_path: str = ""
@@ -244,8 +244,8 @@ class DirectoryManager:
                       " Skipping makedirs. results will be written to "
                       "existing directory.")
 
-    def define_model_comp_results_path(self, dir_label: str, version="main",
-                                       make_dir: bool = False):
+    def define_model_est_results_path(self, dir_label: str, version="main",
+                                      make_dir: bool = False):
         """Define path variable for directory containing model fitting results
 
         Parameters
@@ -257,13 +257,13 @@ class DirectoryManager:
         make_dir: bool
           if True, creates physical directory
           directory"""
-        self.paths.this_model_comp_results_dir = os.path.join(
-            self.paths.model_comp_results, f"{dir_label}_{version}")
+        self.paths.this_model_est_results_dir = os.path.join(
+            self.paths.model_est_results, f"{dir_label}_{version}")
 
         if make_dir:
             try:
-                if not os.path.exists(self.paths.this_model_comp_results_dir):
-                    os.makedirs(self.paths.this_model_comp_results_dir)
+                if not os.path.exists(self.paths.this_model_est_results_dir):
+                    os.makedirs(self.paths.this_model_est_results_dir)
                 else:
                     print("Output directory for model fitting results already "
                           "exists. Skipping makedirs. results will be written "
@@ -295,15 +295,15 @@ class DirectoryManager:
             self.paths.this_model_recov_results_dir,
             f"val_results_sub-{sub_id}")
 
-    def define_model_comp_results_filename(self, sub_id: str):
+    def define_model_est_results_filename(self, sub_id: str):
         """Method to define the filename for the model estimation results for
         the data of subject <sub_id>
 
         Args:
             sub_id (str): Subject ID
         """
-        self.paths.this_sub_model_comp_results_fn = os.path.join(
-            self.paths.this_model_comp_results_dir,
+        self.paths.this_sub_model_est_results_fn = os.path.join(
+            self.paths.this_model_est_results_dir,
             f"model_fit_results_sub-{sub_id}"
         )
 

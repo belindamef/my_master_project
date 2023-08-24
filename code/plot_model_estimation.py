@@ -2,9 +2,7 @@
 import math
 import numpy as np
 from matplotlib import gridspec
-from matplotlib import pyplot
-from code.utilities.very_plotter import VeryPlotter
-import pandas as pd
+from utilities.very_plotter import VeryPlotter
 from utilities.config import DirectoryManager, DataHandler
 
 
@@ -57,8 +55,9 @@ def main():
     dir_mgr = DirectoryManager()
     dir_mgr.define_model_recov_results_path(dir_label=EXP_LABEL, version=VERSION_NO)
     data_loader = DataHandler(dir_mgr.paths, exp_label=EXP_LABEL)
+    # TODO: hier weiter: results directory paths ist leer ?
     all_bics_df = data_loader.load_data_in_one_folder(
-        folder_path=dir_mgr.paths.this_model_comp_results_dir
+        folder_path=dir_mgr.paths.this_model_est_results_dir
         )
 
     bic_of_analizing_models = [
@@ -149,7 +148,7 @@ if __name__ == "__main__":
 
     EXP_LABEL = "exp_msc"
     VERSION_NO = "test_1"
-    FIGURE_FILENAME = f"figure_model_fit_{VERSION_NO}"
+    FIGURE_FILENAME = f"figure_model_est_{VERSION_NO}"
     N_BLOCKS = 3
 
     main()

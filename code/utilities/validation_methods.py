@@ -3,27 +3,65 @@
 import time
 import pandas as pd
 from utilities.simulation_methods import Simulator, SimulationParameters
-from utilities.estimation_methods import Estimator
-from utilities.config import DirectoryManager, TaskConfigurator
+from utilities.estimation_methods import Estimator, EstimationParameters
+from utilities.config import TaskConfigurator
 from utilities.agent import BayesianModelComps
+
+
+class ValidationParameters:
+    """Class to store and manage parameters model validation routines"""
+
+    n_repetitions: int
+    repetition_numbers: range
+    n_participants: int
+    participant_numbers: range
+    current_rep: int
+    current_part: int
+
+    def get_params_from_args(self, args):
+        """Method to fetch simulation parameters from command line or bash
+        script arguments."""
+        self.repetition_numbers = args.repetition
+        self.participant_numbers = args.participant
+        self.n_participants = len(self.participant_numbers)
+        self.n_repetitions = len(self.repetition_numbers)
+        return self
+
+    def define_n_reps_and_participants_manually(self, n_rep: int = 1,
+                                                n_part: int = 1,):
+        """Method to define pass number of repetitions and participants to
+        class instance.
+
+        Parameters
+        ----------
+        n_rep : int
+            Number of repetitions. Default value is 1
+        n_part : int
+            Number of participants. Default value is 1
+            """
+        self.n_repetitions = n_rep
+        self.repetition_numbers = range(self.n_repetitions)
+        self.n_participants = n_part
+        self.participant_numbers = range(self.n_participants)
 
 
 class Validator:
     """Class of methods to run model validation routines"""
     data_dic: dict
-    estimator: Estimator = Estimator()
 
     def __init__(self, sim_params: SimulationParameters,
+                 val_params: ValidationParameters,
                  task_configs: TaskConfigurator,
                  bayesian_comps: BayesianModelComps,
-                 dir_mgr: DirectoryManager):
+                 est_params: EstimationParameters):
 
+        self.val_params = val_params
         self.sim_params: SimulationParameters = sim_params
         self.task_config = task_configs
         self.bayesian_comps = bayesian_comps
         self.simulator: Simulator = Simulator(task_configs=task_configs,
                                               bayesian_comps=bayesian_comps)
-        self.dir_mgr: DirectoryManager = dir_mgr
+        self.estimator: Estimator = Estimator(estim_params=est_params)
 
     def init_data_dic(self, validation_part: str):
         """_summary_
@@ -33,7 +71,7 @@ class Validator:
                 "agent": [], "participant": [],
                 "tau_gen": [], "tau_mle": [],
                 "lambda_gen": [], "lambda_mle": []}
-        elif validation_part == "model_comparison":
+        elif validation_part == "model_estimation":
             self.data_dic = {
                 "participant": [],
                 }
@@ -46,18 +84,18 @@ class Validator:
         """
         self.data_dic["agent"].extend(
             [self.sim_params.current_agent_gen
-             ] * self.sim_params.n_participants)
+             ] * self.val_params.n_participants)
         self.data_dic["tau_gen"].extend(
             [self.sim_params.current_tau_gen
-             ] * self.sim_params.n_participants)
+             ] * self.val_params.n_participants)
         self.data_dic["lambda_gen"].extend(
             [self.sim_params.current_lambda_gen
-             ] * self.sim_params.n_participants)
+             ] * self.val_params.n_participants)
 
     def record_participant_number(self):
         """_summary_
         """
-        self.data_dic["participant"].append(self.sim_params.current_part)
+        self.data_dic["participant"].append(self.val_params.current_part)
 
     def record_tau_estimate(self, tau_estimate: float):
         """_summary_
@@ -85,25 +123,6 @@ class Validator:
         for agent in self.estimator.est_params.agent_candidate_space:
             self.data_dic[f"BIC_{agent}"].append(bics[f"BIC_{agent}"])
 
-    def save_results(self, validation_part: str, sub_id: str):
-        """Method to save validation results to a .tsv file
-
-        Args:
-            sub_id (str): Subject ID
-        """
-        filename = "not_defined"
-        if validation_part == "model_recovery":
-            self.dir_mgr.define_model_recov_results_filename(sub_id)
-            filename = self.dir_mgr.paths.this_sub_model_recov_result_fn
-        elif validation_part == "model_comparison":
-            self.dir_mgr.define_model_comp_results_filename(
-                sub_id=str(self.sim_params.current_part))
-            filename = self.dir_mgr.paths.this_sub_model_comp_results_fn
-
-        mle_df = pd.DataFrame(self.data_dic)
-        with open(f"{filename}.tsv", "w", encoding="utf8") as tsv_file:
-            tsv_file.write(mle_df.to_csv(sep="\t", na_rep="nan", index=False))
-
     def estimate_parameter_values(self, data: pd.DataFrame):
         """_summary_
 
@@ -123,24 +142,31 @@ class Validator:
         self.record_tau_estimate(mle_tau_est)
         self.record_lambda_estimate(mle_lambda_est)
 
-    def evaluate_model_fitting_performance(self, data: pd.DataFrame):
+    def evaluate_model_fitting_performance(self, data: pd.DataFrame,
+                                           datatype: str):
         """_summary_
         """
+        start = time.time()
         bics = self.estimator.evaluate_bic_s(est_method="brute_force",
                                              data=data,
-                                             data_type="sim")
+                                             data_type=datatype)
         self.record_bics(bics)
+        end = time.time()
+        print(
+            "time needed for evaluatung mordel recovery performance for data",
+            f" from {self.sim_params.current_agent_gen} as generating agent: ",
+            f"{round((end-start), ndigits=2)} sec.")
 
-    def run_model_recovery(self, validation_part: str):
+    def run_model_recovery(self):
         """For each participant, simulate behavioral data, estimate parameter
         values and evaluate model recovery performance.
 
         Args:
-            validation_part (str): "model_recovery" or "model_comparison"
+            validation_part (str): "model_recovery" or "model_estimation"
             sub_id (str): _description_
         """
 
-        self.init_data_dic(validation_part=validation_part)
+        self.init_data_dic(validation_part="model_recovery")
         self.record_data_generating_sim_params()
         self.record_participant_number()
 
@@ -153,35 +179,21 @@ class Validator:
               f"{self.sim_params.current_agent_gen} as generating agent: "
               f"{round((end-start), ndigits=2)} sec.")
 
-        start = time.time()
-        self.evaluate_model_fitting_performance(data=simulated_data)
-        end = time.time()
-        print(
-            "time needed for evaluatung mordel recovery performance for data",
-            f" from {self.sim_params.current_agent_gen} as generating agent: ",
-            f"{round((end-start), ndigits=2)} sec.")
+        self.evaluate_model_fitting_performance(data=simulated_data,
+                                                datatype="sim")
 
         return pd.DataFrame(self.data_dic)
 
-    def run_model_fitting_routine(self, data: pd.DataFrame):
-        """For each participant, simulate behavioral data, estimate parameter
+    def run_model_estimation(self, data: pd.DataFrame) -> pd.DataFrame:
+        """For each participant's behavioral data, estimate parameter
         values and evaluate model recovery performance"""
 
-        self.init_data_dic(validation_part="model_comparison")
+        self.init_data_dic(validation_part="model_estimation")
         self.record_participant_number()
 
-        start = time.time()
         self.estimator.instantiate_sim_obj(
             task_configs=self.simulator.task_configs,
             bayesian_comps=self.simulator.bayesian_comps
         )
-        self.evaluate_model_fitting_performance(data=data)
-        end = time.time()
-        print(
-            "time needed for evaluatung mordel fitting performances for ",
-            " experimental data from participant ",
-            f" {self.sim_params.current_part} ",
-            f"{round((end-start), ndigits=2)} sec.")
-
-        self.save_results(validation_part="model_comparison",
-                          sub_id=str(self.sim_params.current_part))
+        self.evaluate_model_fitting_performance(data=data, datatype="exp")
+        return pd.DataFrame(self.data_dic)
