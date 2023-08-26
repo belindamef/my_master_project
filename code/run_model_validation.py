@@ -249,7 +249,7 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     EXP_LABEL = "exp_msc"
-    VERSION = "debug_0824"
+    VERSION = "extra_A3"
     OUT_DIR_LABEL = f"{EXP_LABEL}_{VERSION}"
 
     # Define repetition_parameters
@@ -258,16 +258,19 @@ if __name__ == "__main__":
 
     # Define Simulation parameters, and generating parameter sapce
     AGENT_GEN_SPACE = ["C1", "C2", "C3", "A1", "A2", "A3"]
-    TAU_GEN_SPACE = np.linspace(0.01, 0.5, 2).tolist()
-    LAMBDA_GEN_SPACE = np.linspace(0, 1, 2).tolist()
+    TAU_GEN_SPACE = [0.001]
+    LAMBDA_GEN_SPACE = [0.75]
+    # TAU_GEN_SPACE = np.linspace(0.01, 0.5, 2).tolist()  # TODO
+    # LAMBDA_GEN_SPACE = np.linspace(0, 1, 2).tolist()  # TODO
 
     # Define parameter estimation candidate space
     AGENT_CAND_SPACE = ["C1", "C2", "C3", "A1", "A2", "A3"]
+    AGENT_GEN_SPACE = ["A3"]  # TODO
     TAU_CAND_SPACE = np.linspace(0.01, 0.3, 2).tolist()
     LAMBDA_CAND_SPACE = np.linspace(0.25, 0.75, 2).tolist()
 
     # Configure quick test
-    IS_QUICK_TEST = True
+    IS_QUICK_TEST = False
     TEST_N_BLOCKS = 1
     TEST_N_ROUNDS = 1
     TEST_N_TRIALS = 2

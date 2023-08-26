@@ -8,6 +8,7 @@ from utilities.very_plotter import VeryPlotter
 from utilities.config import DirectoryManager, DataHandler
 import pandas as pd
 import utilities.config as config
+import argparse
 
 
 def extract_number(f):
@@ -21,7 +22,7 @@ def find_most_recent_data_dir(val_results_paths: str) -> str:
     return most_recent_data
 
 
-def main():
+def main(save_file: bool):
 
 # Specify directories and filenames
     # Prepare data
@@ -115,8 +116,11 @@ def main():
             axes[i].set_xticklabels(np.round(np.linspace(0.1, 1, 10), 1),
                                 fontsize=14)
 
-    plotter.save_figure(fig=fig, figure_filename=FIGURE_FILENAME)
+    if save_file:
+        plotter.save_figure(fig=fig, figure_filename=FIGURE_FILENAME)
 
+    if show_plot:
+        plt.show()
 
 if __name__ == "__main__":
 
@@ -125,4 +129,14 @@ if __name__ == "__main__":
     FIGURE_FILENAME = f"figure_param_recov_{VERSION_NO}"
     N_BLOCKS = 3
 
-    main()
+    parser = argparse.ArgumentParser(description='Plotting')
+    parser.add_argument('--_dont_save_file', action="store_false",
+                        default=True)
+    parser.add_argument('--show_plot', action="store_true", 
+                        default=False)
+    args = parser.parse_args()
+
+    save_file = args.dont_save_file
+    show_plot = args.show_plot
+
+    main(save_file)
