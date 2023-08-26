@@ -156,7 +156,7 @@ def run_model_recovery_routine(sim_params: SimulationParameters,
                     sim_params.current_lambda_gen = lambda_gen
 
                     for participant in val_params.participant_numbers:
-                        val_params.current_part = participant + 1
+                        val_params.current_part = participant
                         sub_id = sim_params.create_agent_sub_id(participant,
                                                                 repetition)
                         dir_mgr.define_model_recov_results_filename(sub_id)
