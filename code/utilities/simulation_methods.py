@@ -30,8 +30,8 @@ class SimulationParameters:
         """Method to fetch simulation parameters from command line or bash
         script arguments."""
         self.agent_space_gen = args.agent_model
-        self.tau_space_gen = args.tau_value
-        self.lambda_gen_space = args.lambda_value
+        self.tau_space_gen = args.tau_gen
+        self.lambda_gen_space = args.lambda_gen
         return self
 
     def define_params_manually(self, agent_gen_space=None,
