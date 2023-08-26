@@ -9,7 +9,7 @@ from matplotlib import gridspec
 import palettable
 
 
-def main():
+def main(savefile: bool = True):
     dir_mgr = DirectoryManager()
     dir_mgr.define_raw_beh_data_out_path(data_type="sim",
                                          out_dir_label=EXP_LABEL,
@@ -176,7 +176,8 @@ def main():
         y_lim=(0, 10))
 
     # Print subject level descriptive figure
-    plotter.save_figure(fig=fig, figure_filename=FIGURE_FILENAME)
+    if savefile:
+        plotter.save_figure(fig=fig, figure_filename=FIGURE_FILENAME)
 
 
 if __name__ == "__main__":
