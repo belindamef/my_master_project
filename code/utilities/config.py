@@ -650,6 +650,8 @@ def get_arguments():
     parser.add_argument('--agent_model', type=str, nargs='+')
     parser.add_argument('--tau_value', type=float, nargs='+')
     parser.add_argument('--lambda_value', type=float, nargs='+')
+    parser.add_argument('--tau_cand_res', type=float, nargs='+')
+    parser.add_argument('--lambda_cand_res', type=float, nargs='+')
     parser.add_argument('--participant', type=int, nargs='+')
     args = parser.parse_args()
     return args

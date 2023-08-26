@@ -18,6 +18,17 @@ class EstimationParameters:
     tau_bf_cand_space: list
     lambda_bf_cand_space: list
 
+    def get_params_from_args(self, args):
+        """Method to fetch simulation parameters from command line or bash
+        script arguments."""
+        tau_cand_res = args.tau_cand_res
+        lambda_cand_res = args.lambda_cand_res
+
+        self.agent_candidate_space = args.agent_model
+        self.tau_bf_cand_space = np.linspace(0.01, 0.5, tau_cand_res).tolist()
+        self.lambda_bf_cand_space = np.linspace(0, 1, lambda_cand_res).tolist()
+        return self
+
     def def_params_manually(self, agent_candidate_space=None,
                             tau_bf_cand_space=None,
                             lambda_bf_cand_space=None):

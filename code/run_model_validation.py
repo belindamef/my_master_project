@@ -64,11 +64,14 @@ def define_estimation_parameters() -> EstimationParameters:
         EstimationParameters: _description_
     """
     estim_params = EstimationParameters()
-    estim_params.def_params_manually(
-        agent_candidate_space=AGENT_CAND_SPACE,
-        tau_bf_cand_space=TAU_CAND_SPACE,
-        lambda_bf_cand_space=LAMBDA_CAND_SPACE
-        )
+    if arguments.parallel_computing:
+        estim_params.get_params_from_args(arguments)
+    else:
+        estim_params.def_params_manually(
+            agent_candidate_space=AGENT_CAND_SPACE,
+            tau_bf_cand_space=TAU_CAND_SPACE,
+            lambda_bf_cand_space=LAMBDA_CAND_SPACE
+            )
     return estim_params
 
 
@@ -225,6 +228,7 @@ def main():
     sim_params = define_simulation_parameters()
     val_params = define_validation_parameters()
     est_params = define_estimation_parameters()
+
     validator = Validator(sim_params=sim_params,
                           val_params=val_params,
                           task_configs=task_config,
@@ -249,7 +253,7 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     EXP_LABEL = "exp_msc"
-    VERSION = "extra_A3"
+    VERSION = "test_hr_1"
     OUT_DIR_LABEL = f"{EXP_LABEL}_{VERSION}"
 
     # Define repetition_parameters
@@ -258,14 +262,11 @@ if __name__ == "__main__":
 
     # Define Simulation parameters, and generating parameter sapce
     AGENT_GEN_SPACE = ["C1", "C2", "C3", "A1", "A2", "A3"]
-    TAU_GEN_SPACE = [0.001]
-    LAMBDA_GEN_SPACE = [0.75]
-    # TAU_GEN_SPACE = np.linspace(0.01, 0.5, 2).tolist()  # TODO
-    # LAMBDA_GEN_SPACE = np.linspace(0, 1, 2).tolist()  # TODO
+    TAU_GEN_SPACE = np.linspace(0.01, 0.5, 2).tolist()
+    LAMBDA_GEN_SPACE = np.linspace(0, 1, 2).tolist()
 
     # Define parameter estimation candidate space
     AGENT_CAND_SPACE = ["C1", "C2", "C3", "A1", "A2", "A3"]
-    AGENT_GEN_SPACE = ["A3"]  # TODO
     TAU_CAND_SPACE = np.linspace(0.01, 0.3, 2).tolist()
     LAMBDA_CAND_SPACE = np.linspace(0.25, 0.75, 2).tolist()
 
