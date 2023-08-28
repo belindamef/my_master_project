@@ -66,6 +66,7 @@ def define_estimation_parameters() -> EstimationParameters:
     estim_params = EstimationParameters()
     if arguments.parallel_computing:
         estim_params.get_params_from_args(arguments)
+        estim_params.agent_candidate_space = AGENT_CAND_SPACE
     else:
         estim_params.def_params_manually(
             agent_candidate_space=AGENT_CAND_SPACE,
