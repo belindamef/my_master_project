@@ -222,8 +222,8 @@ class DirectoryManager:
             self.paths.this_analyses_descr_stats_path, "r_wise_stats"
         )
 
-    def define_model_recov_results_path(self, dir_label: str = "",
-                                        make_dir: bool = False):
+    def define_model_recov_results_path(self, exp_label: str = "",
+                                        version="1", make_dir: bool = False):
         """Method to define the path variable for the directory containing
         model recovery results.
 
@@ -236,7 +236,7 @@ class DirectoryManager:
             make_dir (bool, optional): If True, makes the directory defined
                 in this method. Defaults to False.
         """
-        if not dir_label:
+        if not exp_label:
             while True:
                 try:
                     dir_name = input(
@@ -250,7 +250,7 @@ class DirectoryManager:
                           'already exists.')
         else:
             self.paths.this_model_recov_results_dir = os.path.join(
-                self.paths.model_recov_results, f"{dir_label}")
+                self.paths.model_recov_results, f"{exp_label}_{version}")
 
         if make_dir:
             try:

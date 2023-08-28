@@ -26,7 +26,7 @@ def main(save_file: bool = True, show_plot: bool = False):
 # Specify directories and filenames
     # Prepare data
     dir_mgr = DirectoryManager()
-    dir_mgr.define_model_recov_results_path(dir_label=EXP_LABEL,
+    dir_mgr.define_model_recov_results_path(exp_label=EXP_LABEL,
                                             version=VERSION_NO)
     data_loader = DataHandler(dir_mgr.paths, exp_label=EXP_LABEL)
     all_val_results = data_loader.load_data_in_one_folder(
@@ -126,12 +126,12 @@ if __name__ == "__main__":
     N_BLOCKS = 3
 
     parser = argparse.ArgumentParser(description='Plotting')
-    parser.add_argument('--_dont_save_file', action="store_false",
+    parser.add_argument('--dont_save_file', action="store_false",
                         default=True)
     parser.add_argument('--show_plot', action="store_true",default=False)
     args = parser.parse_args()
 
-    # save_file = args.dont_save_file
-    # show_plot = args.show_plot
+    save_file = args.dont_save_file
+    show_plot = args.show_plot
 
-    main()
+    main(save_file, show_plot)

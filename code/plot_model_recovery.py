@@ -53,7 +53,7 @@ def pick_values(lst):
 def main():
     # Prepare data
     dir_mgr = DirectoryManager()
-    dir_mgr.define_model_recov_results_path(dir_label=EXP_LABEL,
+    dir_mgr.define_model_recov_results_path(exp_label=EXP_LABEL,
                                             version=VERSION_NO)
     data_loader = DataHandler(dir_mgr.paths, exp_label=EXP_LABEL)
     all_bics_df = data_loader.load_data_in_one_folder(

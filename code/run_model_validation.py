@@ -114,7 +114,7 @@ def prepare_path_variables(dir_mgr_obj: DirectoryManager):
     Args:
         dir_mgr_obj (DirectoryManager): _description_
     """
-    dir_mgr_obj.define_model_recov_results_path(dir_label=OUT_DIR_LABEL,
+    dir_mgr_obj.define_model_recov_results_path(exp_label=EXP_LABEL,
                                                 version=VERSION,
                                                 make_dir=True)
     dir_mgr_obj.define_raw_beh_data_out_path(data_type="exp",
@@ -253,8 +253,7 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     EXP_LABEL = "exp_msc"
-    VERSION = "test_hr_1"
-    OUT_DIR_LABEL = f"{EXP_LABEL}_{VERSION}"
+    VERSION = "test_08_28"
 
     # Define repetition_parameters
     N_REPS = 1
