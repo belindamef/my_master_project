@@ -223,7 +223,7 @@ class DirectoryManager:
         )
 
     def define_model_recov_results_path(self, dir_label: str = "",
-                                        version="1", make_dir: bool = False):
+                                        make_dir: bool = False):
         """Method to define the path variable for the directory containing
         model recovery results.
 
@@ -250,7 +250,7 @@ class DirectoryManager:
                           'already exists.')
         else:
             self.paths.this_model_recov_results_dir = os.path.join(
-                self.paths.model_recov_results, f"{dir_label}_{version}")
+                self.paths.model_recov_results, f"{dir_label}")
 
         if make_dir:
             try:

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """This script plots figure 2"""
 import os
 import glob
@@ -6,8 +7,6 @@ import re
 from matplotlib import gridspec
 from utilities.very_plotter import VeryPlotter
 from utilities.config import DirectoryManager, DataHandler
-import pandas as pd
-import utilities.config as config
 import argparse
 
 
@@ -22,7 +21,7 @@ def find_most_recent_data_dir(val_results_paths: str) -> str:
     return most_recent_data
 
 
-def main(save_file: bool):
+def main(save_file: bool = True, show_plot: bool = False):
 
 # Specify directories and filenames
     # Prepare data
@@ -37,9 +36,7 @@ def main(save_file: bool):
     agent_gen_models = all_val_results.agent.unique().tolist()
     agent_gen_models.sort()
 
-    control_gen_agents = [agent for agent in agent_gen_models if "C" in agent]
     Bayesian_gen_agents = [agent for agent in agent_gen_models if "A" in agent]
-    n_agents = len(agent_gen_models)
 
     mle_group_averages = all_val_results.groupby(
         ["agent", "tau_gen"])[["tau_mle", "lambda_mle"]].agg(
@@ -52,7 +49,6 @@ def main(save_file: bool):
     fig = plt.figure(figsize=(15, 10))
     gridspecstrum = gridspec.GridSpec(2, 3)
     axes = {}
-    agent_colors = col_agents + col_controls  # Specify agent colors
     color_dict = {"C1": col_controls[0],
                   "C2": col_controls[1],
                   "C3": col_controls[2],
@@ -74,7 +70,7 @@ def main(save_file: bool):
         e = mle_group_averages_fixed_lambda.loc[gen_model]["tau_mle"]["std"].values
         axes[i].errorbar(x, y, alpha=0.7, markersize=6, color=color_dict[gen_model],
                     fmt='o', linestyle=None, clip_on=False,
-                    label=f"{gen_model}, lambda = 0.5", yerr=e)
+                    label=f"{gen_model}", yerr=e)
         axes[i].legend(loc='upper left', fontsize=14)
         plotter.config_axes(axes[i], y_label="tau_est", x_label="tau_gen",
                                 xticks=np.linspace(0, 0.5, 3),
@@ -125,18 +121,17 @@ def main(save_file: bool):
 if __name__ == "__main__":
 
     EXP_LABEL = "exp_msc"
-    VERSION_NO = "test_parallel_1"
+    VERSION_NO = "test_hr_1_test_hr_1"
     FIGURE_FILENAME = f"figure_param_recov_{VERSION_NO}"
     N_BLOCKS = 3
 
     parser = argparse.ArgumentParser(description='Plotting')
     parser.add_argument('--_dont_save_file', action="store_false",
                         default=True)
-    parser.add_argument('--show_plot', action="store_true", 
-                        default=False)
+    parser.add_argument('--show_plot', action="store_true",default=False)
     args = parser.parse_args()
 
-    save_file = args.dont_save_file
-    show_plot = args.show_plot
+    # save_file = args.dont_save_file
+    # show_plot = args.show_plot
 
-    main(save_file)
+    main()
