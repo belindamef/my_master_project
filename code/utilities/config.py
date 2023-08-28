@@ -223,7 +223,7 @@ class DirectoryManager:
         )
 
     def define_model_recov_results_path(self, dir_label: str = "",
-                                        version="1", make_dir: bool = False):
+                                        make_dir: bool = False):
         """Method to define the path variable for the directory containing
         model recovery results.
 
@@ -250,7 +250,7 @@ class DirectoryManager:
                           'already exists.')
         else:
             self.paths.this_model_recov_results_dir = os.path.join(
-                self.paths.model_recov_results, f"{dir_label}_{version}")
+                self.paths.model_recov_results, f"{dir_label}")
 
         if make_dir:
             try:
@@ -648,10 +648,10 @@ def get_arguments():
     parser.add_argument('--parallel_computing', action="store_true")
     parser.add_argument('--repetition', type=int, nargs='+')
     parser.add_argument('--agent_model', type=str, nargs='+')
-    parser.add_argument('--tau_value', type=float, nargs='+')
-    parser.add_argument('--lambda_value', type=float, nargs='+')
-    parser.add_argument('--tau_cand_res', type=float, nargs='+')
-    parser.add_argument('--lambda_cand_res', type=float, nargs='+')
+    parser.add_argument('--tau_gen', type=float, nargs='+')
+    parser.add_argument('--lambda_gen', type=float, nargs='+')
+    parser.add_argument('--tau_cand_res', type=int)
+    parser.add_argument('--lambda_cand_res', type=int)
     parser.add_argument('--participant', type=int, nargs='+')
     args = parser.parse_args()
     return args
