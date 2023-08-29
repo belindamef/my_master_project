@@ -3,7 +3,7 @@
 import os
 import numpy as np
 import pandas as pd
-from code.utilities.very_plotter import VeryPlotter
+from utilities.very_plotter import VeryPlotter
 from utilities.config import DirectoryManager, DataHandler
 from matplotlib import gridspec
 import palettable
@@ -22,7 +22,7 @@ def main(savefile: bool = True):
                                     make_dir=True)
     dir_mgr.define_stats_filenames()
 
-    data_loader = DataHandler(dir_mgr.paths)
+    data_loader = DataHandler(dir_mgr.paths, exp_label=EXP_LABEL)
     subj_lvl_stats_df = data_loader.load_sim_subj_lvl_stats()
 
     # Prepare group level stats
@@ -174,7 +174,7 @@ def main(savefile: bool = True):
         yticks=np.arange(0, 11, 2),
         ytickslabels=np.arange(0, 11, 2),
         y_lim=(0, 10))
-
+    plt.show()
     # Print subject level descriptive figure
     if savefile:
         plotter.save_figure(fig=fig, figure_filename=FIGURE_FILENAME)

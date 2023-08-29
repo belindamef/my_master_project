@@ -1,0 +1,46 @@
+---
+title: "Model validation - Report"
+format:
+  html:
+    code-fold: true
+    fig-format: png
+jupyter: python3
+---
+
+```{python}
+#| echo: false
+exp_label = "exp_msc"
+version = "test_hr_1_test_hr_1"
+
+import sys
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.path import Path
+sys.path.append(os.path.join(os.path.dirname(os.getcwd()), "code"))
+sys.path.append(os.path.join(os.path.dirname(os.getcwd()), "code", "utilities"))
+```
+
+
+
+## Parameter Recovery
+
+
+```{python}
+#| label: fig-param_recov
+#| fig-cap: "Parameter recovery"
+#| output : true
+
+
+
+from utilities.plot_param_recovery_new import main
+
+
+main(exp_label=exp_label, vers=version, save_file=False)
+# plt.figure = fig
+#plt.show
+#plt.close(figure)  # workaround...
+
+#plt.figure().set_figwidth(15)
+```
+
