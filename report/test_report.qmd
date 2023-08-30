@@ -23,6 +23,7 @@ from utilities.very_plotter_new import PlotCustomParams
 from utilities.plot_agent_perf_giv_tau import plot_agent_perf
 from utilities.plot_param_recovery import plot_param_recov_results
 from utilities.plot_model_recovery import plot_model_recov_results
+from utilities.plot_model_estimation import plot_model_estimation_results
 plot_params = PlotCustomParams()
 
 ```
@@ -63,4 +64,16 @@ plot_param_recov_results(exp_label=exp_label,
 plot_model_recov_results(exp_label=exp_label,
                          vers="test_parallel_1",
                          save_file=False)
+```
+
+## Model estimation and comparison
+
+```{python}
+#| label: fig-model-estimation
+#| fig-cap: "Model estimation with experimental data"
+#| output : true
+
+plot_model_estimation_results(exp_label=exp_label,
+                              vers="test_1",
+                              save_file=False)
 ```

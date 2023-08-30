@@ -3,8 +3,8 @@
 import math
 import numpy as np
 from matplotlib import pyplot
-from very_plotter_new import VeryPlotter, PlotCustomParams
-from config import DirectoryManager, DataHandler
+from utilities.very_plotter_new import VeryPlotter, PlotCustomParams
+from utilities.config import DirectoryManager, DataHandler
 
 
 def plot_model_recov_results(
@@ -51,8 +51,8 @@ def plot_model_recov_results(
     rc_params = plotter.define_run_commands()
     plt = pyplot
     plt.rcParams.update(rc_params)
-    fig, axs = plt.subplots(nrows=2, ncols=5,
-                            figsize=(26, 9),
+    fig, axs = plt.subplots(nrows=3, ncols=3,
+                            figsize=(13, 12),
                             layout="constrained")
 
     # Adjust axis parameters
@@ -94,7 +94,9 @@ def plot_model_recov_results(
 
         plotter.config_axes(
             this_ax,
-            y_label=r"\textit{N} treasures",
+            title=f"{gen_agent}",
+            title_color=color_dict[f"{gen_agent}"],
+            y_label=f"BIC",
             x_label="Analyzing agent",
             axix_label_size=plt_params.axis_label_fs,
             ticksize=plt_params.axis_tick_fs,
@@ -102,14 +104,14 @@ def plot_model_recov_results(
             title_font=plt_params.axis_title_fs,
             xticklabels=x_tick_labels,
             yticks=bic_y_tick,
-            ytickslabels=bic_y_tick,
-            title=f"{gen_agent}",
-            title_color=color_dict[f"{gen_agent}"]
+            ytickslabels=bic_y_tick
             )
 
         column += 1
 
-    column = len(control_gen_agents)
+    # ------Figure B: A1 and A2
+    row = 1
+    column = 0
 
     tau_gen_values = np.delete(  # TODO: redundant?
         all_bics_df.tau_gen.unique(),
@@ -148,7 +150,7 @@ def plot_model_recov_results(
             title_font=plt_params.axis_title_fs,
             title_color=color_dict[f"{gen_agent}"],
             axix_label_size=plt_params.axis_label_fs,
-            y_label=r"\textit{N} treasures",
+            y_label=f"BIC",
             x_label=r"$\tau$",
             xticks=plt_params.tau_ticks,
             xticklabels=plt_params.tau_ticks,
@@ -161,8 +163,8 @@ def plot_model_recov_results(
 
     this_ax.legend(loc="lower right", fontsize=plt_params.legend_fs)
 
-# ------ Figure B-------------------------------------------------
-    row = 1
+# ------ Figure c: A3-------------------------------------------------
+    row = 2
     column = 0
     if "A3" in bic_group_averages.index.get_level_values("agent"):
         for lambda_gen in lambda_gen_values:

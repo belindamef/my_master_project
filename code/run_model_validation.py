@@ -121,7 +121,7 @@ def prepare_path_variables(dir_mgr_obj: DirectoryManager):
     dir_mgr_obj.define_raw_beh_data_out_path(data_type="exp",
                                              exp_label=EXP_LABEL,
                                              make_dir=False)
-    dir_mgr_obj.define_model_est_results_path(dir_label=EXP_LABEL,
+    dir_mgr_obj.define_model_est_results_path(exp_label=EXP_LABEL,
                                               version=VERSION,
                                               make_dir=True)
 

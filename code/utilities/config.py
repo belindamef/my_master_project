@@ -1,13 +1,13 @@
 """This module contains functions to implement basic configurations
 that are shared across scripts."""
 
-from dataclasses import dataclass
 import os
 import argparse
 import copy as cp
 import glob
 import numpy as np
 import pandas as pd
+from dataclasses import dataclass
 
 
 def humanreadable_time(time_in_seconds: float) -> str:
@@ -270,7 +270,7 @@ class DirectoryManager:
                       " Skipping makedirs. results will be written to "
                       "existing directory.")
 
-    def define_model_est_results_path(self, dir_label: str, version="main",
+    def define_model_est_results_path(self, exp_label: str, version="main",
                                       make_dir: bool = False):
         """Define path variable for directory containing model fitting results
 
@@ -284,7 +284,7 @@ class DirectoryManager:
           if True, creates physical directory
           directory"""
         self.paths.this_model_est_results_dir = os.path.join(
-            self.paths.model_est_results, f"{dir_label}_{version}")
+            self.paths.model_est_results, f"{exp_label}_{version}")
 
         if make_dir:
             try:

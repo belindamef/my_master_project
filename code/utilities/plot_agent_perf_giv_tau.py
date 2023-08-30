@@ -2,8 +2,8 @@
 """This script plots simulated agent performance"""
 import numpy as np
 from matplotlib import pyplot
-from very_plotter_new import VeryPlotter, PlotCustomParams
-from config import DirectoryManager, DataHandler
+from utilities.very_plotter_new import VeryPlotter, PlotCustomParams
+from utilities.config import DirectoryManager, DataHandler
 
 
 def plot_agent_perf(

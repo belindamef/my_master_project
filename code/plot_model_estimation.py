@@ -1,17 +1,21 @@
+#!/usr/bin/env python3
 """This script plots model fitting performance results: BICs"""
 import math
 import numpy as np
 from matplotlib import gridspec
-from utilities.very_plotter import VeryPlotter
 from utilities.config import DirectoryManager, DataHandler
+from utilities.very_plotter_new import VeryPlotter, PlotCustomParams
 
 
-def plot_model_fitting_perf():
+def plot_model_estimation_results(
+        exp_label: str, vers: str, save_file: bool = True,
+        plt_params: PlotCustomParams = PlotCustomParams()):
+
     # Prepare data
     dir_mgr = DirectoryManager()
-    dir_mgr.define_model_est_results_path(dir_label=EXP_LABEL,
+    dir_mgr.define_model_est_results_path(exp_label=exp_label,
                                           version=VERSION_NO)
-    data_loader = DataHandler(dir_mgr.paths, exp_label=EXP_LABEL)
+    data_loader = DataHandler(dir_mgr.paths, exp_label=exp_label)
     all_bics_df = data_loader.load_data_in_one_folder(
         folder_path=dir_mgr.paths.this_model_est_results_dir
         )
@@ -98,7 +102,7 @@ def plot_model_fitting_perf():
                         ticksize=18,
                         x_label="Analyzing agent"
                             )
-plot_model_recov_results
+
     plotter.config_axes(ax=axes[1], y_label="BIC", axix_label_size=22)
     fig.align_ylabels(axs=list(axes.values()))
 
@@ -111,4 +115,4 @@ if __name__ == "__main__":
     FIGURE_FILENAME = f"figure_model_est_{VERSION_NO}"
     N_BLOCKS = 3
 
-    main()
+    plot_model_estimation_results()
