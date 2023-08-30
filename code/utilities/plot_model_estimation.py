@@ -1,9 +1,11 @@
-"""This script plots model fitting performance results: BICs"""
+#!/usr/bin/env python3
+"""This script plots model fitting for experimental data
+performance results: BICs"""
 import math
 import numpy as np
 from matplotlib import pyplot
-from utilities.very_plotter_new import VeryPlotter, PlotCustomParams
 from utilities.config import DirectoryManager, DataHandler
+from utilities.very_plotter_new import VeryPlotter, PlotCustomParams
 
 
 def plot_model_fitting_perf(
@@ -12,8 +14,8 @@ def plot_model_fitting_perf(
 
     # Get and prepare data
     dir_mgr = DirectoryManager()
-    dir_mgr.define_model_est_results_path(exp_label=EXP_LABEL,
-                                          version=VERSION)
+    dir_mgr.define_model_est_results_path(exp_label=exp_label,
+                                          version=vers)
     data_loader = DataHandler(dir_mgr.paths, exp_label=EXP_LABEL)
     all_bics_df = data_loader.load_data_in_one_folder(
         folder_path=dir_mgr.paths.this_model_est_results_dir
@@ -28,9 +30,9 @@ def plot_model_fitting_perf(
             ["mean", "std"])
 
     bic_min_for_yaxis = int(math.floor(
-        np.nanmin(bic_group_average.loc[:]/ 100.0)) * 100)
+        np.nanmin(bic_group_average)/100)*100)
     bic_max_for_yaxis = int(math.ceil(
-        np.nanmax(bic_group_average.loc[:]/ 100.0)) * 100)
+        np.nanmax(bic_group_average/100))*100)
     bic_y_tick = np.round(np.linspace(bic_min_for_yaxis, bic_max_for_yaxis, 5),
                           decimals=2)
 
@@ -78,7 +80,6 @@ def plot_model_fitting_perf(
 
     plotter.config_axes(
         ax=ax,
-        #title="Model recovery with experimental data",
         x_label="Analyzing agent",
         y_label="BIC",
         axix_label_size=plt_params.axis_label_fs,
@@ -89,6 +90,7 @@ def plot_model_fitting_perf(
         ticksize=plt_params.axis_tick_fs)
 
     plotter.save_figure(fig=fig, figure_filename=FIGURE_FILENAME)
+
 
 if __name__ == "__main__":
 

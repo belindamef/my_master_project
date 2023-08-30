@@ -3,8 +3,8 @@
 import math
 import numpy as np
 from matplotlib import pyplot
-from utilities.very_plotter_new import VeryPlotter, PlotCustomParams
 from utilities.config import DirectoryManager, DataHandler
+from utilities.very_plotter_new import VeryPlotter, PlotCustomParams
 
 
 def plot_model_recov_results(

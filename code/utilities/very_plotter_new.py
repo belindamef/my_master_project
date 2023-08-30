@@ -2,7 +2,7 @@ import numpy as np
 import wesanderson
 import string
 import palettable
-from utilities.config import Paths
+from config import Paths
 from dataclasses import dataclass
 import os
 

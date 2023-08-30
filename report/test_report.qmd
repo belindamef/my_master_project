@@ -22,8 +22,9 @@ sys.path.append(os.path.join(os.path.dirname(os.getcwd()), "code", "utilities"))
 from utilities.very_plotter_new import PlotCustomParams
 from utilities.plot_agent_perf_giv_tau import plot_agent_perf
 from utilities.plot_param_recovery import plot_param_recov_results
-from utilities.plot_model_recovery import plot_model_recov_results
 from utilities.plot_model_estimation import plot_model_estimation_results
+from utilities.plot_model_recovery import plot_model_recov_results
+
 plot_params = PlotCustomParams()
 
 ```
@@ -73,7 +74,7 @@ plot_model_recov_results(exp_label=exp_label,
 #| fig-cap: "Model estimation with experimental data"
 #| output : true
 
-plot_model_estimation_results(exp_label=exp_label,
-                              vers="test_1",
-                              save_file=False)
+# plot_model_estimation_results(exp_label=exp_label,
+#                               vers="test_1",
+#                               save_file=False)
 ```
