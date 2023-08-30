@@ -2,8 +2,8 @@
 """This script plots simulated agent performance"""
 import numpy as np
 from matplotlib import pyplot
-from utilities.very_plotter_new import VeryPlotter, PlotCustomParams
-from utilities.config import DirectoryManager, DataHandler
+from very_plotter_new import VeryPlotter, PlotCustomParams
+from config import DirectoryManager, DataHandler
 
 
 def plot_agent_perf(
@@ -13,14 +13,14 @@ def plot_agent_perf(
     # Get and Prepare data
     dir_mgr = DirectoryManager()
     dir_mgr.define_raw_beh_data_out_path(data_type="sim",
-                                         out_dir_label=exp_label,
-                                         make_dir=False)
+                                         exp_label=exp_label,
+                                         version=vers)
     dir_mgr.define_processed_data_path(data_type="sim",
-                                       dir_label=exp_label,
-                                       make_dir=False)
+                                       exp_label=exp_label,
+                                       vers=vers)
     dir_mgr.define_descr_stats_path(data_type="sim",
-                                    dir_label=exp_label,
-                                    make_dir=False)
+                                    exp_label=exp_label,
+                                    version=vers)
     dir_mgr.define_stats_filenames()
     data_loader = DataHandler(dir_mgr.paths, exp_label=exp_label)
     subj_lvl_stats_df = data_loader.load_sim_subj_lvl_stats()
@@ -50,22 +50,14 @@ def plot_agent_perf(
     # Prepare figure
     plotter = VeryPlotter(paths=dir_mgr.paths)
     plt = pyplot
-    col_agents, col_controls = plotter.get_agent_colors(control_color="grey")
-    color_dict = {"C1": col_controls[0],
-                  "C2": col_controls[1],
-                  "C3": col_controls[2],
-                  "A1": col_agents[0],
-                  "A2": col_agents[1],
-                  "A3": col_agents[2]}
+    color_dict = plotter.get_agent_colors(control_color="grey")
 
     rc_params = plotter.define_run_commands()
     plt = pyplot
     plt.rcParams.update(rc_params)
     fig, axs = plt.subplots(nrows=2, ncols=1,
-                            figsize=(6, 7),
+                            figsize=(13, 14),
                             layout="constrained")
-
-    fig = plt.figure(figsize=(24, 10), layout="constrained")
 
     # Adujust axis parameters
     tau_gen_all = agent_performance_group_averages.index.get_level_values(
@@ -129,7 +121,7 @@ def plot_agent_perf(
         )
 
     this_ax.legend(loc='upper right', fontsize=plt_params.legend_fs,
-                   bbox_to_anchor=(1.3, 1))
+                   bbox_to_anchor=(1, 1))
 
     # ------Figure B----------------------------------------
 
@@ -161,7 +153,7 @@ def plot_agent_perf(
             label=r"$\lambda$ = " + f"{lambda_gen}")
 
     this_ax.legend(loc="upper right", fontsize=plt_params.legend_fs,
-                   bbox_to_anchor=(1.4, 1.1))
+                   bbox_to_anchor=(1, 1.1))
 
     plotter.config_axes(
         this_ax,
@@ -182,8 +174,8 @@ def plot_agent_perf(
 
 if __name__ == "__main__":
 
-    EXP_LABEL = "exp_msc_50parts_new"
-    FIGURE_FILENAME = "figue_1_agent_perf_50parts_new"
-    N_BLOCKS = 3
+    EXP_LABEL = "exp_msc"
+    VERSION = "50parts_new"
+    FIGURE_FILENAME = f"figue_1_agent_perf_{VERSION}"
 
-    plot_agent_perf(exp_label=EXP_LABEL, vers="", save_file=True)
+    plot_agent_perf(exp_label=EXP_LABEL, vers=VERSION, save_file=True)

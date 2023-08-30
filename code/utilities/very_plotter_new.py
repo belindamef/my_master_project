@@ -1,20 +1,20 @@
 import numpy as np
 import wesanderson
 import string
-from dataclasses import dataclass
 import palettable
 from config import Paths
+from dataclasses import dataclass
 import os
 
 
 @dataclass
 class PlotCustomParams:
     # fontsizes
-    standard_fs = 14
+    standard_fs = 17
     legend_fs = standard_fs
     axis_label_fs = standard_fs
-    axis_tick_fs = 12
-    axis_title_fs = 20
+    axis_tick_fs = standard_fs
+    axis_title_fs = standard_fs
 
     # marker
     marker_shape = 'o'
@@ -50,6 +50,7 @@ class VeryPlotter:
     def __init__(self, paths: Paths) -> None:
         self.paths = paths
         self.rcParams = None
+        self.color_dict = {}
 
     def define_run_commands(self) -> dict:
         """This function sets some plt defaults and returns blue and red color
@@ -84,7 +85,7 @@ class VeryPlotter:
         return col_exp
 
 
-    def get_agent_colors(self, control_color="orange"):
+    def get_agent_colors(self, control_color="orange") -> dict:
 
         viridis_20 = palettable.matplotlib.Viridis_20.colors
         col_A = [
@@ -99,7 +100,13 @@ class VeryPlotter:
         elif control_color == "grey":
             col_C = ['0.35', '0.6', '0.85']
         
-        return col_A, col_C
+        color_dict = {"C1": col_C[0],
+                      "C2": col_C[1],
+                      "C3": col_C[2],
+                      "A1": col_A[0],
+                      "A2": col_A[1],
+                      "A3": col_A[2]}
+        return color_dict
 
     def define_a3_colors(self):
         color_indices = np.flip(np.round(np.linspace(3, 19, 11)))
@@ -142,7 +149,6 @@ class VeryPlotter:
             ax.set_yticks(yticks)
         if ytickslabels is not None:
             ax.set_yticklabels(ytickslabels, fontsize=ticksize)
-
 
 
     def plot_bar(self, ax, x, height, colors, bar_width=0.6, errorbar_size=10,

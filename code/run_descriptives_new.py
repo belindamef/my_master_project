@@ -20,13 +20,13 @@ def main():
     # Specify directories and create if not existent
     dir_mgr = DirectoryManager()
     dir_mgr.define_raw_beh_data_out_path(data_type=EXP_OR_SIM,
-                                         out_dir_label=EXP_LABEL,
+                                         exp_label=EXP_LABEL,
                                          make_dir=False)
     dir_mgr.define_processed_data_path(data_type=EXP_OR_SIM,
-                                       dir_label=EXP_LABEL,
+                                       exp_label=EXP_LABEL,
                                        make_dir=True)
     dir_mgr.define_descr_stats_path(data_type=EXP_OR_SIM,
-                                    dir_label=EXP_LABEL,
+                                    exp_label=EXP_LABEL,
                                     make_dir=True)
     dir_mgr.define_stats_filenames()
 

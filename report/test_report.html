@@ -96,21 +96,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="agent-task-performance" class="level2">
 <h2 class="anchored" data-anchor-id="agent-task-performance">Agent task performance</h2>
-<div id="agent-task-performance" class="cell" data-execution_count="2">
+<div class="cell" data-execution_count="2">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>plot_agent_perf(exp_label<span class="op">=</span><span class="st">"exp_msc_50parts_new"</span>, vers<span class="op">=</span>version, save_file<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>plot_agent_perf(exp_label<span class="op">=</span><span class="st">"exp_msc"</span>,</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>                vers<span class="op">=</span><span class="st">"50parts_new"</span>,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>                save_file<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-display">
-<div id="agent-task-performance-1" class="quarto-figure quarto-figure-center anchored">
+<div id="agent-task-performance" class="quarto-figure quarto-figure-center anchored">
 <figure class="figure">
 <p><img src="test_report_files/figure-html/agent-task-performance-output-1.png" class="img-fluid figure-img"></p>
 <figcaption class="figure-caption">Agent task performance</figcaption>
 </figure>
 </div>
-</div>
-<div id="agent-task-performance-2" class="cell-output cell-output-display">
-<pre><code>&lt;Figure size 2304x960 with 0 Axes&gt;</code></pre>
 </div>
 </div>
 </section>
@@ -119,7 +118,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell" data-execution_count="3">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>plot_param_recov_results(exp_label<span class="op">=</span>exp_label, vers<span class="op">=</span>version, save_file<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>plot_param_recov_results(exp_label<span class="op">=</span>exp_label,</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                         vers<span class="op">=</span><span class="st">"test_hr_1_test_hr_1"</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>                         <span class="co">#vers=version,</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>                         save_file<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stderr">
 <pre><code>/home/belinda_f/.pyenv/versions/3.8.2/envs/th-env/lib/python3.8/site-packages/matplotlib/axes/_base.py:2503: UserWarning: Warning: converting a masked element to nan.
@@ -130,6 +132,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <figure class="figure">
 <p><img src="test_report_files/figure-html/fig-param-recov-output-2.png" class="img-fluid figure-img"></p>
 <figcaption class="figure-caption">Figure&nbsp;1: Parameter recovery</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="model-recovery" class="level2">
+<h2 class="anchored" data-anchor-id="model-recovery">Model Recovery</h2>
+<div class="cell" data-execution_count="4">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>plot_model_recov_results(exp_label<span class="op">=</span>exp_label,</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                         vers<span class="op">=</span><span class="st">"test_parallel_1"</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                         save_file<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>/home/belinda_f/.pyenv/versions/3.8.2/envs/th-env/lib/python3.8/site-packages/matplotlib/axes/_axes.py:1185: RuntimeWarning: All-NaN axis encountered
+  miny = np.nanmin(masked_verts[..., 1])
+/home/belinda_f/.pyenv/versions/3.8.2/envs/th-env/lib/python3.8/site-packages/matplotlib/axes/_axes.py:1186: RuntimeWarning: All-NaN axis encountered
+  maxy = np.nanmax(masked_verts[..., 1])</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div id="fig-model-recov" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="test_report_files/figure-html/fig-model-recov-output-2.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Figure&nbsp;2: Model recovery</figcaption>
 </figure>
 </div>
 </div>

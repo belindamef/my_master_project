@@ -6,51 +6,7 @@ from utilities.very_plotter import VeryPlotter
 from utilities.config import DirectoryManager, DataHandler
 
 
-def find_central_value(lst):
-    sorted_lst = sorted(lst)
-    n = len(sorted_lst)
-
-    if n % 2 == 1:
-        central_index = n // 2
-        central_value = sorted_lst[central_index]
-    else:
-        middle_right = n // 2
-        middle_left = middle_right - 1
-        central_value = (sorted_lst[middle_left] + sorted_lst[middle_right]) / 2
-
-    return central_value
-
-
-def find_value_closest_to_half_max(lst):
-    max_val = max(lst)
-    half_max = max_val / 2
-
-    closest_val = None
-    min_distance = float('inf')
-
-    for val in lst:
-        distance = abs(val - half_max)
-        if distance < min_distance:
-            closest_val = val
-            min_distance = distance
-
-    return closest_val
-
-
-def pick_values(lst):
-    if len(lst) < 3:
-        raise ValueError("Input list must contain at least 3 values")
-
-    min_val = min(lst)
-    max_val = max(lst)
-
-    # Pick one value from the remaining list
-    middle = find_value_closest_to_half_max(lst)
-
-    return [min_val, middle, max_val]
-
-
-def main():
+def plot_model_fitting_perf():
     # Prepare data
     dir_mgr = DirectoryManager()
     dir_mgr.define_model_est_results_path(dir_label=EXP_LABEL,
@@ -84,7 +40,7 @@ def main():
                   "C3": col_controls[2],
                   "A1": col_agents[0],
                   "A2": col_agents[1],
-                  "A3": col_agents[2]}
+                  "A3": plot_model_recov_resultscol_agents[2]}
     axes = {}
     fig = plt.figure(figsize=(16, 9), layout="constrained")
     gridspecstrum = gridspec.GridSpec(1, 1)
@@ -142,7 +98,7 @@ def main():
                         ticksize=18,
                         x_label="Analyzing agent"
                             )
-
+plot_model_recov_results
     plotter.config_axes(ax=axes[1], y_label="BIC", axix_label_size=22)
     fig.align_ylabels(axs=list(axes.values()))
 

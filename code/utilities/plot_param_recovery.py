@@ -35,19 +35,13 @@ def plot_param_recov_results(
 
     # Prepare figure
     plotter = VeryPlotter(paths=dir_mgr.paths)
-    col_agents, col_controls = plotter.get_agent_colors()
-    color_dict = {"C1": col_controls[0],
-                  "C2": col_controls[1],
-                  "C3": col_controls[2],
-                  "A1": col_agents[0],
-                  "A2": col_agents[1],
-                  "A3": col_agents[2]}
+    color_dict = plotter.get_agent_colors()
 
     rc_params = plotter.define_run_commands()
     plt = pyplot
     plt.rcParams.update(rc_params)
     fig, axs = plt.subplots(nrows=2, ncols=3,
-                            figsize=(12, 8), layout="constrained")
+                            figsize=(13, 8), layout="constrained")
 
     # ------First row------------------
     row = 0

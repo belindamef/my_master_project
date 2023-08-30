@@ -114,7 +114,8 @@ class DirectoryManager:
     paths = Paths()
 
     def define_raw_beh_data_out_path(self, data_type: str,
-                                     out_dir_label: str = "",
+                                     exp_label: str = "",
+                                     version: str = "",
                                      make_dir: bool = False,):
         """
         Create path variable for output directoy containing behavioral data
@@ -133,15 +134,15 @@ class DirectoryManager:
         else:
             data_directory = self.paths.exp_rawdata
 
-        while out_dir_label == "":
-            out_dir_label = input(
+        while exp_label == "":
+            exp_label = input(
                 "Enter label for raw behav. data output directory: ")
-            if os.path.exists(os.path.join(data_directory, out_dir_label)):
+            if os.path.exists(os.path.join(data_directory, exp_label)):
                 print("A directory with this name already exists. "
                       "Please choose a different name.")
-                out_dir_label = ""
+                exp_label = ""
 
-        raw_data_path = os.path.join(data_directory, out_dir_label)
+        raw_data_path = os.path.join(data_directory, f"{exp_label}_{version}")
 
         try:
             if make_dir:
@@ -163,7 +164,8 @@ class DirectoryManager:
             self.paths.this_analyses_raw_data_path = raw_data_path
 
     def define_processed_data_path(self, data_type: str,
-                                   dir_label: str,
+                                   exp_label: str,
+                                   vers: str,
                                    make_dir: bool = False):
         """Define path variable for directory containing processed behavioral
         data
@@ -176,13 +178,15 @@ class DirectoryManager:
           if True, creates physical directory
           directory"""
         self.paths.this_analyses_proc_data_path = os.path.join(
-            self.paths.data, 'processed_data', f'{data_type}', f'{dir_label}')
+            self.paths.data, 'processed_data', f'{data_type}',
+            f'{exp_label}_{vers}')
         if make_dir:
             if not os.path.exists(self.paths.this_analyses_proc_data_path):
                 os.makedirs(self.paths.this_analyses_proc_data_path)
 
     def define_descr_stats_path(self, data_type: str,
-                                dir_label: str,
+                                exp_label: str,
+                                version: str,
                                 make_dir: bool = False):
         """Define path variable for directory containing descriptive stats
 
@@ -194,7 +198,8 @@ class DirectoryManager:
           if True, creates physical directory
           directory"""
         self.paths.this_analyses_descr_stats_path = os.path.join(
-            self.paths.descr_stats, f'{data_type}', f'{dir_label}')
+            self.paths.descr_stats, f'{data_type}',
+            f'{exp_label}_{version}')
         if make_dir:
             if not os.path.exists(self.paths.this_analyses_descr_stats_path):
                 os.makedirs(self.paths.this_analyses_descr_stats_path)
