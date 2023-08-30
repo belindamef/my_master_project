@@ -47,20 +47,20 @@ def plot_param_recov_results(
     plt = pyplot
     plt.rcParams.update(rc_params)
     fig, axs = plt.subplots(nrows=2, ncols=3,
-                            figsize=(15, 10))
+                            figsize=(12, 8), layout="constrained")
 
     # ------First row------------------
     row = 0
     for column, gen_model in enumerate(bayesian_gen_agents):
         this_ax = axs[row, column]
 
-        x_values = mle_grp_avrgs.loc[gen_model].index.unique(
+        tau_gen_values = mle_grp_avrgs.loc[gen_model].index.unique(
             level="tau_gen").values
-        y_values = mle_grp_avrgs.loc[gen_model]["tau_mle"]["mean"].values
+        tau_est_values = mle_grp_avrgs.loc[gen_model]["tau_mle"]["mean"].values
         stds = mle_grp_avrgs.loc[gen_model]["tau_mle"]["std"].values
 
         this_ax.errorbar(
-            x_values, y_values, yerr=stds,
+            x=tau_gen_values, y=tau_est_values, yerr=stds,
             fmt=plt_params.marker_shape, color=color_dict[gen_model],
             alpha=plt_params.transp_lvl, markersize=plt_params.marker_sz,
             label=f"{gen_model}")
@@ -96,15 +96,16 @@ def plot_param_recov_results(
 
         for column, tau_i in enumerate(taus_for_plt):
             this_ax = axs[row, column]
-            x_values = mle_grp_avrgs_diff_lambdas.index.get_level_values(
+
+            tau_gen_values = mle_grp_avrgs_diff_lambdas.index.get_level_values(
                 "lambda_gen").tolist()
-            y_values = mle_grp_avrgs_diff_lambdas.loc[
+            tau_est_values = mle_grp_avrgs_diff_lambdas.loc[
                 "A3", tau_i]["lambda_mle"]["mean"].values
             stds = mle_grp_avrgs_diff_lambdas.loc[
                 "A3", tau_i]["lambda_mle"]["std"].values
 
             this_ax.errorbar(
-                x_values, y_values, yerr=stds,
+                x=tau_gen_values, y=tau_est_values, yerr=stds,
                 fmt=plt_params.marker_shape, color=color_dict[gen_model],
                 alpha=plt_params.transp_lvl, markersize=plt_params.marker_sz,
                 label=f"{gen_model}, " + r"$\tau = $" + f"{tau_i}")
@@ -139,8 +140,7 @@ if __name__ == "__main__":
     parser.add_argument('--show_plot', action="store_true",default=False)
     args = parser.parse_args()
 
-    save_file = args.dont_save_file
-    show_plot = args.show_plot
+    SAVE_FILE = args.dont_save_file
 
-    plot_param_recov_results(save_file=save_file, exp_label=EXP_LABEL,
+    plot_param_recov_results(save_file=SAVE_FILE, exp_label=EXP_LABEL,
                              vers=VERSION_NO)

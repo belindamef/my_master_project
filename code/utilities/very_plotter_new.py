@@ -4,7 +4,6 @@ import string
 from dataclasses import dataclass
 import palettable
 from config import Paths
-from matplotlib import pyplot as plt
 import os
 
 
@@ -15,15 +14,35 @@ class PlotCustomParams:
     legend_fs = standard_fs
     axis_label_fs = standard_fs
     axis_tick_fs = 12
+    axis_title_fs = 20
 
     # marker
     marker_shape = 'o'
-    marker_sz = 6
+    marker_sz = 5
     transp_lvl = 0.7
 
-    # other parameters
+    # errorbar_lines
+    err_bar_linestyle = '-'
+    err_bar_linewidth = 1
+
+    # control agent lines
+    c_agent_linestyle = '-'
+    c_agent_linewidth = 0.8
+    c_agent_std_transp_lvl = 0.2
+
+    # ticks
     tau_ticks = np.round(np.linspace(0, 0.5, 3), 2)
     lambda_ticks = np.round(np.linspace(0.1, 1, 10), 1)
+    n_tr_ticks = np.linspace(0, 10, 5)
+
+    def define_tau_tick_labels(self, max_tau_value: float,
+                               n_values: int = 3):
+        self.tau_ticks = np.round(np.linspace(0, max_tau_value, n_values), 2)
+
+    def define_lambda_tick_labels(self, max_lambda_value: float,
+                                  n_values: int = 3):
+        self.lambda_ticks = np.round(
+            np.linspace(0, max_lambda_value, n_values), 2)
 
 
 class VeryPlotter:

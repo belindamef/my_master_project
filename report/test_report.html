@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Model validation - Report</title>
+<title>Model validation</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -79,7 +79,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Model validation - Report</h1>
+<h1 class="title">Model validation</h1>
 </div>
 
 
@@ -94,29 +94,41 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </header>
 
-<section id="parameter-recovery" class="level2">
-<h2 class="anchored" data-anchor-id="parameter-recovery">Parameter Recovery</h2>
-<div class="cell" data-execution_count="2">
+<section id="agent-task-performance" class="level2">
+<h2 class="anchored" data-anchor-id="agent-task-performance">Agent task performance</h2>
+<div id="agent-task-performance" class="cell" data-execution_count="2">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> utilities.plot_param_recovery_new <span class="im">import</span> main</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>main(exp_label<span class="op">=</span>exp_label, vers<span class="op">=</span>version, save_file<span class="op">=</span><span class="va">False</span>)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># plt.figure = fig</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">#plt.show</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">#plt.close(figure)  # workaround...</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co">#plt.figure().set_figwidth(15)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>plot_agent_perf(exp_label<span class="op">=</span><span class="st">"exp_msc_50parts_new"</span>, vers<span class="op">=</span>version, save_file<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="agent-task-performance-1" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="test_report_files/figure-html/agent-task-performance-output-1.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Agent task performance</figcaption>
+</figure>
+</div>
+</div>
+<div id="agent-task-performance-2" class="cell-output cell-output-display">
+<pre><code>&lt;Figure size 2304x960 with 0 Axes&gt;</code></pre>
+</div>
+</div>
+</section>
+<section id="parameter-recovery" class="level2">
+<h2 class="anchored" data-anchor-id="parameter-recovery">Parameter Recovery</h2>
+<div class="cell" data-execution_count="3">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>plot_param_recov_results(exp_label<span class="op">=</span>exp_label, vers<span class="op">=</span>version, save_file<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stderr">
 <pre><code>/home/belinda_f/.pyenv/versions/3.8.2/envs/th-env/lib/python3.8/site-packages/matplotlib/axes/_base.py:2503: UserWarning: Warning: converting a masked element to nan.
   xys = np.asarray(xys)</code></pre>
 </div>
 <div class="cell-output cell-output-display">
-<div id="fig-param_recov" class="quarto-figure quarto-figure-center anchored">
+<div id="fig-param-recov" class="quarto-figure quarto-figure-center anchored">
 <figure class="figure">
-<p><img src="test_report_files/figure-html/fig-param_recov-output-2.png" class="img-fluid figure-img"></p>
+<p><img src="test_report_files/figure-html/fig-param-recov-output-2.png" class="img-fluid figure-img"></p>
 <figcaption class="figure-caption">Figure&nbsp;1: Parameter recovery</figcaption>
 </figure>
 </div>

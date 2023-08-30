@@ -1,5 +1,5 @@
 ---
-title: "Model validation - Report"
+title: "Model validation"
 format:
   html:
     code-fold: true
