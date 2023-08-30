@@ -19,28 +19,31 @@ import matplotlib.pyplot as plt
 from matplotlib.path import Path
 sys.path.append(os.path.join(os.path.dirname(os.getcwd()), "code"))
 sys.path.append(os.path.join(os.path.dirname(os.getcwd()), "code", "utilities"))
+from utilities.very_plotter_new import PlotCustomParams
+from utilities.plot_param_recovery import plot_param_recov_results
+from utilities.plot_agent_perf_giv_tau import plot_agent_perf 
+plot_params = PlotCustomParams()
+
 ```
 
+
+## Agent task performance
+
+```{python}
+#| label: agent-task-performance
+#| fig-cap: "Agent task performance"
+
+plot_agent_perf(exp_label="exp_msc_50parts_new", vers=version, save_file=False)
+```
 
 
 ## Parameter Recovery
 
 
 ```{python}
-#| label: fig-param_recov
+#| label: fig-param-recov
 #| fig-cap: "Parameter recovery"
 #| output : true
 
-
-
-from utilities.plot_param_recovery_new import main
-
-
-main(exp_label=exp_label, vers=version, save_file=False)
-# plt.figure = fig
-#plt.show
-#plt.close(figure)  # workaround...
-
-#plt.figure().set_figwidth(15)
+plot_param_recov_results(exp_label=exp_label, vers=version, save_file=False)
 ```
-

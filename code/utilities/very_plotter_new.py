@@ -1,10 +1,29 @@
 import numpy as np
 import wesanderson
 import string
+from dataclasses import dataclass
 import palettable
 from config import Paths
 from matplotlib import pyplot as plt
 import os
+
+
+@dataclass
+class PlotCustomParams:
+    # fontsizes
+    standard_fs = 14
+    legend_fs = standard_fs
+    axis_label_fs = standard_fs
+    axis_tick_fs = 12
+
+    # marker
+    marker_shape = 'o'
+    marker_sz = 6
+    transp_lvl = 0.7
+
+    # other parameters
+    tau_ticks = np.round(np.linspace(0, 0.5, 3), 2)
+    lambda_ticks = np.round(np.linspace(0.1, 1, 10), 1)
 
 
 class VeryPlotter:
