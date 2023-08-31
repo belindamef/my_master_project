@@ -10,6 +10,14 @@ from utilities.very_plotter_new import VeryPlotter, PlotCustomParams
 def plot_model_recov_results(
         exp_label: str, vers: str, save_file: bool = True,
         plt_params: PlotCustomParams = PlotCustomParams()):
+    """_summary_
+
+    Args:
+        exp_label (str): _description_
+        vers (str): _description_
+        save_file (bool, optional): _description_. Defaults to True.
+        plt_params (PlotCustomParams, optional): _description_. Defaults to PlotCustomParams().
+    """    
 
     # Get and Prepare data
     dir_mgr = DirectoryManager()
@@ -60,6 +68,15 @@ def plot_model_recov_results(
         all_bics_df["lambda_gen"].unique(),
         np.where(np.isnan(all_bics_df.lambda_gen.unique())))
     lambda_gen_values.sort()
+
+    if len(lambda_gen_values) > 3:
+        number_of_elements_wanted = 3
+    else:
+        number_of_elements_wanted = len(lambda_gen_values)
+    indices_lambda_selection = np.round(np.linspace(
+        0, len(lambda_gen_values) - 1, number_of_elements_wanted)
+        ).astype(int)
+    lambdas_for_plot = lambda_gen_values[indices_lambda_selection]
 
 # ------ Figure A: C1, C2, C3, A1, A2 --------------------------------
     row = 0
@@ -164,10 +181,11 @@ def plot_model_recov_results(
     this_ax.legend(loc="lower right", fontsize=plt_params.legend_fs)
 
 # ------ Figure c: A3-------------------------------------------------
+
     row = 2
     column = 0
     if "A3" in bic_group_averages.index.get_level_values("agent"):
-        for lambda_gen in lambda_gen_values:
+        for lambda_gen in lambdas_for_plot:
             this_ax = axs[row, column]
             tau_gen_values = np.array(
                 bic_group_averages.loc[
@@ -220,7 +238,8 @@ def plot_model_recov_results(
 if __name__ == "__main__":
 
     EXP_LABEL = "exp_msc"
-    VERSION_NO = "test_parallel_1"
+    #VERSION_NO = "test_parallel_1"
+    VERSION_NO = "test_hr"
     FIGURE_FILENAME = f"figure_model_recov_{VERSION_NO}"
 
     plot_model_recov_results(exp_label=EXP_LABEL, vers=VERSION_NO, save_file=True)
