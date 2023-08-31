@@ -651,6 +651,7 @@ def get_arguments():
     or with a bash jobwrapper."""
     parser = argparse.ArgumentParser(description='Run model validation.')
     parser.add_argument('--parallel_computing', action="store_true")
+    parser.add_argument('--version', type=str, default="")
     parser.add_argument('--repetition', type=int, nargs='+')
     parser.add_argument('--agent_model', type=str, nargs='+')
     parser.add_argument('--tau_gen', type=float, nargs='+')

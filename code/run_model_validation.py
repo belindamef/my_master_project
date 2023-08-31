@@ -254,7 +254,11 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     EXP_LABEL = "exp_msc"
-    VERSION = "test_08_28"
+    if arguments.parallel_computing:
+        VERSION = arguments.vers
+    else:
+        VERSION = "test_from_script"
+
 
     # Define repetition_parameters
     N_REPS = 1
@@ -271,7 +275,7 @@ if __name__ == "__main__":
     LAMBDA_CAND_SPACE = np.linspace(0.25, 0.75, 2).tolist()
 
     # Configure quick test
-    IS_QUICK_TEST = False
+    IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1
     TEST_N_ROUNDS = 1
     TEST_N_TRIALS = 2

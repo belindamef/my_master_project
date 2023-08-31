@@ -2,7 +2,11 @@
 # v3.0
 
 timestamp=$(date +"%Y%m%d_%H%M")
-logs_dir=/home/data/treasure_hunt/logs/tests/model_recov_${timestamp}
+
+# Define version label
+vers=test_rh
+
+logs_dir=/home/data/treasure_hunt/logs/tests/model_recov_${vers}_${timestamp}
 # create the logs dir if it doesn't exist
 [ ! -d "$logs_dir" ] && mkdir -p "$logs_dir"
 
@@ -11,7 +15,7 @@ printf "# The environment
 universe       = vanilla
 getenv         = True
 request_cpus   = 1
-request_memory = 16G
+request_memory = 10G
 notify_user    = belinda.fleischmann@ovgu.de
 notification   = Error
 
@@ -21,6 +25,7 @@ executable     = /home/data/treasure_hunt/treasure-hunt/code/wrapper_script_vali
 
 # Make sure floating numbers are comma seperated
 export LC_NUMERIC="en_US.UTF-8"
+
 
 # Define data generating model space
 declare -a all_agents_gen=(C1 C2 C3 A1 A2 A3)
@@ -40,10 +45,10 @@ n_participants=1
 # Define generating parameter space
 tau_gen_min=0.01
 tau_gen_max=0.5
-tau_gen_resolution=10
+tau_gen_resolution=20
 lambda_gen_min=0.25
 lambda_gen_max=0.75
-lambda_gen_resolution=10
+lambda_gen_resolution=20
 
 # Define candidate parameter space
 tau_cand_min=0.01
@@ -76,7 +81,8 @@ for repetition in $(seq 1 ${n_repetitions}); do
 
             # Define lambda space
             if [ ${agent_model} = A3 ]; then
-                lambda_gen_space=$(seq ${lambda_gen_min} ${lambda_gen_resolution_step} ${lambda_gen_max})
+                lambda_gen_space=$(seq ${lambda_gen_min} \
+                ${lambda_gen_resolution_step} ${lambda_gen_max})
             else
                 lambda_gen_space=(nan)
             fi
@@ -88,7 +94,12 @@ for repetition in $(seq 1 ${n_repetitions}); do
                 for participant in $(seq 1 ${n_participants}); do
 
                     # Create a job for each subject file
-                    printf "arguments = --parallel_computing --repetition ${repetition} --agent_model ${agent_model} --tau_gen ${tau_gen} --lambda_gen ${lambda_gen} --tau_cand_res ${tau_cand_resolution} --lambda_cand_res ${lambda_cand_resolution} --participant ${participant}\n"
+                    printf "arguments = --parallel_computing --version ${vers} \
+                    --repetition ${repetition} --agent_model ${agent_model} \
+                    --tau_gen ${tau_gen} --lambda_gen ${lambda_gen} \
+                    --tau_cand_res ${tau_cand_resolution} \
+                    --lambda_cand_res ${lambda_cand_resolution} \
+                    --participant ${participant}\n"
                     printf "log       = ${logs_dir}/\$(Cluster).\$(Process)_rep-${repetition}_sub-${agent_model}_tau-${tau_gen}_lambda-${lambda_gen}_p-${participant}.log\n"
                     printf "output    = ${logs_dir}/\$(Cluster).\$(Process)_rep-${repetition}_sub-${agent_model}_tau-${tau_gen}_lambda-${lambda_gen}_p-${participant}.out\n"
                     printf "error     = ${logs_dir}/\$(Cluster).\$(Process)_rep-${repetition}_sub-${agent_model}_tau-${tau_gen}_lambda-${lambda_gen}_p-${participant}.err\n"
