@@ -8,7 +8,7 @@ from utilities.config import DirectoryManager, DataHandler
 from utilities.very_plotter_new import VeryPlotter, PlotCustomParams
 
 
-def plot_model_fitting_perf(
+def plot_model_est_results(
         exp_label: str, vers: str, save_file: bool = True,
         plt_params: PlotCustomParams = PlotCustomParams()):
 
@@ -16,7 +16,7 @@ def plot_model_fitting_perf(
     dir_mgr = DirectoryManager()
     dir_mgr.define_model_est_results_path(exp_label=exp_label,
                                           version=vers)
-    data_loader = DataHandler(dir_mgr.paths, exp_label=EXP_LABEL)
+    data_loader = DataHandler(dir_mgr.paths, exp_label=exp_label)
     all_bics_df = data_loader.load_data_in_one_folder(
         folder_path=dir_mgr.paths.this_model_est_results_dir
         )
@@ -44,7 +44,7 @@ def plot_model_fitting_perf(
     rc_params = plotter.define_run_commands()
     plt = pyplot
     plt.rcParams.update(rc_params)
-    fig, ax = plt.subplots(figsize=(16, 9),
+    fig, ax = plt.subplots(figsize=(11, 5),
                            layout="constrained")
 
 # ------ Figure A --------------------------------
@@ -89,7 +89,8 @@ def plot_model_fitting_perf(
         ytickslabels=bic_y_tick,
         ticksize=plt_params.axis_tick_fs)
 
-    plotter.save_figure(fig=fig, figure_filename=FIGURE_FILENAME)
+    if save_file:
+        plotter.save_figure(fig=fig, figure_filename=FIGURE_FILENAME)
 
 
 if __name__ == "__main__":
@@ -99,4 +100,4 @@ if __name__ == "__main__":
     FIGURE_FILENAME = f"figure_model_est_{VERSION}"
     N_BLOCKS = 3
 
-    plot_model_fitting_perf(exp_label=EXP_LABEL, vers=VERSION, save_file=True)
+    plot_model_est_results(exp_label=EXP_LABEL, vers=VERSION, save_file=True)
