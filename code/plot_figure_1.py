@@ -12,10 +12,10 @@ from utilities.config import DirectoryManager, DataHandler
 def main():
     dir_mgr = DirectoryManager()
     dir_mgr.define_raw_beh_data_out_path(data_type="sim",
-                                         out_dir_label=EXP_LABEL,
+                                         exp_label=EXP_LABEL,
                                          make_dir=False)
     dir_mgr.define_raw_beh_data_out_path(data_type="exp",
-                                         out_dir_label=EXP_LABEL,
+                                         exp_label=EXP_LABEL,
                                          make_dir=False)
 
     data_loader = DataHandler(dir_mgr.paths, EXP_LABEL)

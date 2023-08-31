@@ -61,7 +61,7 @@ def main():
     """Main function"""
     dir_mgr = DirectoryManager()
     dir_mgr.define_raw_beh_data_out_path(data_type="sim",
-                                         out_dir_label=OUT_DIR_LABEL,
+                                         exp_label=OUT_DIR_LABEL,
                                          make_dir=True)
 
     task_config = TaskConfigurator(dir_mgr.paths).get_config(EXP_LABEL)
