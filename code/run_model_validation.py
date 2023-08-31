@@ -254,7 +254,11 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     EXP_LABEL = "exp_msc"
-    VERSION = "test_08_28"
+    if arguments.parallel_computing:
+        VERSION = arguments.vers
+    else:
+        VERSION = "test_from_script"
+
 
     # Define repetition_parameters
     N_REPS = 1
