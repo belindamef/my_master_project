@@ -4,7 +4,7 @@
 timestamp=$(date +"%Y%m%d_%H%M")
 
 # Define version label
-vers=test_rh
+vers=test_hr_limit_lambda_cand_space
 
 logs_dir=/home/data/treasure_hunt/logs/tests/model_recov_${vers}_${timestamp}
 # create the logs dir if it doesn't exist
@@ -15,7 +15,7 @@ printf "# The environment
 universe       = vanilla
 getenv         = True
 request_cpus   = 1
-request_memory = 10G
+request_memory = 16G
 notify_user    = belinda.fleischmann@ovgu.de
 notification   = Error
 
@@ -45,10 +45,10 @@ n_participants=1
 # Define generating parameter space
 tau_gen_min=0.01
 tau_gen_max=0.5
-tau_gen_resolution=20
+tau_gen_resolution=10
 lambda_gen_min=0.25
 lambda_gen_max=0.75
-lambda_gen_resolution=20
+lambda_gen_resolution=10
 
 # Define candidate parameter space
 tau_cand_min=0.01

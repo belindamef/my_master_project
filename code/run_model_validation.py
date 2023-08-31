@@ -255,7 +255,7 @@ if __name__ == "__main__":
 
     EXP_LABEL = "exp_msc"
     if arguments.parallel_computing:
-        VERSION = arguments.vers
+        VERSION = arguments.version
     else:
         VERSION = "test_from_script"
 
