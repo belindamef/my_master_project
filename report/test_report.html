@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Model validation</title>
+<title>Treasure hunt - Doc</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -68,18 +68,43 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="test_report_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="test_report_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
 </head>
 
-<body class="fullcontent">
+<body>
 
-<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
+  <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="99">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#experimental-data-and-simulation-with-deterministic-agents" id="toc-experimental-data-and-simulation-with-deterministic-agents" class="nav-link active" data-scroll-target="#experimental-data-and-simulation-with-deterministic-agents">Experimental data and simulation with deterministic agents</a></li>
+  <li><a href="#agent-based-behavioral-modelling" id="toc-agent-based-behavioral-modelling" class="nav-link" data-scroll-target="#agent-based-behavioral-modelling">Agent-based behavioral modelling</a>
+  <ul>
+  <li><a href="#model-formulation" id="toc-model-formulation" class="nav-link" data-scroll-target="#model-formulation">Model formulation</a></li>
+  <li><a href="#model-and-parameter-recovery" id="toc-model-and-parameter-recovery" class="nav-link" data-scroll-target="#model-and-parameter-recovery">Model and parameter recovery</a>
+  <ul class="collapse">
+  <li><a href="#agent-task-performance" id="toc-agent-task-performance" class="nav-link" data-scroll-target="#agent-task-performance">Agent task performance</a></li>
+  </ul></li>
+  <li><a href="#parameter-recovery" id="toc-parameter-recovery" class="nav-link" data-scroll-target="#parameter-recovery">Parameter Recovery</a>
+  <ul class="collapse">
+  <li><a href="#model-recovery" id="toc-model-recovery" class="nav-link" data-scroll-target="#model-recovery">Model Recovery</a></li>
+  <li><a href="#model-estimation-and-comparison" id="toc-model-estimation-and-comparison" class="nav-link" data-scroll-target="#model-estimation-and-comparison">Model estimation and comparison</a></li>
+  </ul></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+</div>
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Model validation</h1>
+<h1 class="title">Treasure hunt - Doc</h1>
 </div>
 
 
@@ -94,8 +119,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </header>
 
-<section id="agent-task-performance" class="level2">
-<h2 class="anchored" data-anchor-id="agent-task-performance">Agent task performance</h2>
+<section id="experimental-data-and-simulation-with-deterministic-agents" class="level2">
+<h2 class="anchored" data-anchor-id="experimental-data-and-simulation-with-deterministic-agents">Experimental data and simulation with deterministic agents</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figure_1.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Participant and agent task performance</figcaption>
+</figure>
+</div>
+</section>
+<section id="agent-based-behavioral-modelling" class="level2">
+<h2 class="anchored" data-anchor-id="agent-based-behavioral-modelling">Agent-based behavioral modelling</h2>
+<section id="model-formulation" class="level3">
+<h3 class="anchored" data-anchor-id="model-formulation">Model formulation</h3>
+% ——Task Model————-
+The model of the task is formulated based on theory of partially observable Markov decision processes . The two-dimensional gridworld is represented by a graph <span class="math inline">\((I,E)\)</span>, where <span class="math inline">\(I:=\mathbb{N}_{25}\)</span> is the set of nodes corresponding to the 25 cells of the grid and <span class="math inline">\(E:=\mathbb{N}_{40}\)</span> is the set of edges corresponding to the direct connections between two adjacent nodes (see Fig. <span class="math inline">\(\ref{fig:graph_and_agent_task_interaction}\)</span> for a visualization of the graph model). One experimental run is represented by the tuple <span class="math display">\[\begin{equation}\label{MDP}
+    \mathcal{T} := (T,C,S,A,R,O,p^{s, a_{t}}(r_t),f,g)
+\end{equation}\]</span> Here,
+</section>
+<section id="model-and-parameter-recovery" class="level3">
+<h3 class="anchored" data-anchor-id="model-and-parameter-recovery">Model and parameter recovery</h3>
+<section id="agent-task-performance" class="level4">
+<h4 class="anchored" data-anchor-id="agent-task-performance">Agent task performance</h4>
 <div class="cell" data-execution_count="2">
 <details>
 <summary>Code</summary>
@@ -113,62 +158,53 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </section>
-<section id="parameter-recovery" class="level2">
-<h2 class="anchored" data-anchor-id="parameter-recovery">Parameter Recovery</h2>
+</section>
+<section id="parameter-recovery" class="level3">
+<h3 class="anchored" data-anchor-id="parameter-recovery">Parameter Recovery</h3>
 <div class="cell" data-execution_count="3">
 <details>
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>plot_param_recov_results(exp_label<span class="op">=</span>exp_label,</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                         vers<span class="op">=</span><span class="st">"test_hr_1_test_hr_1"</span>,</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                         vers<span class="op">=</span><span class="st">"test_hr"</span>,</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>                         save_file<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div class="cell-output cell-output-stderr">
-<pre><code>/home/belinda_f/.pyenv/versions/3.8.2/envs/th-env/lib/python3.8/site-packages/matplotlib/axes/_base.py:2503: UserWarning: Warning: converting a masked element to nan.
-  xys = np.asarray(xys)</code></pre>
-</div>
 <div class="cell-output cell-output-display">
 <div id="fig-param-recov" class="quarto-figure quarto-figure-center anchored">
 <figure class="figure">
-<p><img src="test_report_files/figure-html/fig-param-recov-output-2.png" class="img-fluid figure-img"></p>
+<p><img src="test_report_files/figure-html/fig-param-recov-output-1.png" class="img-fluid figure-img"></p>
 <figcaption class="figure-caption">Figure&nbsp;1: Parameter recovery</figcaption>
 </figure>
 </div>
 </div>
 </div>
-</section>
-<section id="model-recovery" class="level2">
-<h2 class="anchored" data-anchor-id="model-recovery">Model Recovery</h2>
+<section id="model-recovery" class="level4">
+<h4 class="anchored" data-anchor-id="model-recovery">Model Recovery</h4>
 <div class="cell" data-execution_count="4">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>plot_model_recov_results(exp_label<span class="op">=</span>exp_label,</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                         vers<span class="op">=</span><span class="st">"test_parallel_1"</span>,</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                         save_file<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>plot_model_recov_results(exp_label<span class="op">=</span>exp_label,</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>                         <span class="co">#vers="test_parallel_1",</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>                         vers<span class="op">=</span><span class="st">"test_hr"</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>                         save_file<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div class="cell-output cell-output-stderr">
-<pre><code>/home/belinda_f/.pyenv/versions/3.8.2/envs/th-env/lib/python3.8/site-packages/matplotlib/axes/_axes.py:1185: RuntimeWarning: All-NaN axis encountered
-  miny = np.nanmin(masked_verts[..., 1])
-/home/belinda_f/.pyenv/versions/3.8.2/envs/th-env/lib/python3.8/site-packages/matplotlib/axes/_axes.py:1186: RuntimeWarning: All-NaN axis encountered
-  maxy = np.nanmax(masked_verts[..., 1])</code></pre>
-</div>
 <div class="cell-output cell-output-display">
 <div id="fig-model-recov" class="quarto-figure quarto-figure-center anchored">
 <figure class="figure">
-<p><img src="test_report_files/figure-html/fig-model-recov-output-2.png" class="img-fluid figure-img"></p>
+<p><img src="test_report_files/figure-html/fig-model-recov-output-1.png" class="img-fluid figure-img"></p>
 <figcaption class="figure-caption">Figure&nbsp;2: Model recovery</figcaption>
 </figure>
 </div>
 </div>
 </div>
 </section>
-<section id="model-estimation-and-comparison" class="level2">
-<h2 class="anchored" data-anchor-id="model-estimation-and-comparison">Model estimation and comparison</h2>
+<section id="model-estimation-and-comparison" class="level4">
+<h4 class="anchored" data-anchor-id="model-estimation-and-comparison">Model estimation and comparison</h4>
 <div class="cell" data-execution_count="5">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>plot_model_est_results(exp_label<span class="op">=</span>exp_label,</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                       vers<span class="op">=</span><span class="st">"test_1"</span>,</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                       save_file<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>plot_model_est_results(exp_label<span class="op">=</span>exp_label,</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                       vers<span class="op">=</span><span class="st">"test_1"</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                       save_file<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-display">
 <div id="fig-model-estimation" class="quarto-figure quarto-figure-center anchored">
@@ -179,6 +215,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
+</section>
+</section>
 </section>
 
 </main>

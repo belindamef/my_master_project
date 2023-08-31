@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """This script plots figure 2"""
 import argparse
+import sys
+import os
 import numpy as np
 from matplotlib import pyplot
+sys.path.append(os.path.dirname(os.path.dirname(os.getcwd())))
 from utilities.very_plotter_new import VeryPlotter, PlotCustomParams
 from utilities.config import DirectoryManager, DataHandler
 
@@ -91,15 +94,16 @@ def plot_param_recov_results(
         for column, tau_i in enumerate(taus_for_plt):
             this_ax = axs[row, column]
 
-            tau_gen_values = mle_grp_avrgs_diff_lambdas.index.get_level_values(
+            lambda_gen_values = mle_grp_avrgs_diff_lambdas.loc[
+                "A3", tau_i].index.get_level_values(
                 "lambda_gen").tolist()
-            tau_est_values = mle_grp_avrgs_diff_lambdas.loc[
+            lambda_est_values = mle_grp_avrgs_diff_lambdas.loc[
                 "A3", tau_i]["lambda_mle"]["mean"].values
             stds = mle_grp_avrgs_diff_lambdas.loc[
                 "A3", tau_i]["lambda_mle"]["std"].values
 
             this_ax.errorbar(
-                x=tau_gen_values, y=tau_est_values, yerr=stds,
+                x=lambda_gen_values, y=lambda_est_values, yerr=stds,
                 fmt=plt_params.marker_shape, color=color_dict[gen_model],
                 alpha=plt_params.transp_lvl, markersize=plt_params.marker_sz,
                 label=f"{gen_model}, " + r"$\tau = $" + f"{tau_i}")
@@ -124,7 +128,7 @@ def plot_param_recov_results(
 if __name__ == "__main__":
 
     EXP_LABEL = "exp_msc"
-    VERSION_NO = "test_hr_1_test_hr_1"
+    VERSION_NO = "test_hr"
     FIGURE_FILENAME = f"figure_param_recov_{VERSION_NO}"
     N_BLOCKS = 3
 
