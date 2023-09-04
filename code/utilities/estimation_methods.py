@@ -26,7 +26,7 @@ class EstimationParameters:
 
         #self.agent_candidate_space = args.agent_model
         self.tau_bf_cand_space = np.linspace(0.01, 0.5, tau_cand_res).tolist()
-        self.lambda_bf_cand_space = np.linspace(0.1, 0.9, lambda_cand_res).tolist()
+        self.lambda_bf_cand_space = np.linspace(0, 1, lambda_cand_res).tolist()
         return self
 
     def def_params_manually(self, agent_candidate_space=None,

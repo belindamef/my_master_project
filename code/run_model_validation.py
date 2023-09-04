@@ -277,8 +277,8 @@ if __name__ == "__main__":
     # Configure quick test
     IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1
-    TEST_N_ROUNDS = 1
-    TEST_N_TRIALS = 2
+    TEST_N_ROUNDS = 10
+    TEST_N_TRIALS = 12
 
     RUN_RECOVERY = True
     RUN_ESTIMATION_EXP = False

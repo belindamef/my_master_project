@@ -4,7 +4,7 @@
 timestamp=$(date +"%Y%m%d_%H%M")
 
 # Define version label
-vers=test_hr_limit_lambda_cand_space
+vers=test_backto_lr
 
 logs_dir=/home/data/treasure_hunt/logs/tests/model_recov_${vers}_${timestamp}
 # create the logs dir if it doesn't exist
@@ -45,18 +45,18 @@ n_participants=1
 # Define generating parameter space
 tau_gen_min=0.01
 tau_gen_max=0.5
-tau_gen_resolution=10
+tau_gen_resolution=5
 lambda_gen_min=0.25
 lambda_gen_max=0.75
-lambda_gen_resolution=10
+lambda_gen_resolution=5
 
 # Define candidate parameter space
 tau_cand_min=0.01
 tau_cand_max=0.5
-tau_cand_resolution=10
+tau_cand_resolution=5
 lambda_cand_min=0.25
 lambda_cand_max=0.75
-lambda_cand_resolution=10
+lambda_cand_resolution=5
 
 tau_gen_resolution_step=$(echo "scale=3; ($tau_gen_max - $tau_gen_min) / $tau_gen_resolution" | bc)
 lambda_gen_resolution_step=$(echo "scale=3; ($lambda_gen_max - $lambda_gen_min) / $lambda_gen_resolution" | bc)
