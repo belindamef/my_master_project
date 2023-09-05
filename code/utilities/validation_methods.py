@@ -2,6 +2,7 @@
 
 import time
 import pandas as pd
+import numpy as np
 from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.estimation_methods import Estimator, EstimationParameters
 from utilities.config import TaskConfigurator, humanreadable_time
@@ -78,6 +79,8 @@ class Validator:
 
         for agent in self.estimator.est_params.agent_candidate_space:
             self.data_dic[f"BIC_{agent}"] = []
+            self.data_dic[f"PEP_{agent}"] = []
+            self.data_dic[f"MLL_{agent}"] = []
 
     def record_data_generating_sim_params(self):
         """_summary_
@@ -123,6 +126,27 @@ class Validator:
         for agent in self.estimator.est_params.agent_candidate_space:
             self.data_dic[f"BIC_{agent}"].append(bics[f"BIC_{agent}"])
 
+    def record_peps(self, peps: dict):
+        """_summary_
+
+        Args:
+            bics (dict): Dictioniary containing the BIC values for all
+            candidate agent models
+        """
+        for agent in self.estimator.est_params.agent_candidate_space:
+            self.data_dic[f"PEP_{agent}"].append(peps[f"PEP_{agent}"])
+
+    def record_mlls(self, mlls: np.ndarray):
+        """_summary_
+
+        Args:
+            bics (dict): Dictioniary containing the BIC values for all
+            candidate agent models
+        """
+        for i, agent in enumerate(
+            self.estimator.est_params.agent_candidate_space):
+            self.data_dic[f"MLL_{agent}"].append(mlls[0, i])
+
     def estimate_parameter_values(self, data: pd.DataFrame):
         """_summary_
 
@@ -150,6 +174,12 @@ class Validator:
                                              data=data,
                                              data_type=datatype)
         self.record_bics(bics)
+
+        peps = self.estimator.evaluate_pep_s(data=data)
+
+        self.record_peps(peps)
+
+        self.record_mlls(self.estimator.mll)
 
     def run_model_recovery(self):
         """For each participant, simulate behavioral data, estimate parameter

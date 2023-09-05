@@ -257,8 +257,7 @@ if __name__ == "__main__":
     if arguments.parallel_computing:
         VERSION = arguments.version
     else:
-        VERSION = "test_from_script"
-
+        VERSION = "debug_from_script_0905"
 
     # Define repetition_parameters
     N_REPS = 1
@@ -277,8 +276,8 @@ if __name__ == "__main__":
     # Configure quick test
     IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1
-    TEST_N_ROUNDS = 10
-    TEST_N_TRIALS = 12
+    TEST_N_ROUNDS = 1
+    TEST_N_TRIALS = 3
 
     RUN_RECOVERY = True
     RUN_ESTIMATION_EXP = False

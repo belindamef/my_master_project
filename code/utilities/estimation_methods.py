@@ -5,6 +5,8 @@ Author: Belinda Fleischmann
 """
 import numpy as np
 import pandas as pd
+from sklearn.utils import Bunch
+import utilities.abm_bmc as abm_bmc
 from utilities.simulation_methods import Simulator
 from utilities.agent import BayesianModelComps
 from utilities.config import TaskConfigurator
@@ -58,8 +60,44 @@ class EstimationParameters:
             self.lambda_bf_cand_space = lambda_bf_cand_space
 
 
+class BMCObject:
+    """A class to store Bayesian model comparison input data as needed
+    for abm_bmc methods.
+
+    Attributes:
+        mll (np.ndarray): participants x models array of maximized log likelihoods
+        n (np.ndarray): participants x models array of observation numbers
+        k  (np.ndarray): participants x models array of free parameter numbers
+
+        mll_avg (np.ndarray): 1 x models array of maximized log likelihood averages
+        bic (np.ndarray): participants x models array of BICs
+        bic_sum (np.ndarray): 1 x models array of BIC sum values
+        win (np.ndarray): p x 1 array indexing participant-specific winning models
+        gmi (Bunch): group model inference structure
+        phi (np.ndarray): 1 x models array of protected exceedance probabilities
+        p_eta_0 (np.ndarray): posterior probability of null hypothesis ("Bayes omnibus risk")
+"""
+    def __init__(self, mll: np.ndarray, n: np.ndarray, k: np.ndarray, n_models: int):
+        self.mll = mll
+        self.n = n
+        self.k = k
+
+        # self.mll_avg = np.full(n_models, np.nan)
+        # self.bic = np.full(n_models, np.nan)
+        # self.bic_sum = np.full(n_models, np.nan)
+        # self.win = np.full(1, np.nan)  # TODO: 1 because n_part = 1
+        # self.gmi = None  # TODO: später Bunch()
+        # self.phi = np.full(n_models, np.nan)
+        # self.p_eta_0 = np.full(1, np.nan)
+
+
+
 class Estimator:
-    """A class to evaluate Maximum Likelihood parameters estimations"""
+    """A class to evaluate Maximum Likelihood parameters estimations
+    
+    Attributes
+        mll (np.ndarray): array of maximized log likelihoods
+    """
     sim_object: Simulator
 
     current_cand_agent: str
@@ -72,6 +110,8 @@ class Estimator:
 
     def __init__(self, estim_params: EstimationParameters):
         self.est_params = estim_params
+        self.mll = np.full((1, len(estim_params.agent_candidate_space)),
+                           np.nan)
 
     def instantiate_sim_obj(self, task_configs: TaskConfigurator,
                             bayesian_comps: BayesianModelComps):
@@ -324,6 +364,30 @@ class Estimator:
         this_bic = llh_theta_hat - n_params/2 * np.log(n_valid_actions)
         return this_bic
 
+    def evaluate_pep_s(self, data: pd.DataFrame):
+        agent_specific_peps_s = {
+            "PEP_C1": np.nan, "PEP_C2": np.nan, "PEP_C3": np.nan,
+            "PEP_A1": np.nan, "PEP_A2": np.nan, "PEP_A3": np.nan
+        }
+
+        n_models = len(self.est_params.agent_candidate_space)
+
+        bmc_object = BMCObject(mll=self.mll,
+                               n=np.full((1, n_models),
+                                         data.a.count()),
+                               k=np.array([[0, 0, 0, 1, 1, 2]]),
+                               n_models=n_models
+                               )
+
+        abm_bmc.abm_bmc(bmc=bmc_object)
+
+        # TODO: abm_bmc berechnet PEP auf group level. hier nur ein part
+        for i, agent in enumerate(self.est_params.agent_candidate_space):
+            agent_specific_peps_s[
+                f"PEP_{agent}"] = bmc_object.phi[i]
+
+        return agent_specific_peps_s
+
     def evaluate_bic_s(self, data: pd.DataFrame, est_method: str,
                        data_type: str) -> dict:
         """_summary_
@@ -341,7 +405,7 @@ class Estimator:
             "BIC_A1": np.nan, "BIC_A2": np.nan, "BIC_A3": np.nan
         }
 
-        for agent_model in self.est_params.agent_candidate_space:
+        for i, agent_model in enumerate(self.est_params.agent_candidate_space):
             self.current_cand_agent = agent_model
 
             n_params = self.determine_n_parameters(agent_model)
@@ -350,22 +414,26 @@ class Estimator:
             if data_type == "sim":
                 if ("A" in agent_model and
                         agent_model == data.iloc[0]["agent"]):
-                    llh_data = self.max_llh_current_gen_agent
+                    max_llh_data = self.max_llh_current_gen_agent
                 else:
                     self.eval_llh_data(candidate_agent=agent_model,
                                        method=est_method,
                                        data=data)
-                    llh_data = self.max_llh_current_cand_agent
+                    max_llh_data = self.max_llh_current_cand_agent
 
             else:  # if data_type == "exp"
                 self.eval_llh_data(candidate_agent=agent_model,
                                    method=est_method,
                                    data=data)
-                llh_data = self.max_llh_current_cand_agent
+                max_llh_data = self.max_llh_current_cand_agent
 
+            # Record agent specific maximized loglikelihood
+            self.mll[0, i] = max_llh_data
+
+            # Record agent specific BIC
             agent_specific_bic_s[
                 f"BIC_{agent_model}"] = self.eval_bic_giv_theta_hat(
-                llh_theta_hat=llh_data,
+                llh_theta_hat=max_llh_data,
                 n_params=n_params,
                 n_valid_actions=n_valid_choices)
 
