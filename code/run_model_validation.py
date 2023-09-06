@@ -86,7 +86,7 @@ def define_validation_parameters() -> ValidationParameters:
     if arguments.parallel_computing:
         val_params.get_params_from_args(arguments)
     else:
-        val_params.define_n_reps_and_participants_manually(
+        val_params.define_numbers(
             n_rep=N_REPS, n_part=N_PARTS
         )
     return val_params
