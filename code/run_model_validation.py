@@ -86,7 +86,7 @@ def define_validation_parameters() -> ValidationParameters:
     if arguments.parallel_computing:
         val_params.get_params_from_args(arguments)
     else:
-        val_params.define_n_reps_and_participants_manually(
+        val_params.define_numbers(
             n_rep=N_REPS, n_part=N_PARTS
         )
     return val_params
@@ -257,8 +257,7 @@ if __name__ == "__main__":
     if arguments.parallel_computing:
         VERSION = arguments.version
     else:
-        VERSION = "test_from_script"
-
+        VERSION = "debug_from_script_0905"
 
     # Define repetition_parameters
     N_REPS = 1
@@ -280,8 +279,8 @@ if __name__ == "__main__":
     # Configure quick test
     IS_QUICK_TEST = False
     TEST_N_BLOCKS = 1
-    TEST_N_ROUNDS = 10
-    TEST_N_TRIALS = 12
+    TEST_N_ROUNDS = 1
+    TEST_N_TRIALS = 3
 
     RUN_RECOVERY = True
     RUN_ESTIMATION_EXP = False

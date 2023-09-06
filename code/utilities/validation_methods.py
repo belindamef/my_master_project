@@ -2,6 +2,8 @@
 
 import time
 import pandas as pd
+import numpy as np
+import xarray as xr
 from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.estimation_methods import Estimator, EstimationParameters
 from utilities.config import TaskConfigurator, humanreadable_time
@@ -9,9 +11,11 @@ from utilities.agent import BayesianModelComps
 
 
 class ValidationParameters:
-    """Class to store and manage parameters model validation routines"""
+    """Class to store and manage parameters model validation routines
+    """
 
-    n_repetitions: int
+
+    n_reps: int
     repetition_numbers: range
     n_participants: int
     participant_numbers: range
@@ -24,11 +28,10 @@ class ValidationParameters:
         self.repetition_numbers = args.repetition
         self.participant_numbers = args.participant
         self.n_participants = len(self.participant_numbers)
-        self.n_repetitions = len(self.repetition_numbers)
+        self.n_reps = len(self.repetition_numbers)
         return self
 
-    def define_n_reps_and_participants_manually(self, n_rep: int = 1,
-                                                n_part: int = 1,):
+    def define_numbers(self, n_rep: int = 1, n_part: int = 1,):
         """Method to define pass number of repetitions and participants to
         class instance.
 
@@ -39,14 +42,17 @@ class ValidationParameters:
         n_part : int
             Number of participants. Default value is 1
             """
-        self.n_repetitions = n_rep
-        self.repetition_numbers = range(self.n_repetitions)
+        self.n_reps = n_rep
+        self.repetition_numbers = range(self.n_reps)
         self.n_participants = n_part
         self.participant_numbers = range(self.n_participants)
 
 
 class Validator:
-    """Class of methods to run model validation routines"""
+    """Class of methods to run model validation routines
+    
+    Attributes:
+        data_dict (dict): dictionary that stores validation results"""
     data_dic: dict
 
     def __init__(self, sim_params: SimulationParameters,
@@ -78,6 +84,8 @@ class Validator:
 
         for agent in self.estimator.est_params.agent_candidate_space:
             self.data_dic[f"BIC_{agent}"] = []
+            self.data_dic[f"PEP_{agent}"] = []
+            self.data_dic[f"MLL_{agent}"] = []
 
     def record_data_generating_sim_params(self):
         """_summary_
@@ -123,6 +131,27 @@ class Validator:
         for agent in self.estimator.est_params.agent_candidate_space:
             self.data_dic[f"BIC_{agent}"].append(bics[f"BIC_{agent}"])
 
+    def record_peps(self, peps: dict):
+        """_summary_
+
+        Args:
+            bics (dict): Dictioniary containing the BIC values for all
+            candidate agent models
+        """
+        for agent in self.estimator.est_params.agent_candidate_space:
+            self.data_dic[f"PEP_{agent}"].append(peps[f"PEP_{agent}"])
+
+    def record_mlls(self, mlls: np.ndarray):
+        """_summary_
+
+        Args:
+            bics (dict): Dictioniary containing the BIC values for all
+            candidate agent models
+        """
+        for i, agent in enumerate(
+            self.estimator.est_params.agent_candidate_space):
+            self.data_dic[f"MLL_{agent}"].append(mlls[0, i])
+
     def estimate_parameter_values(self, data: pd.DataFrame):
         """_summary_
 
@@ -150,6 +179,12 @@ class Validator:
                                              data=data,
                                              data_type=datatype)
         self.record_bics(bics)
+
+        peps = self.estimator.evaluate_pep_s(data=data)
+
+        self.record_peps(peps)
+
+        self.record_mlls(self.estimator.mll)
 
     def run_model_recovery(self):
         """For each participant, simulate behavioral data, estimate parameter
