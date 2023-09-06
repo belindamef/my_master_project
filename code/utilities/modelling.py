@@ -14,7 +14,7 @@ class BehavioralModel:
     a_t : array_like
         Action value in trial t
     """
-    p_a_giv_h: np.ndarray  # likelihood fucntion of action giv history and tau
+    p_a_giv_h: np.ndarray  # likelihood function of action giv history and tau
     rvs: np.ndarray
     log_likelihood: float = np.nan
     action_t = np.nan  # agent action
@@ -32,8 +32,7 @@ class BehavioralModel:
             np.exp((1 / self.tau) * self.agent.valence_t))
 
     def eval_rvs(self):
-        """Evaluate action according to sample from multinomial distribution
-        TODO what does rvs stand for"""
+        """Evaluate action according to sample from multinomial distribution"""
         rng = np.random.default_rng()
         self.rvs = rng.multinomial(1, self.p_a_giv_h)
 

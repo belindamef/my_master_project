@@ -434,7 +434,7 @@ class Agent:
             post_belief_state = (
                 prior_belief_state
                 * self.bayes_comps.lklh[action, s_1, s2_giv_s1, obs, :, :])
-            print('zero_sum in bayesian likelihood occurred')
+            print('sum of prio * lklh = 0, leaving out normalization')
             # debug = 'here'
         else:
             post_belief_state = (
@@ -637,18 +637,24 @@ class Agent:
         # end = time.time()
         # print(f'After masking zeros: {end - start}')
 
+        # Ensure KL is zero, if virtual postior and current belief state are 
+        # equal
         if np.all(np.around(p_x, 10) == np.around(q_x, 10)):
-            kl_mask = 0.
+            kl = 0.
+
+        # or sum over all dimensions of virtual belief for potential obs after
+        # given action are zero, i.e. the agent is knows with certainty that
+        # potential observation is inprobable (impossible), e.g. treasure on
+        # grey field
+        elif np.sum(np.sum(p_x)) == 0:
+            kl = 0.
 
         else:
-            # start = time.time()
-            # diffs = np.where(p_x != q_x)
             with np.errstate(divide="ignore", invalid="ignore"):
-                kl_mask = np.sum(p_x * np.ma.masked_invalid(np.log(p_x / q_x)))
-            # end = time.time()
-            # print(f'Using ma.masked all_in_one: {end - start}')
+                kl = np.sum(p_x * np.ma.masked_invalid(np.log(p_x / q_x)))
+                # TODO: masked value troublesome
 
-        return kl_mask
+        return kl
 
     def eval_kl(self):
         """Evaluate KL divergence between the agent's belief state on trial t
@@ -681,8 +687,13 @@ class Agent:
                     self.task.s2_t[new_s1], obs)
 
                 # Evaluate KL divergence
+                kl_value = self.evaluate_kl_divergence(
+                    self.virt_b[i][obs], self.p_s_giv_o)
+                
                 self.kl_giv_a_o[i, obs] = self.evaluate_kl_divergence(
                     self.virt_b[i][obs], self.p_s_giv_o)
+
+                stop = "here"
 
     def evaluate_action_valences(self):
         """Evaluate action valences"""

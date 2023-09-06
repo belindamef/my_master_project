@@ -268,6 +268,9 @@ if __name__ == "__main__":
     AGENT_GEN_SPACE = ["C1", "C2", "C3", "A1", "A2", "A3"]
     TAU_GEN_SPACE = np.linspace(0.01, 0.5, 2).tolist()
     LAMBDA_GEN_SPACE = np.linspace(0, 1, 2).tolist()
+    AGENT_GEN_SPACE = ["A3"]
+    TAU_GEN_SPACE = [0.01]
+    LAMBDA_GEN_SPACE = [0.582, 0.748]
 
     # Define parameter estimation candidate space
     AGENT_CAND_SPACE = ["C1", "C2", "C3", "A1", "A2", "A3"]
@@ -275,7 +278,7 @@ if __name__ == "__main__":
     LAMBDA_CAND_SPACE = np.linspace(0.25, 0.75, 2).tolist()
 
     # Configure quick test
-    IS_QUICK_TEST = True
+    IS_QUICK_TEST = False
     TEST_N_BLOCKS = 1
     TEST_N_ROUNDS = 10
     TEST_N_TRIALS = 12

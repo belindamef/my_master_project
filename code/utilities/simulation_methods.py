@@ -400,7 +400,7 @@ class Simulator():
 
         n_blocks = data.block.max()
         n_rounds = data.round_.max()
-        n_trials = data.trial.max() - 1  # subtract 1 bc data trials = 13
+        n_trials = data.trial.max() - 1  # subtract 1 bc data n trials = 13
 
         llhs_all_blocks = np.full((n_blocks, 1), np.nan)
 
