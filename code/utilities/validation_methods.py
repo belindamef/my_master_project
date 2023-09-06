@@ -14,7 +14,6 @@ class ValidationParameters:
     """Class to store and manage parameters model validation routines
     """
 
-
     n_reps: int
     repetition_numbers: range
     n_participants: int
