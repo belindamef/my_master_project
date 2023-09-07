@@ -8,9 +8,13 @@
 *ethics/*
 *doc*
 *archive*
+
+# files
 code/utilities/lklh_dim-5_h6.npy
 code/utilities/lklh_dim-5_h6_bu.npy
 **.pptx
+
+# IDEs and OSX
 *.vscode
 .DS_Store
 .idea/
@@ -21,3 +25,7 @@ __pycache__/
 .th_env
 .my-master-project
 .python-version
+
+# nextcloud sync
+**.sync*
+**.nextcloud*
