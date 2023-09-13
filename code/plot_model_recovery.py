@@ -3,7 +3,7 @@
 import math
 import numpy as np
 from matplotlib import pyplot
-from utilities.config import DirectoryManager, DataHandler
+from utilities.config import DirectoryManager, DataHandler, custom_sort_key
 from utilities.very_plotter_new import VeryPlotter, PlotCustomParams
 
 
@@ -24,32 +24,36 @@ def plot_model_recov_results(
     dir_mgr.define_model_recov_results_path(exp_label=exp_label,
                                             version=vers)
     data_loader = DataHandler(dir_mgr.paths, exp_label=exp_label)
-    all_bics_df = data_loader.load_data_in_one_folder(
+    all_val_results_df = data_loader.load_data_in_one_folder(
         folder_path=dir_mgr.paths.this_model_recov_results_dir
         )
 
-    agent_gen_models = all_bics_df.agent.unique().tolist()
+    agent_gen_models = all_val_results_df.agent.unique().tolist()
     agent_gen_models.sort()
 
     control_gen_agents = [agent for agent in agent_gen_models if "C" in agent]
     Bayesian_gen_agents = [agent for agent in agent_gen_models if "A" in agent]
 
-    bic_of_analizing_models = [
-        col_name for col_name in all_bics_df.columns if "BIC" in col_name]
-    analyzing_models = [
-        bic_model[-2:] for bic_model in bic_of_analizing_models
-        ]
-    bic_group_averages = all_bics_df.groupby(
+    measures_col_names = [
+        col_name for col_name in all_val_results_df.columns
+        if "BIC" in col_name or "PEP" in col_name]
+    analyzing_models = sorted(list(set([
+        bic_model[-2:] for bic_model in measures_col_names
+        ])), key=custom_sort_key)
+    group_averages_df = all_val_results_df.groupby(
         ["agent", "tau_gen", "lambda_gen"],
-        dropna=False)[bic_of_analizing_models].agg(
+        dropna=False)[measures_col_names].agg(
             ["mean", "std"])
 
     bic_min_for_yaxis = int(math.floor(
-        np.nanmin(bic_group_averages.loc[:]/ 100.0)) * 100)
+        np.nanmin(group_averages_df.loc[:]/ 100.0)) * 100)
     bic_max_for_yaxis = int(math.ceil(
-        np.nanmax(bic_group_averages.loc[:]/ 100.0)) * 100)
-    bic_y_tick = np.round(np.linspace(bic_min_for_yaxis, bic_max_for_yaxis, 5),
+        np.nanmax(group_averages_df.loc[:]/ 100.0)) * 100)
+    bic_y_ticks = np.round(np.linspace(bic_min_for_yaxis, bic_max_for_yaxis, 5),
                           decimals=2)
+    pep_y_ticks = np.round(np.linspace(0, 1, 5), decimals=2)
+    y_ticks = {"BIC": bic_y_ticks,
+               "PEP": pep_y_ticks}
 
     # Prepare figure
     plotter = VeryPlotter(paths=dir_mgr.paths)
@@ -59,18 +63,20 @@ def plot_model_recov_results(
     rc_params = plotter.define_run_commands()
     plt = pyplot
     plt.rcParams.update(rc_params)
-    fig, axs = plt.subplots(nrows=3, ncols=3,
-                            figsize=(13, 12),
-                            layout="constrained")
+    n_colums = 6
+    fig, axs = plt.subplots(nrows=4, ncols=n_colums,
+                            figsize=(22, 12),
+                            layout="constrained"
+                            )
 
     # Adjust axis parameters
     lambda_gen_values = np.delete(
-        all_bics_df["lambda_gen"].unique(),
-        np.where(np.isnan(all_bics_df.lambda_gen.unique())))
+        all_val_results_df["lambda_gen"].unique(),
+        np.where(np.isnan(all_val_results_df.lambda_gen.unique())))
     lambda_gen_values.sort()
 
-    if len(lambda_gen_values) > 3:
-        number_of_elements_wanted = 3
+    if len(lambda_gen_values) > n_colums:
+        number_of_elements_wanted = n_colums
     else:
         number_of_elements_wanted = len(lambda_gen_values)
     indices_lambda_selection = np.round(np.linspace(
@@ -78,131 +84,87 @@ def plot_model_recov_results(
         ).astype(int)
     lambdas_for_plot = lambda_gen_values[indices_lambda_selection]
 
-# ------ Figure A: C1, C2, C3, A1, A2 --------------------------------
-    row = 0
-    column = 0
+    # Create measure list
+    if any("PEP" in col_name for col_name in all_val_results_df.columns):
+        measure_list = ["BIC", "PEP"]
+    else:
+        measure_list = ["BIC"]
 
-    for gen_agent in control_gen_agents:
-        this_ax = axs[row, column]
+    # ------Iterate measures (BIC and PEP)-------------------------------------
+    for i_measure, measure in enumerate(measure_list):
+        row = 2 * i_measure
+        column = 0
 
-        x_ticks = range(1, len(analyzing_models)+1)
-        x_tick_labels = []
-        colors = []
+        # ------ C1, C2, C3----------------------------------------------------
 
-        j = 0
-        for analyzing_model in analyzing_models:
+        for gen_agent in control_gen_agents:
+            this_ax = axs[row, column]
 
-            x_tick_labels.append(analyzing_model)
+            x_ticks = range(1, len(analyzing_models)+1)
+            x_tick_labels = []
+            colors = []
 
-            colors.append(color_dict[analyzing_model])
-            this_ax.errorbar(
-                x=j+1,
-                y=np.mean(bic_group_averages.loc[gen_agent][
-                        f"BIC_{analyzing_model}", "mean"]),
-                yerr=np.mean(bic_group_averages.loc[
-                    gen_agent][
-                        f"BIC_{analyzing_model}", "std"]),
-                fmt=plt_params.marker_shape,
-                alpha=plt_params.transp_lvl, markersize=plt_params.marker_sz,
-                color=color_dict[analyzing_model],
-                label=analyzing_model
-                )
-            j += 1
+            j = 0
+            for analyzing_model in analyzing_models:
 
-        plotter.config_axes(
-            this_ax,
-            title=f"{gen_agent}",
-            title_color=color_dict[f"{gen_agent}"],
-            y_label=f"BIC",
-            x_label="Analyzing agent",
-            axix_label_size=plt_params.axis_label_fs,
-            ticksize=plt_params.axis_tick_fs,
-            xticks=x_ticks,
-            title_font=plt_params.axis_title_fs,
-            xticklabels=x_tick_labels,
-            yticks=bic_y_tick,
-            ytickslabels=bic_y_tick
-            )
+                x_tick_labels.append(analyzing_model)
 
-        column += 1
-
-    # ------Figure B: A1 and A2
-    row = 1
-    column = 0
-
-    tau_gen_values = np.delete(  # TODO: redundant?
-        all_bics_df.tau_gen.unique(),
-        np.where(np.isnan(all_bics_df.tau_gen.unique())))
-
-    for gen_agent in [agent for agent in Bayesian_gen_agents if agent != "A3"]:
-        this_ax = axs[row, column]
-        tau_gen_values = np.array(
-            bic_group_averages.loc[gen_agent].index.get_level_values("tau_gen")
-            )
-
-        for analyzing_model in analyzing_models:
-
-            bic_values_this_analyzing_agent = bic_group_averages.loc[
-                gen_agent][f"BIC_{analyzing_model}", "mean"]
-
-            stds = (np.mean(bic_group_averages.loc[
-                        gen_agent][f"BIC_{analyzing_model}", "std"])
+                colors.append(color_dict[analyzing_model])
+                this_ax.errorbar(
+                    x=j+1,
+                    y=np.mean(group_averages_df.loc[gen_agent][
+                            f"{measure}_{analyzing_model}", "mean"]),
+                    yerr=np.mean(group_averages_df.loc[
+                        gen_agent][
+                            f"{measure}_{analyzing_model}", "std"]),
+                    fmt=plt_params.marker_shape,
+                    alpha=plt_params.transp_lvl, markersize=plt_params.marker_sz,
+                    color=color_dict[analyzing_model],
+                    label=analyzing_model
                     )
+                j += 1
 
-            this_ax.errorbar(
-                x=tau_gen_values,
-                y=bic_values_this_analyzing_agent,
-                yerr=stds,
-                fmt=plt_params.marker_shape,
-                alpha=plt_params.transp_lvl, markersize=plt_params.marker_sz,
-                linestyle=plt_params.err_bar_linestyle,
-                linewidth=plt_params.err_bar_linewidth,
-                color=color_dict[analyzing_model],
-                label=analyzing_model
+            plotter.config_axes(
+                this_ax,
+                title=f"{gen_agent}",
+                title_color=color_dict[f"{gen_agent}"],
+                y_label=f"{measure}",
+                x_label="Analyzing agent",
+                axix_label_size=plt_params.axis_label_fs,
+                ticksize=plt_params.axis_tick_fs,
+                xticks=x_ticks,
+                title_font=plt_params.axis_title_fs,
+                xticklabels=x_tick_labels,
+                yticks=y_ticks[measure],
+                ytickslabels=y_ticks[measure]
                 )
 
-        plotter.config_axes(
-            ax=this_ax,
-            title=f"{gen_agent}",
-            title_font=plt_params.axis_title_fs,
-            title_color=color_dict[f"{gen_agent}"],
-            axix_label_size=plt_params.axis_label_fs,
-            y_label=f"BIC",
-            x_label=r"$\tau$",
-            xticks=plt_params.tau_ticks,
-            xticklabels=plt_params.tau_ticks,
-            yticks=bic_y_tick,
-            ytickslabels=bic_y_tick,
-            ticksize=plt_params.axis_tick_fs
-            )
+            column += 1
 
-        column += 1
+        # ------A1 and A2------------------------------------------------------
 
-    this_ax.legend(loc="lower right", fontsize=plt_params.legend_fs)
+        tau_gen_values = np.delete(  # TODO: redundant?
+            all_val_results_df.tau_gen.unique(),
+            np.where(np.isnan(all_val_results_df.tau_gen.unique())))
 
-# ------ Figure c: A3-------------------------------------------------
-
-    row = 2
-    column = 0
-    if "A3" in bic_group_averages.index.get_level_values("agent"):
-        for lambda_gen in lambdas_for_plot:
+        for gen_agent in [agent for agent in Bayesian_gen_agents if agent != "A3"]:
             this_ax = axs[row, column]
             tau_gen_values = np.array(
-                bic_group_averages.loc[
-                    "A3", :, lambda_gen].index.get_level_values("tau_gen"))
+                group_averages_df.loc[gen_agent].index.get_level_values("tau_gen")
+                )
 
             for analyzing_model in analyzing_models:
-                
-                bic_values_this_analyzing_agent = bic_group_averages.loc[
-                    "A3", :, lambda_gen][f"BIC_{analyzing_model}", "mean"]
 
-                stds = (np.mean(bic_group_averages.loc[
-                            "A3"][f"BIC_{analyzing_model}", "std"])
+                mean_this_analyzing_agent = group_averages_df.loc[
+                    gen_agent][f"{measure}_{analyzing_model}", "mean"]
+
+                stds = (np.mean(group_averages_df.loc[
+                            gen_agent][f"{measure}_{analyzing_model}", "std"])
                         )
 
                 this_ax.errorbar(
                     x=tau_gen_values,
-                    y=bic_values_this_analyzing_agent,
+                    y=mean_this_analyzing_agent,
                     yerr=stds,
                     fmt=plt_params.marker_shape,
                     alpha=plt_params.transp_lvl, markersize=plt_params.marker_sz,
@@ -214,21 +176,75 @@ def plot_model_recov_results(
 
             plotter.config_axes(
                 ax=this_ax,
-                title=r"A3 $\lambda= $" + f"{lambda_gen}",
+                title=f"{gen_agent}",
                 title_font=plt_params.axis_title_fs,
-                title_color=color_dict["A3"],
+                title_color=color_dict[f"{gen_agent}"],
                 axix_label_size=plt_params.axis_label_fs,
-                y_label=r"\textit{N} treasures",
+                y_label=f"{measure}",
                 x_label=r"$\tau$",
                 xticks=plt_params.tau_ticks,
                 xticklabels=plt_params.tau_ticks,
-                yticks=bic_y_tick,
-                ytickslabels=bic_y_tick,
+                yticks=y_ticks[measure],
+                ytickslabels=y_ticks[measure],
                 ticksize=plt_params.axis_tick_fs
                 )
+
             column += 1
 
-    #fig.align_ylabels(axs=axs)
+    # ------ A3-------------------------------------------------
+
+        row += 1
+        column = 0
+        if "A3" in group_averages_df.index.get_level_values("agent"):
+            for lambda_gen in lambdas_for_plot:
+                this_ax = axs[row, column]
+                tau_gen_values = np.array(
+                    group_averages_df.loc[
+                        "A3", :, lambda_gen].index.get_level_values("tau_gen"))
+
+                for analyzing_model in analyzing_models:
+                    
+                    mean_this_analyzing_agent = group_averages_df.loc[
+                        "A3", :, lambda_gen][f"{measure}_{analyzing_model}", "mean"]
+
+                    stds = (np.mean(group_averages_df.loc[
+                                "A3"][f"{measure}_{analyzing_model}", "std"])
+                            )
+
+                    this_ax.errorbar(
+                        x=tau_gen_values,
+                        y=mean_this_analyzing_agent,
+                        yerr=stds,
+                        fmt=plt_params.marker_shape,
+                        alpha=plt_params.transp_lvl, markersize=plt_params.marker_sz,
+                        linestyle=plt_params.err_bar_linestyle,
+                        linewidth=plt_params.err_bar_linewidth,
+                        color=color_dict[analyzing_model],
+                        label=analyzing_model
+                        )
+
+                plotter.config_axes(
+                    ax=this_ax,
+                    title=r"A3 $\lambda= $" + f"{lambda_gen}",
+                    title_font=plt_params.axis_title_fs,
+                    title_color=color_dict["A3"],
+                    axix_label_size=plt_params.axis_label_fs,
+                    y_label=f"{measure}",
+                    x_label=r"$\tau$",
+                    xticks=plt_params.tau_ticks,
+                    xticklabels=plt_params.tau_ticks,
+                    yticks=y_ticks[measure],
+                    ytickslabels=y_ticks[measure],
+                    ticksize=plt_params.axis_tick_fs
+                    )
+                column += 1
+
+    # fig.align_ylabels(axs=axs)
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    fig.legend(handles, labels,
+               loc="upper right", # bbox_to_anchor=(1.0, 1.05),
+               fontsize=plt_params.legend_fs)
+
 
     # Print subject level descriptive figure
     if save_file:
@@ -239,7 +255,7 @@ if __name__ == "__main__":
 
     EXP_LABEL = "exp_msc"
     #VERSION_NO = "test_parallel_1"
-    VERSION_NO = "test_hr"
+    VERSION_NO = "test_0906"
     FIGURE_FILENAME = f"figure_model_recov_{VERSION_NO}"
 
     plot_model_recov_results(exp_label=EXP_LABEL, vers=VERSION_NO, save_file=True)
