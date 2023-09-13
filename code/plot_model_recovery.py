@@ -3,7 +3,7 @@
 import math
 import numpy as np
 from matplotlib import pyplot
-from utilities.config import DirectoryManager, DataHandler
+from utilities.config import DirectoryManager, DataHandler, custom_sort_key
 from utilities.very_plotter_new import VeryPlotter, PlotCustomParams
 
 
@@ -34,14 +34,15 @@ def plot_model_recov_results(
     control_gen_agents = [agent for agent in agent_gen_models if "C" in agent]
     Bayesian_gen_agents = [agent for agent in agent_gen_models if "A" in agent]
 
-    bic_of_analizing_models = [
-        col_name for col_name in all_val_results_df.columns if "BIC" in col_name]
-    analyzing_models = [
-        bic_model[-2:] for bic_model in bic_of_analizing_models
-        ]
+    measures_col_names = [
+        col_name for col_name in all_val_results_df.columns
+        if "BIC" in col_name or "PEP" in col_name]
+    analyzing_models = sorted(list(set([
+        bic_model[-2:] for bic_model in measures_col_names
+        ])), key=custom_sort_key)
     group_averages_df = all_val_results_df.groupby(
         ["agent", "tau_gen", "lambda_gen"],
-        dropna=False)[bic_of_analizing_models].agg(
+        dropna=False)[measures_col_names].agg(
             ["mean", "std"])
 
     bic_min_for_yaxis = int(math.floor(
@@ -65,7 +66,8 @@ def plot_model_recov_results(
     n_colums = 6
     fig, axs = plt.subplots(nrows=4, ncols=n_colums,
                             figsize=(22, 12),
-                            layout="constrained")
+                            layout="constrained"
+                            )
 
     # Adjust axis parameters
     lambda_gen_values = np.delete(
@@ -82,16 +84,18 @@ def plot_model_recov_results(
         ).astype(int)
     lambdas_for_plot = lambda_gen_values[indices_lambda_selection]
 
+    # Create measure list
     if any("PEP" in col_name for col_name in all_val_results_df.columns):
         measure_list = ["BIC", "PEP"]
-    else: 
+    else:
         measure_list = ["BIC"]
 
-
-    for measure in measure_list:
-# ------ Figure A: C1, C2, C3, A1, A2 --------------------------------
-        row = 0
+    # ------Iterate measures (BIC and PEP)-------------------------------------
+    for i_measure, measure in enumerate(measure_list):
+        row = 2 * i_measure
         column = 0
+
+        # ------ C1, C2, C3----------------------------------------------------
 
         for gen_agent in control_gen_agents:
             this_ax = axs[row, column]
@@ -137,7 +141,7 @@ def plot_model_recov_results(
 
             column += 1
 
-        # ------Figure A: A1 and A2
+        # ------A1 and A2------------------------------------------------------
 
         tau_gen_values = np.delete(  # TODO: redundant?
             all_val_results_df.tau_gen.unique(),
@@ -187,9 +191,7 @@ def plot_model_recov_results(
 
             column += 1
 
-        this_ax.legend(loc="lower right", fontsize=plt_params.legend_fs)
-
-    # ------ Figure B: A3-------------------------------------------------
+    # ------ A3-------------------------------------------------
 
         row += 1
         column = 0
@@ -237,7 +239,12 @@ def plot_model_recov_results(
                     )
                 column += 1
 
-    #fig.align_ylabels(axs=axs)
+    # fig.align_ylabels(axs=axs)
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    fig.legend(handles, labels,
+               loc="upper right", # bbox_to_anchor=(1.0, 1.05),
+               fontsize=plt_params.legend_fs)
+
 
     # Print subject level descriptive figure
     if save_file:
@@ -248,7 +255,7 @@ if __name__ == "__main__":
 
     EXP_LABEL = "exp_msc"
     #VERSION_NO = "test_parallel_1"
-    VERSION_NO = "test_hr"
-    FIGURE_FILENAME = f"figure_model_recov_{VERSION_NO}_debug"
+    VERSION_NO = "test_0906"
+    FIGURE_FILENAME = f"figure_model_recov_{VERSION_NO}"
 
     plot_model_recov_results(exp_label=EXP_LABEL, vers=VERSION_NO, save_file=True)

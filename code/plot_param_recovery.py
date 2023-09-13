@@ -128,7 +128,7 @@ def plot_param_recov_results(
 if __name__ == "__main__":
 
     EXP_LABEL = "exp_msc"
-    VERSION_NO = "test_hr"
+    VERSION_NO = "test_0904"
     FIGURE_FILENAME = f"figure_param_recov_{VERSION_NO}"
     N_BLOCKS = 3
 
