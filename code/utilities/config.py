@@ -54,6 +54,16 @@ def get_user_yes_no(question: str) -> bool:
         return get_user_yes_no(question)
 
 
+def custom_sort_key(item):
+    letter, number = item[0], item[1:]
+    if letter == "C":
+        return (0, number)  # Sort "C" items first, then by number
+    elif letter == "A":
+        return (2, number)  # Sort "A" items last, then by number
+    else:
+        return (1, item)   # For other letters, maintain original order
+
+
 @dataclass
 class Paths:
     """A class to store directory and file paths as string values
@@ -416,7 +426,7 @@ class DataHandler:
             folder_path=folder_path)
 
         dataframe = pd.concat(
-            (pd.read_csv(f, sep="\t") for f in file_list),
+            ([pd.read_csv(f, sep="\t", encoding="utf8") for f in file_list]),
             ignore_index=True)
         return dataframe
 

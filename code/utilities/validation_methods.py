@@ -148,7 +148,7 @@ class Validator:
             candidate agent models
         """
         for i, agent in enumerate(
-            self.estimator.est_params.agent_candidate_space):
+                self.estimator.est_params.agent_candidate_space):
             self.data_dic[f"MLL_{agent}"].append(mlls[0, i])
 
     def estimate_parameter_values(self, data: pd.DataFrame):
