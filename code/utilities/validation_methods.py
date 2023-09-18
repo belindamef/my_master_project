@@ -130,16 +130,6 @@ class Validator:
         for agent in self.estimator.est_params.agent_candidate_space:
             self.data_dic[f"BIC_{agent}"].append(bics[f"BIC_{agent}"])
 
-    def record_peps(self, peps: dict):
-        """_summary_
-
-        Args:
-            bics (dict): Dictioniary containing the BIC values for all
-            candidate agent models
-        """
-        for agent in self.estimator.est_params.agent_candidate_space:
-            self.data_dic[f"PEP_{agent}"].append(peps[f"PEP_{agent}"])
-
     def record_mlls(self, mlls: np.ndarray):
         """_summary_
 
@@ -170,20 +160,29 @@ class Validator:
         self.record_tau_estimate(mle_tau_est)
         self.record_lambda_estimate(mle_lambda_est)
 
-    def evaluate_model_fitting_performance(self, data: pd.DataFrame,
-                                           datatype: str):
+    def evaluate_bics(self, data: pd.DataFrame,
+                      datatype: str):
         """_summary_
         """
         bics = self.estimator.evaluate_bic_s(est_method="brute_force",
                                              data=data,
                                              data_type=datatype)
         self.record_bics(bics)
-
-        peps = self.estimator.evaluate_pep_s(data=data)
-
-        self.record_peps(peps)
-
         self.record_mlls(self.estimator.mll)
+
+        # TODO: record number of actions data.a.coutn() ?
+
+    def evaluate_peps(self, val_results: pd.DataFrame,
+                      datatype: str):
+        """_summary_
+
+        Args:
+            val_results (pd.DataFrame): model recovery results including column with
+                mll values.
+            datatype (str): _description_
+        """
+        return self.estimator.evaluate_pep_s(val_results_df=val_results,
+                                             datatype=data_type)
 
     def run_model_recovery(self):
         """For each participant, simulate behavioral data, estimate parameter
@@ -211,7 +210,7 @@ class Validator:
         print("Running model estimation with simulated data from",
               f" {self.sim_params.current_agent_gen} ...")
         start = time.time()
-        self.evaluate_model_fitting_performance(data=simulated_data,
+        self.evaluate_bics(data=simulated_data,
                                                 datatype="sim")
         end = time.time()
         print(" ... finished model estimationting ",
@@ -232,7 +231,7 @@ class Validator:
         print("Running model estimation with experimental data from ",
               f" {self.val_params.current_part} ...")
         start = time.time()
-        self.evaluate_model_fitting_performance(data=data, datatype="exp")
+        self.evaluate_bics(data=data, datatype="exp")
         end = time.time()
         print("finished model fitting with experimental data from participant",
               f" {self.val_params.current_part}, ",

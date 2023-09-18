@@ -79,7 +79,7 @@ def main():
 
         for agent_model in sim_params.agent_space_gen:
             sim_params.current_agent_gen_init_obj = AgentAttributes(
-                agent_model).def_attributes()
+                agent_model)
             sim_params.current_agent_gen = agent_model
 
             for tau_gen in sim_params.tau_space_gen:

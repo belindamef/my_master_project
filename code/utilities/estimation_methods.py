@@ -5,11 +5,12 @@ Author: Belinda Fleischmann
 """
 import numpy as np
 import pandas as pd
+import xarray as xr
 from sklearn.utils import Bunch
 import utilities.abm_bmc as abm_bmc
 from utilities.simulation_methods import Simulator
 from utilities.agent import BayesianModelComps
-from utilities.config import TaskConfigurator
+from utilities.config import TaskConfigurator, custom_sort_key
 
 
 class EstimationParameters:
@@ -77,19 +78,19 @@ class BMCObject:
         phi (np.ndarray): 1 x models array of protected exceedance probabilities
         p_eta_0 (np.ndarray): posterior probability of null hypothesis ("Bayes omnibus risk")
 """
-    def __init__(self, mll: np.ndarray, n: np.ndarray, k: np.ndarray, n_models: int):
+    def __init__(self, mll, bic, n: np.ndarray, k: np.ndarray):  # TODO: what type is xarray?
         self.mll = mll
+        self.bic = bic
         self.n = n
         self.k = k
+        # self.phi = np.full(n_models, np.nan)
 
         # self.mll_avg = np.full(n_models, np.nan)
         # self.bic = np.full(n_models, np.nan)
         # self.bic_sum = np.full(n_models, np.nan)
         # self.win = np.full(1, np.nan)  # TODO: 1 because n_part = 1
         # self.gmi = None  # TODO: später Bunch()
-        # self.phi = np.full(n_models, np.nan)
         # self.p_eta_0 = np.full(1, np.nan)
-
 
 
 class Estimator:
@@ -364,29 +365,116 @@ class Estimator:
         this_bic = llh_theta_hat - n_params/2 * np.log(n_valid_actions)
         return this_bic
 
-    def evaluate_pep_s(self, data: pd.DataFrame):
-        agent_specific_peps_s = {
-            "PEP_C1": np.nan, "PEP_C2": np.nan, "PEP_C3": np.nan,
-            "PEP_A1": np.nan, "PEP_A2": np.nan, "PEP_A3": np.nan
-        }
+    def evaluate_pep_s(self, val_results_df: pd.DataFrame,
+                       data_type: str):
+        
+        peps_df = pd.DataFrame()
 
-        n_models = len(self.est_params.agent_candidate_space)
+        mll_col_names = [col_name for col_name in val_results_df.columns
+                         if "MLL" in col_name]
+        bic_col_names = [col_name for col_name in val_results_df.columns
+                         if "BIC" in col_name]
+        
+        analizing_agents = sorted(list(set(
+            [mll_col_name[-2:] for mll_col_name in mll_col_names
+             ])), key=custom_sort_key)
 
-        bmc_object = BMCObject(mll=self.mll,
-                               n=np.full((1, n_models),
-                                         data.a.count()),
-                               k=np.array([[0, 0, 0, 1, 1, 2]]),
-                               n_models=n_models
-                               )
+        col_names_for_mll_array = mll_col_names
+        col_names_for_mll_array.append("participant")
 
-        abm_bmc.abm_bmc(bmc=bmc_object)
+        col_names_for_bic_array = bic_col_names
+        col_names_for_bic_array.append("participant")
 
-        # TODO: abm_bmc berechnet PEP auf group level. hier nur ein part
-        for i, agent in enumerate(self.est_params.agent_candidate_space):
-            agent_specific_peps_s[
-                f"PEP_{agent}"] = bmc_object.phi[i]
+        n_models = len(analizing_agents)
 
-        return agent_specific_peps_s
+        if data_type == "sim":
+            for agent_gen in val_results_df.agent.unique():
+
+                recording_dic = {"agent": agent_gen}
+                this_agents_df = val_results_df[val_results_df.agent == agent_gen]
+
+                for tau_gen in this_agents_df.tau_gen.unique():
+                    recording_dic["tau_gen"] =tau_gen
+            
+                    if "A" in agent_gen:
+                        this_taus_df = this_agents_df[this_agents_df.tau_gen == tau_gen]
+                    else:  # if "C" in agent
+                        this_taus_df = this_agents_df
+
+                    for lambda_gen in this_taus_df.lambda_gen.unique():
+                        recording_dic["lambda_gen"] = lambda_gen
+                        if agent_gen == "A3":
+                            this_lambdas_df = this_taus_df[
+                                this_taus_df.lambda_gen == lambda_gen]
+
+                        else:  # if "C" in agent or "A1" or "A2"
+                            this_lambdas_df = this_taus_df
+
+                        mll_df = this_lambdas_df[
+                            col_names_for_mll_array].set_index("participant")
+                        mll_df.rename(columns=lambda x: x[-2:], inplace=True)  # Rename columns to hold agent name only
+                        mll_array = xr.DataArray(
+                            mll_df, dims=("participant", "analizing_agent"))
+                        
+                        bic_df = this_lambdas_df[
+                            col_names_for_bic_array].set_index("participant")
+                        bic_df.rename(columns=lambda x: x[-2:], inplace=True)  # Rename columns to hold agent name only
+                        bic_array = xr.DataArray(
+                            mll_df, dims=("participant", "analizing_agent"))
+
+                        bmc_object = BMCObject(mll=np.array(mll_array),
+                                            bic=np.array(bic_array),
+                                            n=np.full((1, n_models),
+                                                        320),  # dummy n TODO: save during mll estimation
+                                                        k=np.array([[0, 0, 0, 1, 1, 2]])
+                                            )
+
+                        abm_bmc.abm_bmc(bmc=bmc_object)
+
+                        for i, analizing_agent in enumerate(analizing_agents):
+                            recording_dic[
+                                f"PEP_{analizing_agent}"] = [bmc_object.phi[i]]
+
+                        this_gen_params_and_models_peps = pd.DataFrame(recording_dic)  # TODO: hier weiter
+
+                        peps_df = pd.concat(
+                            [peps_df, this_gen_params_and_models_peps],
+                            ignore_index=True)
+
+        else:  # if data_type == "exp"
+            recording_dic = {}
+            mll_df = val_results_df[
+                col_names_for_mll_array].set_index("participant")
+            mll_df.rename(columns=lambda x: x[-2:], inplace=True)  # Rename columns to hold agent name only
+            mll_array = xr.DataArray(
+                mll_df, dims=("participant", "analizing_agent"))
+            
+            bic_df = val_results_df[
+                col_names_for_bic_array].set_index("participant")
+            bic_df.rename(columns=lambda x: x[-2:], inplace=True)  # Rename columns to hold agent name only
+            bic_array = xr.DataArray(
+                mll_df, dims=("participant", "analizing_agent"))
+
+            bmc_object = BMCObject(
+                mll=np.array(mll_array),
+                bic=np.array(bic_array),
+                n=np.full((1, n_models), 320),  # dummy n TODO: save during mll estimation
+                k=np.array([[0, 0, 0, 1, 1, 2]])
+                )
+
+            abm_bmc.abm_bmc(bmc=bmc_object)
+
+            for i, analizing_agent in enumerate(analizing_agents):
+                recording_dic[f"PEP_{analizing_agent}"] = [
+                    bmc_object.phi[i]]
+
+            this_gen_params_and_models_peps = pd.DataFrame(recording_dic)
+
+            peps_df = pd.concat(
+                [peps_df, this_gen_params_and_models_peps],
+                ignore_index=True)
+
+        return peps_df
 
     def evaluate_bic_s(self, data: pd.DataFrame, est_method: str,
                        data_type: str) -> dict:

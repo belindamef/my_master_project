@@ -92,11 +92,13 @@ class Paths:
     model_est_results = os.path.join(results, "model_estimation")
     this_config: str = ""  # particular config currently used
 
-    # Raw behavioral data or estimation results directories
+    # Raw behavioral data or validation results directories
     this_exp_rawdata_dir: str = ""
     this_sim_rawdata_dir: str = ""
     this_model_recov_results_dir: str = ""
+    this_model_recov_sub_lvl_results_dir: str = ""
     this_model_est_results_dir: str = ""
+    this_model_est_sub_lvl_results_dir: str = ""
 
     # Subject-specific directories and filenames
     this_sub_dir: str = ""
@@ -116,6 +118,8 @@ class Paths:
     grp_lvl_descr_stats_fn: str = ""
     t_wise_stats_fn: str = ""
     r_wise_stats_fn: str = ""
+    grp_lvl_model_recovery_results_fn: str = ""
+    grp_lvl_model_estimation_results_fn: str = ""
 
 
 class DirectoryManager:
@@ -266,6 +270,9 @@ class DirectoryManager:
         else:
             self.paths.this_model_recov_results_dir = os.path.join(
                 self.paths.model_recov_results, f"{exp_label}_{version}")
+            
+            self.paths.this_model_recov_sub_lvl_results_dir = os.path.join(
+                self.paths.this_model_recov_results_dir, "sub_lvl")
 
         if make_dir:
             try:
@@ -275,6 +282,14 @@ class DirectoryManager:
                     print("Output directory for validation results already "
                           "exists. Skipping makedirs. results will be written "
                           "to existing directory.")
+                if not os.path.exists(
+                        self.paths.this_model_recov_sub_lvl_results_dir):
+                    os.makedirs(
+                        self.paths.this_model_recov_sub_lvl_results_dir)
+                else:
+                    print("Output directory for subject level validation"
+                          "results already exist. Skipping makedirs. results"
+                          "will be written to existing directory.")
             except FileExistsError:
                 print("Output directory for validation results already exists."
                       " Skipping makedirs. results will be written to "
@@ -296,6 +311,9 @@ class DirectoryManager:
         self.paths.this_model_est_results_dir = os.path.join(
             self.paths.model_est_results, f"{exp_label}_{version}")
 
+        self.paths.this_model_est_sub_lvl_results_dir = os.path.join(
+            self.paths.this_model_est_results_dir, "sub_lvl")
+
         if make_dir:
             try:
                 if not os.path.exists(self.paths.this_model_est_results_dir):
@@ -304,6 +322,16 @@ class DirectoryManager:
                     print("Output directory for model fitting results already "
                           "exists. Skipping makedirs. results will be written "
                           "to existing directory.")
+                
+                if not os.path.exists(
+                        self.paths.this_model_est_sub_lvl_results_dir):
+                    os.makedirs(
+                        self.paths.this_model_est_sub_lvl_results_dir)
+                else:
+                    print("Output directory for subject level model fitting"
+                          "results already exists. Skipping makedirs. "
+                          "results will be written to existing directory.")
+
             except FileExistsError:
                 print("Output directory for model fitting results already "
                       "exists. Skipping makedirs. results will be written to "
@@ -318,18 +346,34 @@ class DirectoryManager:
         if not os.path.exists(self.paths.this_sub_dir):
             os.makedirs(self.paths.this_sub_dir)
 
-    def define_beh_out_filename(self, sub_id):
-        """Method to define the filename for this subjects behavioral data."""
+    def define_beh_out_fn(self, sub_id):
+        """Method to define the filename for this subjects behavioral data.
+        """
         self.paths.this_sub_beh_out_filename = os.path.join(
             self.paths.this_sub_dir,
             f"sub-{sub_id}_task-th_beh")
 
-    def define_model_recov_results_filename(self, sub_id: str):
+    def define_sub_lvl_model_recov_results_fn(self, sub_id: str):
         """Method to define the filename for this subjects validation restuls.
         """
         self.paths.this_sub_model_recov_result_fn = os.path.join(
             self.paths.this_model_recov_results_dir,
             f"val_results_sub-{sub_id}")
+
+    def define_grp_lvl_model_validation_results_fn_s(self):
+        """Method to define the filename for group level model recovery
+        performance results.
+
+        Args:
+            data_type (str): "sim" or "exp"
+        """
+        self.paths.grp_lvl_model_recovery_results_fn = os.path.join(
+            self.paths.this_model_recov_results_dir,
+            "grp_lvl_val_results")
+        self.paths.grp_lvl_model_estimation_results_fn = os.path.join(
+            self.paths.this_model_est_results_dir,
+            "grp_lvl_val_results"
+        )
 
     def define_model_est_results_filename(self, sub_id: str):
         """Method to define the filename for the model estimation results for
@@ -350,7 +394,7 @@ class DirectoryManager:
             sub_id (str): Subject ID
         """
         self.define_and_make_agent_beh_out_dir(sub_id)
-        self.define_beh_out_filename(sub_id)
+        self.define_beh_out_fn(sub_id)
 
 
 class DataHandler:
@@ -412,6 +456,17 @@ class DataHandler:
             list: _description_
         """
         return glob.glob(os.path.join(folder_path, "*"))
+
+    def load_data_single_tsv(self, file_path: str) -> pd.DataFrame:
+        """_summary_
+
+        Args:
+            folder_path (str): _description_
+
+        Returns:
+            pd.DataFrame: _description_
+        """
+        return pd.read_csv(file_path, sep="\t", encoding="utf8") 
 
     def load_data_in_one_folder(self, folder_path: str) -> pd.DataFrame:
         """_summary_

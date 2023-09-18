@@ -160,7 +160,7 @@ def run_model_recovery_routine(sim_params: SimulationParameters,
                         val_params.current_part = participant
                         sub_id = sim_params.create_agent_sub_id(participant,
                                                                 repetition)
-                        dir_mgr.define_model_recov_results_filename(sub_id)
+                        dir_mgr.define_sub_lvl_model_recov_results_fn(sub_id)
                         outfile_thisparams_exists = check_output_existence(
                             dir_mgr.paths.this_sub_model_recov_result_fn)
                         if not outfile_thisparams_exists:
@@ -209,10 +209,46 @@ def run_model_comparison_routine(val_params: ValidationParameters,
                 estimation_results = validator.run_model_estimation(
                     data=this_participants_data)
                 data_handler.save_data_to_tsv(
-                    estimation_results,
-                    dir_mgr.paths.this_sub_model_est_results_fn
+                    data=estimation_results,
+                    filename=dir_mgr.paths.this_sub_model_est_results_fn
                 )
 
+
+def evaluate_peps(val_params: ValidationParameters,
+                  dir_mgr: DirectoryManager,
+                  validator: Validator,
+                  data_handler: DataHandler):
+    """Evaluate group level PEPs given participant and model specific mll
+    values, i.d. n_participants x n_models
+
+    Args:
+        val_params (ValidationParameters): _description_
+        dir_mgr (DirectoryManager): _description_
+        validator (Validator): _description_
+        data_handler (DataHandler): _description_
+    """
+
+    dir_mgr.define_grp_lvl_model_validation_results_fn_s()
+
+    # For simlated data -------------------------------------------------------
+    all_val_results_df = data_handler.load_data_in_one_folder(
+        folder_path=dir_mgr.paths.this_model_recov_sub_lvl_results_dir
+        )
+    peps = validator.evaluate_peps(val_results=all_val_results_df,
+                                   datatype="sim")  # TODO later datatype = "exp" ?
+
+    data_handler.save_data_to_tsv(
+        data=peps,
+        filename=dir_mgr.paths.grp_lvl_model_recovery_results_fn)
+
+    # For experimental data ---------------------------------------------------
+    all_val_results_df = data_handler.load_data_in_one_folder(
+        folder_path=dir_mgr.paths.this_model_est_sub_lvl_results_dir)
+    peps = validator.evaluate_peps(val_results=all_val_results_df,
+                                   datatype="exp")
+    data_handler.save_data_to_tsv(
+        data=peps,
+        filename=dir_mgr.paths.grp_lvl_model_recovery_results_fn)
 
 def main():
     """Main function that runs model validation routine."""
@@ -249,15 +285,26 @@ def main():
                                      validator=validator,
                                      data_handler=data_handler)
 
+    if EVAL_PEP:
+        evaluate_peps(val_params=val_params,
+                      dir_mgr=dir_mgr,
+                      validator=validator,
+                      data_handler=data_handler)
+
 
 if __name__ == "__main__":
+
+    RUN_RECOVERY = False
+    RUN_ESTIMATION_EXP = False
+    EVAL_PEP = True
+
     arguments = get_arguments()
 
     EXP_LABEL = "exp_msc"
     if arguments.parallel_computing:
         VERSION = arguments.version
     else:
-        VERSION = "debug_from_script_0905"
+        VERSION = "test_0906"
 
     # Define repetition_parameters
     N_REPS = 1
@@ -282,12 +329,9 @@ if __name__ == "__main__":
     TEST_N_ROUNDS = 1
     TEST_N_TRIALS = 3
 
-    RUN_RECOVERY = True
-    RUN_ESTIMATION_EXP = False
-
     start = time.time()
     main()
     end = time.time()
 
-    print(f"Total time for beh_model validation: "
+    print(f"Total time for this validation: "
           f"{round((end-start), ndigits=2)} sec.")

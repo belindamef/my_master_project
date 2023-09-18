@@ -42,7 +42,8 @@ def abm_bmc(bmc):
     bmc.mll_avg     = bmc.mll.mean(axis = 0)                                    # group average maximized log likelihood
     
     # Bayesian information criterion (BIC) evaluation
-    bmc.bic         = bmc.mll - 0.5 * bmc.k * np.log(bmc.n)                     # participant-specific BICs
+    # bmc.bic         = bmc.mll - 0.5 * bmc.k * np.log(bmc.n)                     # participant-specific BICs  # TODO: changed, BF
+    bmc.bic         = bmc.bic
     bmc.bic_sum     = bmc.bic.sum(axis = 0)                                     # group BIC sum 
     
     # BIC-based winning model evaluation

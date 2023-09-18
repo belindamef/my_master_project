@@ -288,42 +288,43 @@ class BayesianModelComps:
 
 
 class AgentAttributes:
-    """A class to create object that stores creates and stores all necessary
-    information to create an agent class instance
+    """
+    A class to store necessary agent-specific attributes. Instance of this
+    class is needed to create an agent class instance
+
+    Attributes:
+        name (str): Agent model name, e.g. "C1" or "A1"
+        is_bayesian (bool): True if agent model is bayesian, i.e. belief state
+            based. False otherwise.
+        is_explorative (bool): True if agent is explorative. False otherwise
     """
     is_bayesian: bool
     is_explorative: bool
-    is_deterministic: bool
 
-    def __init__(self, agent_model: str):
-        self.name = agent_model
-        self.def_attributes()
-
-    def def_attributes(self):
-        """Define agent attributes dependent on beh_model
-
-        Returns
-        -------
-        AgentInitObject
+    def __init__(self, agent_model_name: str):
         """
+        Args:
+            agent_model_name (str): _description_
+        """
+        self.name = agent_model_name
+        self.define_attributes()
+
+    def define_attributes(self):
+        """Define agent specific attributes"""
         # Control models
         if self.name in ['C1', 'C2', 'C3']:
             self.is_bayesian = False
             self.is_explorative = False
-            self.is_deterministic = False
 
         # Bayesian models
         elif self.name == 'A1':
             self.is_bayesian = True
             self.is_explorative = False
-            self.is_deterministic = True
 
         # Bayesian models using explorative strategy
         elif self.name in ['A2', 'A3']:
             self.is_bayesian = True
             self.is_explorative = True
-            self.is_deterministic = True
-        return self
 
 
 class Agent:
@@ -405,7 +406,8 @@ class Agent:
                              self.bayes_comps.s4_perm_node_indices[s_3]
                              ] * (1 / self.task.task_params.n_hides)
 
-        # uncomment for DEBUGGING
+        # Uncomment for DEBUGGING to track evaluation of posteriors
+        # ------------------------------------------------------
         # # Evaluate marginal treasure distribution
         # marg_s3_b = np.full(self.task.n_nodes, np.nan)
         # for s3 in range(self.task.n_nodes):
@@ -418,7 +420,7 @@ class Agent:
         #     marg_s4_b[node] = self.prior_c[:, self.s4_perm_node_indices[
         #                                           node]].sum()
         # sum_prob_hides = marg_s4_b[:].sum()
-        # debug = 'here'
+        # set_debug_breakpoint = 'here'
 
     def eval_posterior(self, prior_belief_state, action, s_1, s2_giv_s1, obs
                        ) -> np.ndarray:

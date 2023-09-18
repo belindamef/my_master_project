@@ -20,7 +20,7 @@ def plot_param_recov_results(
                                             version=vers)
     data_loader = DataHandler(dir_mgr.paths, exp_label=exp_label)
     all_val_results = data_loader.load_data_in_one_folder(
-        folder_path=dir_mgr.paths.this_model_recov_results_dir
+        folder_path=dir_mgr.paths.this_model_recov_sub_lvl_results_dir
         )
 
     agent_gen_models = all_val_results.agent.unique().tolist()
@@ -128,7 +128,7 @@ def plot_param_recov_results(
 if __name__ == "__main__":
 
     EXP_LABEL = "exp_msc"
-    VERSION_NO = "test_0904"
+    VERSION_NO = "test_0906"
     FIGURE_FILENAME = f"figure_param_recov_{VERSION_NO}"
     N_BLOCKS = 3
 
