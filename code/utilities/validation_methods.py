@@ -81,9 +81,10 @@ class Validator:
                 "participant": [],
                 }
 
+        self.data_dic["n_valid_actions"] = []
+
         for agent in self.estimator.est_params.agent_candidate_space:
             self.data_dic[f"BIC_{agent}"] = []
-            self.data_dic[f"PEP_{agent}"] = []
             self.data_dic[f"MLL_{agent}"] = []
 
     def record_data_generating_sim_params(self):
@@ -141,6 +142,9 @@ class Validator:
                 self.estimator.est_params.agent_candidate_space):
             self.data_dic[f"MLL_{agent}"].append(mlls[0, i])
 
+    def record_n_valid_actions(self, n_valid_action_choices: int):
+        self.data_dic["n_valid_actions"].append(n_valid_action_choices)
+
     def estimate_parameter_values(self, data: pd.DataFrame):
         """_summary_
 
@@ -169,11 +173,12 @@ class Validator:
                                              data_type=datatype)
         self.record_bics(bics)
         self.record_mlls(self.estimator.mll)
+        n_valid_action_choices = data.a.count()
+        self.record_n_valid_actions(n_valid_action_choices)
 
-        # TODO: record number of actions data.a.coutn() ?
 
     def evaluate_peps(self, val_results: pd.DataFrame,
-                      datatype: str):
+                      data_type: str):
         """_summary_
 
         Args:
@@ -182,7 +187,7 @@ class Validator:
             datatype (str): _description_
         """
         return self.estimator.evaluate_pep_s(val_results_df=val_results,
-                                             datatype=data_type)
+                                             data_type=data_type)
 
     def run_model_recovery(self):
         """For each participant, simulate behavioral data, estimate parameter
@@ -211,7 +216,7 @@ class Validator:
               f" {self.sim_params.current_agent_gen} ...")
         start = time.time()
         self.evaluate_bics(data=simulated_data,
-                                                datatype="sim")
+                           datatype="sim")
         end = time.time()
         print(" ... finished model estimationting ",
               f"\n     time needed: {humanreadable_time(end-start)}")

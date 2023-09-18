@@ -250,6 +250,7 @@ def evaluate_peps(val_params: ValidationParameters,
         data=peps,
         filename=dir_mgr.paths.grp_lvl_model_recovery_results_fn)
 
+
 def main():
     """Main function that runs model validation routine."""
     dir_mgr = DirectoryManager()
@@ -294,9 +295,9 @@ def main():
 
 if __name__ == "__main__":
 
-    RUN_RECOVERY = False
+    RUN_RECOVERY = True
     RUN_ESTIMATION_EXP = False
-    EVAL_PEP = True
+    EVAL_PEP = False
 
     arguments = get_arguments()
 
@@ -304,7 +305,7 @@ if __name__ == "__main__":
     if arguments.parallel_computing:
         VERSION = arguments.version
     else:
-        VERSION = "test_0906"
+        VERSION = "test_0918_debug"
 
     # Define repetition_parameters
     N_REPS = 1
@@ -314,7 +315,7 @@ if __name__ == "__main__":
     AGENT_GEN_SPACE = ["C1", "C2", "C3", "A1", "A2", "A3"]
     TAU_GEN_SPACE = np.linspace(0.01, 0.5, 2).tolist()
     LAMBDA_GEN_SPACE = np.linspace(0, 1, 2).tolist()
-    AGENT_GEN_SPACE = ["A3"]
+    AGENT_GEN_SPACE = ["C1"]
     TAU_GEN_SPACE = [0.01]
     LAMBDA_GEN_SPACE = [0.582, 0.748]
 
@@ -324,7 +325,7 @@ if __name__ == "__main__":
     LAMBDA_CAND_SPACE = np.linspace(0.25, 0.75, 2).tolist()
 
     # Configure quick test
-    IS_QUICK_TEST = False
+    IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1
     TEST_N_ROUNDS = 1
     TEST_N_TRIALS = 3
