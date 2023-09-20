@@ -11,10 +11,51 @@ from utilities.config import Paths, TaskDesignParameters, humanreadable_time
 
 
 class BayesianModelComps:
-    """A Class to create task configurations given a set of task parameters.
-    Sampled task configuration npy files are written to output_dir
+    """A Class to compute Bayesian model components given a set of
+    task parameters (i.e. no. trials, dimension of the grid, etc.) or
+    load model components from disk if the task-parameter-specific components
+    already exist on disk. For example, the file utilities/liklh_dim-5_h6.npy
+    stores the likelihood array for task configuration with dimensionality 5
+    and 6 hiding spots. If that file exists, the array will not be computed to
+    save computation time.
 
-    TODO
+    Newly computed model components are written to .npy files are written and
+    save in code/utilities/ on disk.
+
+    Args:
+    -----
+        task_design_params (TaskDesignParameters, optional): Instance of data
+            class TaskDesignParameters.
+
+    Attributes:
+    -----------
+        task_design_params (TaskDesignParameters): Instance of data
+            class TaskDesignParameters.
+
+        paths(Paths): Instance of data class Paths.
+
+        s4_perms(list): All permutations of possible values for state s4
+
+        s4_perm_node_indices(dict of int: list): node-specific indices of
+            "self.s4_perms" of all those entries that have the value 1 at
+                self.s4_perms[key], encoding that node i is a hiding spot
+            .key (int): value indicating node in grid
+            .value (list): list of indices for "self.s4_perms".
+
+        n_s4_perms (int): number of state s4 permutations
+
+        prior_c0 (np.ndarray): (n_nodes x n_s4_permutaions)-array of prior, 
+            i.e. initial belief state before any observation
+
+        lklh (np.ndarray): (n_action_type x n_nodes x n_node_colors x
+            n_observations x n_nodes x n_s4_permutations)-array of the
+                likelihood, i.e. action- and state-dependent, state-conditional
+                    observation distribution
+
+    Args:
+    -----
+        task_design_params (TaskDesignParameters, optional): Instance of data
+            class TaskDesignParameters.
     """
 
     def __init__(self, task_design_params=TaskDesignParameters()):
@@ -27,7 +68,7 @@ class BayesianModelComps:
         self.lklh: np.ndarray = np.array(np.nan)
 
     def eval_s4_perms(self):
-        """Evaluate permutations of s4 states"""
+        """Method to evaluate permutations of s4 states"""
         s_4_values = [0] * (self.task_design_params.n_nodes -
                             self.task_design_params.n_hides)
         s_4_values.extend([1] * self.task_design_params.n_hides)
@@ -35,7 +76,7 @@ class BayesianModelComps:
             more_itertools.distinct_permutations(s_4_values))
 
     def eval_prior(self):
-        """Evaluate agent's state priors"""
+        """Method to evaluate the prior belief state"""
         for s_3 in range(self.task_design_params.n_nodes):
             for index, s4_perm in enumerate(self.s4_perms):
 
@@ -45,8 +86,8 @@ class BayesianModelComps:
                     # self.prior_c0[s3, index] = 1 / 1062600
 
     def eval_likelihood(self):
-        """Evaluate action-dependent state-conditional observation
-        distribution p(o|s) (likelihood), separately for
+        """Method to evaluate the action-dependent state-conditional
+        observation distribution p(o|s) (likelihood), separately for
         action = 0 and action not 0"""
 
         # Loop through s4_permutations:
@@ -169,7 +210,8 @@ class BayesianModelComps:
                     self.lklh[1, s_1, s2_s1, 3, s_1, index] = 1
 
     def get_comps(self):
-        """Create or load Bayesian beh_model components (prior and likelihood)
+        """Create or load Bayesian components, i.e. s4-permutations, prior and
+        likelihood.
         """
         # Initialize and evaluate s_4 permutations
         s4_perms_fn_pkl = os.path.join(
@@ -265,7 +307,7 @@ class BayesianModelComps:
             self.lklh = np.load(lklh_fn)
             end = time.time()
             print(f" ... finished loading likelihood array, time needed: "
-                  f"{humanreadable_time(end-start)}")
+                  f"{humanreadable_time(end-start)}\n")
         else:
             print("Computing likelihood array for given task config ...")
             self.lklh = np.zeros(
@@ -293,19 +335,20 @@ class AgentAttributes:
     class is needed to create an agent class instance
 
     Attributes:
+    -----------
         name (str): Agent model name, e.g. "C1" or "A1"
         is_bayesian (bool): True if agent model is bayesian, i.e. belief state
             based. False otherwise.
-        is_explorative (bool): True if agent is explorative. False otherwise
+        is_explorative (bool): True if agent is explorative. False otherwise.
+    
+    Args:
+    -----
+        agent_model_name (str): Agent model name, e.g. "C1" or "A1"
     """
     is_bayesian: bool
     is_explorative: bool
 
     def __init__(self, agent_model_name: str):
-        """
-        Args:
-            agent_model_name (str): _description_
-        """
         self.name = agent_model_name
         self.define_attributes()
 
@@ -436,7 +479,7 @@ class Agent:
             post_belief_state = (
                 prior_belief_state
                 * self.bayes_comps.lklh[action, s_1, s2_giv_s1, obs, :, :])
-            print('sum of prio * lklh = 0, leaving out normalization')
+            print('sum of prior * lklh = 0, leaving out normalization')
             # debug = 'here'
         else:
             post_belief_state = (
@@ -689,13 +732,8 @@ class Agent:
                     self.task.s2_t[new_s1], obs)
 
                 # Evaluate KL divergence
-                kl_value = self.evaluate_kl_divergence(
-                    self.virt_b[i][obs], self.p_s_giv_o)
-                
                 self.kl_giv_a_o[i, obs] = self.evaluate_kl_divergence(
                     self.virt_b[i][obs], self.p_s_giv_o)
-
-                stop = "here"
 
     def evaluate_action_valences(self):
         """Evaluate action valences"""
@@ -830,7 +868,9 @@ class Agent:
             self.decision_t = self.a_s1[np.argmax(self.valence_t)]
 
     def make_decision(self):
-        """Let agent make decision"""
+        """Let agent identify possible actions given s1, evaluate action
+        valences and make decision.
+        """
 
         # -------Identify state-dependent action set----------
         self.identify_a_giv_s1()

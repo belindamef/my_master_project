@@ -20,7 +20,7 @@ def plot_param_recov_results(
                                             version=vers)
     data_loader = DataHandler(dir_mgr.paths, exp_label=exp_label)
     all_val_results = data_loader.load_data_in_one_folder(
-        folder_path=dir_mgr.paths.this_model_recov_sub_lvl_results_dir
+        folder_path=dir_mgr.paths.this_model_recov_sub_lvl_results
         )
 
     agent_gen_models = all_val_results.agent.unique().tolist()

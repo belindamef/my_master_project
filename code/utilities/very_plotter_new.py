@@ -198,6 +198,6 @@ class VeryPlotter:
 
     def save_figure(self, fig, figure_filename: str):
         fig.tight_layout()
-        fn = os.path.join(self.paths.figures, figure_filename)
+        fn = os.path.join(self.paths.figures_dir, figure_filename)
         fig.savefig(f"{fn}.png", dpi=200, format='png')
         fig.savefig(f"{fn}.pdf", dpi=200, format='pdf')

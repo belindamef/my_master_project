@@ -187,9 +187,9 @@ class Task:
         self.r_t = 0  # reward
         self.tr_found_on_blue = np.nan
 
-    def start_new_trial(self, trial_number: int):
+    def start_new_trial(self, current_trial: int):
         """Reset dynamic states to initial values for a new trial"""
-        self.current_trial = trial_number
+        self.current_trial = current_trial
         self.moves -= 1
         self.drill_finding = np.nan
 
@@ -215,7 +215,7 @@ class Task:
             self.o_t = 3
 
     def perform_state_transition_f(self, action_t):
-        """Perform the state transition function f"""
+        """Perform the state transition function f. """
         # Move to new position (transition s_1)
         self.s1_t += int(action_t)
 

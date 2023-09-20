@@ -1,12 +1,9 @@
 """This script contains classes and methods to evaluate Maximum Likelihood
 estimations of model parameters
-
-Author: Belinda Fleischmann
 """
 import numpy as np
 import pandas as pd
 import xarray as xr
-from sklearn.utils import Bunch
 import utilities.abm_bmc as abm_bmc
 from utilities.simulation_methods import Simulator
 from utilities.agent import BayesianModelComps
@@ -16,18 +13,26 @@ from utilities.config import TaskConfigurator, custom_sort_key
 class EstimationParameters:
     """Class to store and manage candidate model and parameter spaces for model
     recorvery
+
+    Attributes:
+    ----------
+        agent_candidate_space (list): Candidate agent model space
+        tau_bf_cand_space (list): Candidate tau parameter space for brute-force
+            estimation method
+        lambda_bf_cand_space (list): Candidate lambda parameter space for
+            brute-force parameter estimation
     """
     agent_candidate_space: list
     tau_bf_cand_space: list
     lambda_bf_cand_space: list
 
     def get_params_from_args(self, args):
+
         """Method to fetch simulation parameters from command line or bash
         script arguments."""
         tau_cand_res = args.tau_cand_res
         lambda_cand_res = args.lambda_cand_res
 
-        #self.agent_candidate_space = args.agent_model
         self.tau_bf_cand_space = np.linspace(0.01, 0.5, tau_cand_res).tolist()
         self.lambda_bf_cand_space = np.linspace(0, 1, lambda_cand_res).tolist()
         return self
@@ -65,7 +70,12 @@ class BMCObject:
     """A class to store Bayesian model comparison input data as needed
     for abm_bmc methods.
 
+    TODO:
+    -----
+    !
+
     Attributes:
+    -----------
         mll (np.ndarray): participants x models array of maximized log likelihoods
         n (np.ndarray): participants x models array of observation numbers
         k  (np.ndarray): participants x models array of free parameter numbers
@@ -77,14 +87,14 @@ class BMCObject:
         gmi (Bunch): group model inference structure
         phi (np.ndarray): 1 x models array of protected exceedance probabilities
         p_eta_0 (np.ndarray): posterior probability of null hypothesis ("Bayes omnibus risk")
-"""
+        """
+
     def __init__(self, mll, bic, n: np.ndarray, k: np.ndarray):  # TODO: what type is xarray?
         self.mll = mll
         self.bic = bic
         self.n = n
         self.k = k
         # self.phi = np.full(n_models, np.nan)
-
         # self.mll_avg = np.full(n_models, np.nan)
         # self.bic = np.full(n_models, np.nan)
         # self.bic_sum = np.full(n_models, np.nan)
@@ -95,9 +105,14 @@ class BMCObject:
 
 class Estimator:
     """A class to evaluate Maximum Likelihood parameters estimations
-    
-    Attributes
-        mll (np.ndarray): array of maximized log likelihoods
+
+    Attributes:
+    ---------
+        mll (np.ndarray): (1 x n_agents)-array of maximum log likelihoods. 
+        
+    Args:
+    -----
+        estim_params (EstimationParameters): _description_
     """
     sim_object: Simulator
 
@@ -111,21 +126,24 @@ class Estimator:
 
     def __init__(self, estim_params: EstimationParameters):
         self.est_params = estim_params
-        self.mll = np.full((1, len(estim_params.agent_candidate_space)),
-                           np.nan)
+        self.mll_results = np.full((1,
+                                    len(estim_params.agent_candidate_space)),
+                                    np.nan)
 
     def instantiate_sim_obj(self, task_configs: TaskConfigurator,
                             bayesian_comps: BayesianModelComps):
         """
-        Parameters
-        ----------
-        sim_object: Simulator
-        """
-        self.sim_object = Simulator(task_configs, bayesian_comps)
+        Method to instantiate simulation object
 
-    def reset_result_variables_to_nan(self):
-        """Name says it all
+        Args:
+        ----------
+        sim_object (Simulator): Object to simulate agent-task-interaction
         """
+        self.sim_object = Simulator(task_configs=task_configs,
+                                    bayesian_comps=bayesian_comps)
+
+    def reset_result_variables(self):
+        """Method to reset result variables to nan values"""
         self.tau_est_result_gen_agent = np.nan
         self.tau_est_result_current_cand_agent = np.nan
         self.lambda_est_result_gen_agent = np.nan
@@ -135,11 +153,14 @@ class Estimator:
 
     def eval_llh_data_no_params(self, candidate_agent: str,
                                 data: pd.DataFrame):
-        """Method to ecalute the "likelihood" of data if no parameters given
+        """Method to evaluate the "likelihood" of data. For control models
+        without parameters
 
         Args:
-            candidate_agent (str): Agent name
-            data (pd.DataFrame): Behavioral data, trialwise events
+        -----
+            candidate_agent (str): Candidate agent name
+            data (pd.DataFrame): (n_events x n_meausures)-dataframe of
+                behavioral data used for llh evaluation
         """
         llh = self.sim_object.sim_to_eval_llh(
             candidate_tau=np.nan,
@@ -150,8 +171,19 @@ class Estimator:
         self.max_llh_current_cand_agent = llh
 
     def eval_llh_function_tau(self, candidate_agent: str, data: pd.DataFrame):
-        """Evaluate log_likelihood function for given tau parameter space, and
-        when lambda is not applicable.
+        """Method to evaluate log likelihood function for given tau parameter
+        space, if lambda is not applicable.
+
+        Args:
+        ----
+            candidate_agent (str): Current candidate agent
+            data (pd.DataFrame): (n_events x n_meausures)-dataframe of
+                behavioral data used for llh evaluation
+
+        Returns:
+        --------
+            np.ndarray: (1 x n_tau_candidates)-array of tau-specific
+                log likelihood values
         """
 
         loglikelihood_function = np.full(
@@ -170,9 +202,20 @@ class Estimator:
 
     def eval_llh_function_tau_and_lambda(self, candidate_agent: str,
                                          data: pd.DataFrame):
-        """Evaluate log_likelihood function for given 2-dimdensional tau and
-        lambda space."""
+        """Method to evaluate the log likelihood function for given
+        2-dimdensional parameter (i.e. tau and lambda) space.
 
+        Args:
+        -----
+            candidate_agent (str): Current candidate agent
+            data (pd.DataFrame): (n_events x n_meausures)-dataframe of
+                behavioral data used for llh evaluation
+
+        Returns:
+        -------
+            np.ndarray: (n_tau_candidates x n_lambda_candidates)-array of
+            tau- and lambda-specific log likelihood values
+        """
         loglikelihood_function = np.full(
             (len(self.est_params.tau_bf_cand_space),
              len(self.est_params.lambda_bf_cand_space)),
@@ -197,11 +240,17 @@ class Estimator:
 
     def eval_brute_force_est_tau(self, candidate_agent: str,
                                  data: pd.DataFrame):
-        """Evaluate the maximum likelihood estimation of the decision noise
-        parameter tau  based on dataset of one participant with brute force
-        method.
-        """
+        """Method to evaluate the maximum likelihood estimation of the decision
+        noise parameter tau based on dataset of one participant with
+        brute-force method. No return, ML estimate is recorded to self.
 
+        Args:
+        -----
+            candidate_agent (str): Current candidate agent
+            data (pd.DataFrame): (n_events x n_meausures)-dataframe of
+                behavioral data
+        """
+        # Evaluate llh function over candidate tau values
         llh_function = self.eval_llh_function_tau(
             candidate_agent=candidate_agent, data=data)
 
@@ -209,22 +258,34 @@ class Estimator:
         ml_tau = self.est_params.tau_bf_cand_space[
             np.argmax(llh_function)]
 
+        # Record ml estimate
         if ("agent" in data.columns and
                 self.current_cand_agent == data.iloc[0]["agent"]):
             self.tau_est_result_gen_agent = ml_tau
             self.max_llh_current_gen_agent = np.max(llh_function)
-
         else:
             self.tau_est_result_current_cand_agent = ml_tau
             self.max_llh_current_cand_agent = np.max(llh_function)
 
     def eval_brute_force_tau_lambda(self, candidate_agent: str,
                                     data: pd.DataFrame):
-        """Evaluate the maximum likelihood estimation of the decision noise
-        parameter tau and weighting parameter lambda based on dataset of one
-        participant with brute force method.
+        """Method to evaluate the maximum likelihood estimation of the
+        2-dimensional parameter space theta=(tau, lambda) based on dataset of
+        one participant with brute force method.
+
+        tau is the decision noise parameter and lambda the weighting parameter.
+    
+        No return, ML estimate is
+        recorded to self.
+
+        Args:
+        -----
+            candidate_agent (str): Current candidate agent
+            data (pd.DataFrame): (n_events x n_meausures)-dataframe of
+                behavioral data
         """
 
+        # Evaluate multivariate llh function over cand tau and lambda spaces
         llh_function = self.eval_llh_function_tau_and_lambda(
             candidate_agent=candidate_agent, data=data)
 
@@ -237,6 +298,7 @@ class Estimator:
         ml_tau = self.est_params.tau_bf_cand_space[ml_tau_index]
         ml_lambda = self.est_params.lambda_bf_cand_space[ml_lambda_index]
 
+        # Record ML estimates
         if ("agent" in data.columns and
                 self.current_cand_agent == data.iloc[0]["agent"]):
             self.tau_est_result_gen_agent = ml_tau
@@ -249,14 +311,18 @@ class Estimator:
 
     def estimate_tau(self, method: str, candidate_agent: str,
                      data: pd.DataFrame):
-        """Estimate tau parameter value with given dataset. Brute-force
-        estimation method will first evaluate likelihood function for different
-        candidate parameter values.
+        """Method to start parameter estimation using a method of choice.
+
+        Note:
+        -----
+            So far, only brute-force implemented
 
         Args:
-            method (str): _description_
-            candidate_agent (str): _description_
-            data (pd.DataFrame): _description_
+        -----
+            method (str): If "brute-force"
+            candidate_agent (str): Current candidate agent
+                data (pd.DataFrame): (n_events x n_meausures)-dataframe of
+                behavioral data
         """
 
         if method == "brute_force":
@@ -293,7 +359,7 @@ class Estimator:
         # Set candidate agent model to generating agent
         self.current_cand_agent = candidate_agent
 
-        self.reset_result_variables_to_nan()
+        self.reset_result_variables()
 
         if "C" in candidate_agent:
             pass
@@ -516,7 +582,7 @@ class Estimator:
                 max_llh_data = self.max_llh_current_cand_agent
 
             # Record agent specific maximized loglikelihood
-            self.mll[0, i] = max_llh_data
+            self.mll_results[0, i] = max_llh_data
 
             # Record agent specific BIC
             agent_specific_bic_s[

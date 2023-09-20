@@ -5,9 +5,9 @@ import os
 import argparse
 import copy as cp
 import glob
+from dataclasses import dataclass
 import numpy as np
 import pandas as pd
-from dataclasses import dataclass
 
 
 def humanreadable_time(time_in_seconds: float) -> str:
@@ -35,10 +35,12 @@ def get_user_yes_no(question: str) -> bool:
     """Function to get user input
 
     Args:
+    ----
         question (str): Question to be printed to user
 
     Returns:
-        bool: user answer
+    -------
+        bool: True, for yes and False for no from user response
     """
     reply = input(question + " (Y/N): ").lower().strip()
     try:
@@ -55,28 +57,29 @@ def get_user_yes_no(question: str) -> bool:
 
 
 def custom_sort_key(item):
+    """Method to sort strings in customized order, i.e. letter "C" before "A".
+
+    Args:
+    -------
+        item (TODO): TODO
+
+    Returns:
+    -------
+        TODO: TODO
+    """
     letter, number = item[0], item[1:]
     if letter == "C":
         return (0, number)  # Sort "C" items first, then by number
     elif letter == "A":
         return (2, number)  # Sort "A" items last, then by number
     else:
-        return (1, item)   # For other letters, maintain original order
+        return (1, item)  # For other letters, maintain original order
 
 
 @dataclass
 class Paths:
-    """A class to store directory and file paths as string values
+    """A data class to store directory and file paths as string values"""
 
-    Attributes
-    ----------
-    project : str
-        path of project root parent directory (path-to/treasure-hunt
-    data : str
-        path to data directory
-    sim_data: str
-        path to directory to store data generated in data simulations
-    """
     # General directories
     utils = os.path.dirname(os.path.abspath(__file__))
     code = os.path.dirname(utils)
@@ -93,15 +96,15 @@ class Paths:
     this_config: str = ""  # particular config currently used
 
     # Raw behavioral data or validation results directories
-    this_exp_rawdata_dir: str = ""
-    this_sim_rawdata_dir: str = ""
-    this_model_recov_results_dir: str = ""
-    this_model_recov_sub_lvl_results_dir: str = ""
-    this_model_est_results_dir: str = ""
-    this_model_est_sub_lvl_results_dir: str = ""
+    this_exp_rawdata: str = ""
+    this_sim_rawdata: str = ""
+    this_model_recov_results: str = ""
+    this_model_recov_sub_lvl_results: str = ""
+    this_model_est_results: str = ""
+    this_model_est_sub_lvl_results: str = ""
 
-    # Subject-specific directories and filenames
-    this_sub_dir: str = ""
+    # Subject-specific directories and filenames (fn)
+    this_sub: str = ""
     this_sub_beh_out_filename: str = ""
     this_sub_model_recov_result_fn: str = ""
     this_sub_model_est_results_fn: str = ""
@@ -123,40 +126,41 @@ class Paths:
 
 
 class DirectoryManager:
-    """Class of methods to create or check for directories"""
+    """Class of methods to create path variables and manage directories."""
 
     paths = Paths()
 
     def define_raw_beh_data_out_path(self, data_type: str,
-                                     exp_label: str = "",
+                                     exp_label: str,
                                      version: str = "",
                                      make_dir: bool = False,):
-        """
-        Create path variable for output directoy containing behavioral data
+        """Method to create path variable for the directoy containing
+        behavioral data
 
-        Parameters
-        ----------
-        data_type: str
-          "sim" or "exp"
-        make_dir: bool
-          if True, creates physical directory
-          directory
+        Args:
+        ------
+            data_type (str): "sim" for simulated dataset or "exp" for
+                experimental dataset
+            exp_label (str): Name of experiment, i.e. task configuration
+            version (str, optional): Version label. Defaults to "".
+            make (bool, optional): If true, creates directory data folder.
+                Defaults to False.
         """
 
         if data_type == "sim":
-            data_directory = self.paths.sim_rawdata
+            dataectory = self.paths.sim_rawdata
         else:
-            data_directory = self.paths.exp_rawdata
+            dataectory = self.paths.exp_rawdata
 
         while exp_label == "":
             exp_label = input(
                 "Enter label for raw behav. data output directory: ")
-            if os.path.exists(os.path.join(data_directory, exp_label)):
+            if os.path.exists(os.path.join(dataectory, exp_label)):
                 print("A directory with this name already exists. "
                       "Please choose a different name.")
                 exp_label = ""
 
-        raw_data_path = os.path.join(data_directory, f"{exp_label}_{version}")
+        raw_data_path = os.path.join(dataectory, f"{exp_label}_{version}")
 
         try:
             if make_dir:
@@ -165,15 +169,15 @@ class DirectoryManager:
                 else:
                     print("Output directory for raw data already exists. "
                           "Skipping makedirs. Raw data will be written to "
-                          "existing directory.")
+                          f"{raw_data_path}. \n")
         except FileExistsError:
             print("Output directory for raw data already exists. "
                   "Skipping makedirs. Raw data will be written to "
-                  "existing directory.")
+                  f"{raw_data_path}. \n")
 
         if data_type == "sim":
             self.paths.this_analyses_raw_data_path = raw_data_path
-            self.paths.this_sim_rawdata_dir = raw_data_path
+            self.paths.this_sim_rawdata = raw_data_path
         else:
             self.paths.this_analyses_raw_data_path = raw_data_path
 
@@ -184,13 +188,17 @@ class DirectoryManager:
         """Define path variable for directory containing processed behavioral
         data
 
-        Parameters
-        ----------
-        data_type: str
-          "sim" or "exp"
-        make_dir: bool
-          if True, creates physical directory
-          directory"""
+        Args:
+        -----
+            data_type (str): "sim" for simulated dataset or "exp" for
+                experimental dataset
+            exp_label (str): Name of experiment, i.e. task configuration
+                version (str, optional): Version label. Defaults to "".
+            vers (str): Version label. Defaults to "".
+            make (bool, optional): If true, creates directory data folder.
+                Defaults to False.. Defaults to False.
+        """
+
         self.paths.this_analyses_proc_data_path = os.path.join(
             self.paths.data, 'processed_data', f'{data_type}',
             f'{exp_label}_{vers}')
@@ -202,15 +210,19 @@ class DirectoryManager:
                                 exp_label: str,
                                 version: str,
                                 make_dir: bool = False):
-        """Define path variable for directory containing descriptive stats
+        """Method to define path variable for directory containing
+        descriptive stats
 
-        Parameters
-        ----------
-        data_type: str
-          "sim" or "exp"
-        make_dir: bool
-          if True, creates physical directory
-          directory"""
+        Args:
+        -----
+            data_type (str): "sim" for simulated dataset or "exp" for
+                experimental dataset
+            exp_label (str): Name of experiment, i.e. task configuration
+                version (str, optional): Version label. Defaults to "".
+            vers (str): Version label. Defaults to "".
+            make (bool, optional): If true, creates directory data folder.
+                Defaults to False.. Defaults to False.
+        """
         self.paths.this_analyses_descr_stats_path = os.path.join(
             self.paths.descr_stats, f'{data_type}',
             f'{exp_label}_{version}')
@@ -219,7 +231,7 @@ class DirectoryManager:
                 os.makedirs(self.paths.this_analyses_descr_stats_path)
 
     def define_stats_filenames(self):
-        """Function to define filenames that store descriptive statistics
+        """Method to define filenames that store descriptive statistics
         """
         self.paths.part_fn = os.path.join(
             self.paths.this_analyses_raw_data_path, "participants.tsv"
@@ -242,240 +254,268 @@ class DirectoryManager:
         )
 
     def define_model_recov_results_path(self, exp_label: str = "",
-                                        version="1", make_dir: bool = False):
+                                        version="", make_dir: bool = False):
         """Method to define the path variable for the directory containing
         model recovery results.
 
         Args:
-            dir_label (str, optional): Name for this model recovery run.
-                Defaults to "".
-            version (str, optional): Version for a given model recovery run.
-                Two runs with the same label can be different versions.
-                Defaults to "1".
-            make_dir (bool, optional): If True, makes the directory defined
-                in this method. Defaults to False.
+        -----
+            exp_label (str): Name of experiment, i.e. task configuration
+                version (str, optional): Version label. Defaults to "".
+            vers (str): Version label. Defaults to "".
+            make (bool, optional): If true, creates directory data folder.
+                Defaults to False.. Defaults to False.
         """
+
         if not exp_label:
             while True:
                 try:
                     dir_name = input(
                         "Enter label for model recovery output directory: ")
-                    self.paths.this_model_recov_results_dir = os.path.join(
+                    self.paths.this_model_recov_results = os.path.join(
                         self.paths.sim_rawdata, dir_name)
-                    os.makedirs(self.paths.this_model_recov_results_dir)
+                    os.makedirs(self.paths.this_model_recov_results)
                     break
                 except FileExistsError:
                     print('model recovery output directory with this name '
                           'already exists.')
         else:
-            self.paths.this_model_recov_results_dir = os.path.join(
+            self.paths.this_model_recov_results = os.path.join(
                 self.paths.model_recov_results, f"{exp_label}_{version}")
-            
-            self.paths.this_model_recov_sub_lvl_results_dir = os.path.join(
-                self.paths.this_model_recov_results_dir, "sub_lvl")
+
+            self.paths.this_model_recov_sub_lvl_results = os.path.join(
+                self.paths.this_model_recov_results, "sub_lvl")
 
         if make_dir:
             try:
-                if not os.path.exists(self.paths.this_model_recov_results_dir):
-                    os.makedirs(self.paths.this_model_recov_results_dir)
+                if not os.path.exists(self.paths.this_model_recov_results):
+                    os.makedirs(self.paths.this_model_recov_results)
                 else:
-                    print("Output directory for validation results already "
-                          "exists. Skipping makedirs. results will be written "
-                          "to existing directory.")
+                    print("\n Output directory for this exp_label's validation"
+                          " results already exists. Skipping makedirs. Results"
+                          " will be written to "
+                          f"{self.paths.this_model_recov_results}. \n")
                 if not os.path.exists(
-                        self.paths.this_model_recov_sub_lvl_results_dir):
+                        self.paths.this_model_recov_sub_lvl_results):
                     os.makedirs(
-                        self.paths.this_model_recov_sub_lvl_results_dir)
+                        self.paths.this_model_recov_sub_lvl_results)
                 else:
-                    print("Output directory for subject level validation"
-                          "results already exist. Skipping makedirs. results"
-                          "will be written to existing directory.")
+                    print("Output directory for subject level validation "
+                          "results already exist. Skipping makedirs\n")
             except FileExistsError:
                 print("Output directory for validation results already exists."
-                      " Skipping makedirs. results will be written to "
-                      "existing directory.")
+                      " Skipping makedirs.\n")
 
     def define_model_est_results_path(self, exp_label: str, version="main",
                                       make_dir: bool = False):
-        """Define path variable for directory containing model fitting results
+        """Method to define path variable for directory containing model
+         estimation (i.e. model validation with experimental data) results
 
-        Parameters
-        ----------
-        dir_label: str
-          "sim" or "exp"
-        version: int or str
-            Version number, only needed during debugging
-        make_dir: bool
-          if True, creates physical directory
-          directory"""
-        self.paths.this_model_est_results_dir = os.path.join(
+        Args:
+        ------
+            exp_label (str): Name of experiment, i.e. task configuration
+                version (str, optional): Version label. Defaults to "".
+            vers (str): Version label. Defaults to "".
+            make (bool, optional): If true, creates directory data folder.
+                Defaults to False.. Defaults to False."""
+        self.paths.this_model_est_results = os.path.join(
             self.paths.model_est_results, f"{exp_label}_{version}")
 
-        self.paths.this_model_est_sub_lvl_results_dir = os.path.join(
-            self.paths.this_model_est_results_dir, "sub_lvl")
+        self.paths.this_model_est_sub_lvl_results = os.path.join(
+            self.paths.this_model_est_results, "sub_lvl")
 
         if make_dir:
             try:
-                if not os.path.exists(self.paths.this_model_est_results_dir):
-                    os.makedirs(self.paths.this_model_est_results_dir)
+                if not os.path.exists(self.paths.this_model_est_results):
+                    os.makedirs(self.paths.this_model_est_results)
                 else:
-                    print("Output directory for model fitting results already "
-                          "exists. Skipping makedirs. results will be written "
-                          "to existing directory.")
-                
+                    print("Output directory for model estimation results "
+                          "already exists. Skipping makedirs. Results will be "
+                          f"written to {self.paths.this_model_est_results}.\n")
+
                 if not os.path.exists(
-                        self.paths.this_model_est_sub_lvl_results_dir):
+                        self.paths.this_model_est_sub_lvl_results):
                     os.makedirs(
-                        self.paths.this_model_est_sub_lvl_results_dir)
+                        self.paths.this_model_est_sub_lvl_results)
                 else:
-                    print("Output directory for subject level model fitting"
-                          "results already exists. Skipping makedirs. "
-                          "results will be written to existing directory.")
+                    print("Output directory for subject level model estimation"
+                          " results already exists. Skipping makedirs.\n")
 
             except FileExistsError:
-                print("Output directory for model fitting results already "
-                      "exists. Skipping makedirs. results will be written to "
-                      "existing directory.")
+                print("Output directory for model estimation results already "
+                      "exists. Skipping makedirs.\n")
 
-    def define_and_make_agent_beh_out_dir(self, sub_id: str):
-        """Define paths to subject specific output directory and make
-        directory if not existent"""
+    def define_and_make_sim_beh_out(self, sub_id: str):
+        """Method to define paths to subject-specific output directory and make
+        directory if not existent
 
-        self.paths.this_sub_dir = os.path.join(
-            self.paths.this_sim_rawdata_dir, f"sub-{sub_id}", "beh")
-        if not os.path.exists(self.paths.this_sub_dir):
-            os.makedirs(self.paths.this_sub_dir)
+        Args:
+        -----
+            sub_id (str): subject ID
+        """
+        self.paths.this_sub = os.path.join(
+            self.paths.this_sim_rawdata, f"sub-{sub_id}", "beh")
+        if not os.path.exists(self.paths.this_sub):
+            os.makedirs(self.paths.this_sub)
+        # TODO: generalize for experimental behavioral data
 
     def define_beh_out_fn(self, sub_id):
-        """Method to define the filename for this subjects behavioral data.
+        """Method to define the filename for this subject's behavioral data.
+
+        Args:
+        -----
+            sub_id (str): subject ID
         """
         self.paths.this_sub_beh_out_filename = os.path.join(
-            self.paths.this_sub_dir,
+            self.paths.this_sub,
             f"sub-{sub_id}_task-th_beh")
 
     def define_sub_lvl_model_recov_results_fn(self, sub_id: str):
-        """Method to define the filename for this subjects validation restuls.
+        """Method to define the filename for this subjects validation results.
+
+        Args:
+        -----
+            sub_id (str): subject ID
         """
         self.paths.this_sub_model_recov_result_fn = os.path.join(
-            self.paths.this_model_recov_results_dir,
+            self.paths.this_model_recov_sub_lvl_results,
             f"val_results_sub-{sub_id}")
 
     def define_grp_lvl_model_validation_results_fn_s(self):
-        """Method to define the filename for group level model recovery
-        performance results.
+        """Method to define the filename for group level model validation
+        performance results, for both simulated and experimantal data."""
 
-        Args:
-            data_type (str): "sim" or "exp"
-        """
         self.paths.grp_lvl_model_recovery_results_fn = os.path.join(
-            self.paths.this_model_recov_results_dir,
+            self.paths.this_model_recov_results,
             "grp_lvl_val_results")
         self.paths.grp_lvl_model_estimation_results_fn = os.path.join(
-            self.paths.this_model_est_results_dir,
+            self.paths.this_model_est_results,
             "grp_lvl_val_results"
         )
 
     def define_model_est_results_filename(self, sub_id: str):
         """Method to define the filename for the model estimation results for
-        the data of subject <sub_id>
+        the experimental data of subject <sub_id>
 
         Args:
+        -----
             sub_id (str): Subject ID
         """
         self.paths.this_sub_model_est_results_fn = os.path.join(
-            self.paths.this_model_est_results_dir,
-            f"model_fit_results_sub-{sub_id}"
+            self.paths.this_model_est_sub_lvl_results,
+            f"val_results_sub-{sub_id}"
         )
 
     def define_sim_beh_output_paths(self, sub_id: str):
         """Method to define output paths and filename variables
 
         Args:
+        -----
             sub_id (str): Subject ID
         """
-        self.define_and_make_agent_beh_out_dir(sub_id)
+        self.define_and_make_sim_beh_out(sub_id)
         self.define_beh_out_fn(sub_id)
 
 
 class DataHandler:
-    """Class to load data or descriptive stats"""
-    def __init__(self, paths: Paths, exp_label: str):
-        self.paths = paths
+    """Class to load/save data or results from/to disk
 
-        exp_proc_data_dir = os.path.join(
-            paths.data, 'processed_data', 'exp', f'{exp_label}')
-        sim_proc_data_dir = os.path.join(
+    Args
+    ----------
+        paths (Paths): Paths class instance
+        exp_label (str): Name of experiment, i.e. task configuration
+
+    Attributes
+    ----------
+        paths (Paths): Paths class instance
+        exp_label (str): Name of experiment, i.e. task configuration
+    """
+
+    def __init__(self, paths: Paths, exp_label: str):
+
+        self.paths = paths
+        self.exp_label = exp_label
+
+        sim_proc_data = os.path.join(
             paths.data, 'processed_data', 'sim', f'sim_{exp_label}')
 
-        self.events_exp_fn = os.path.join(exp_proc_data_dir,
-                                          'sub-all_task-th_run-all_beh')
-        self.ev_sim_run_fn = os.path.join(sim_proc_data_dir,
+        # TODO: clean up class attributes to locas private variables
+        self.ev_sim_run_fn = os.path.join(sim_proc_data,
                                           'sub-all_task-th_run-')
-
         self.ds_exp_fn = os.path.join(paths.descr_stats, 'exp',
                                       f'{exp_label}', 'descr_stats')
         self.grp_stats_exp_fn = os.path.join(
             paths.descr_stats, 'exp', f'{exp_label}', 'grp_lvl_stats')
         self.grp_stats_sim_fn = os.path.join(
             paths.descr_stats, 'sim', f'{exp_label}', 'grp_lvl_stats')
-        self.grp_stats_sim_100_fn = os.path.join(
-            paths.descr_stats, 'sim', 'sim_100_msc', 'grp_lvl_stats')
         self.tw_exp_fn = os.path.join(
             paths.descr_stats, 'exp', f'{exp_label}', 't_wise_stats')
-        self.tw_sim_100_fn = os.path.join(
-            paths.descr_stats, 'sim', 'sim_100_msc', 't_wise_stats')
 
     def save_data_to_tsv(self, data: pd.DataFrame, filename: str):
         """Safe dataframe to a .tsv file
 
-        Parameters
-        ----------
-        data: pd.Dataframe
-            dataframe containting simulated behavioral data
+        Args:
+        ----
+            data (pd.DataFrame): (n_participants x n_variables)-Dataframe
+                containing simulated behavioral data
+            filename (str): Path to file on disk
         """
         with open(f"{filename}.tsv", "w", encoding="utf8") as tsv_file:
             tsv_file.write(data.to_csv(sep="\t", na_rep="nan", index=False))
 
     def load_sim_subj_lvl_stats(self) -> pd.DataFrame:
-        """_summary_
+        """Load descriptive statstics from disk
 
         Returns:
-            pd.DataFrame: _description_
+        ------
+            pd.DataFrame: (n_participants x n_measures)-Dataframe containing
+              subject-level descriptive statistics
         """
         subj_lvl_stats_df = pd.read_pickle(
             f"{self.paths.subj_lvl_descr_stats_fn}.pkl")
         return subj_lvl_stats_df
 
     def create_list_of_files_in_folder(self, folder_path: str) -> list:
-        """_summary_
+        """Create list of all files contained in given folder
 
         Args:
-            folder_path (str): _description_
+        -----
+            folder_path (str): Path to folder on disk
 
         Returns:
-            list: _description_
+        ------
+            list: List of all filenames (full path to files)
         """
         return glob.glob(os.path.join(folder_path, "*"))
 
     def load_data_single_tsv(self, file_path: str) -> pd.DataFrame:
-        """_summary_
+        """Load data from singe tsv file
 
         Args:
-            folder_path (str): _description_
+        -----
+            folder_path (str): Path to file on disk
 
         Returns:
-            pd.DataFrame: _description_
+        -------
+            pd.DataFrame: Data
         """
-        return pd.read_csv(file_path, sep="\t", encoding="utf8") 
+        return pd.read_csv(file_path, sep="\t", encoding="utf8")
 
     def load_data_in_one_folder(self, folder_path: str) -> pd.DataFrame:
-        """_summary_
+        """Load data from all tsv files in one folder. All rowns from tsv files
+        are concatenated to one dataframe.
+
+        Note:
+        -----
+        Only works if all tsv files have same column labebels
 
         Args:
-            folder_path (str): _description_
+        -----
+            folder_path (str): Path to folder on disk
 
         Returns:
-            pd.DataFrame: _description_
+        --------
+            pd.DataFrame: Concatenated dataframe
         """
         file_list = self.create_list_of_files_in_folder(
             folder_path=folder_path)
@@ -485,54 +525,63 @@ class DataHandler:
             ignore_index=True)
         return dataframe
 
-    def load_exp_events(self) -> pd.DataFrame:
-        """Method to load trialwise events
+    def load_proc_exp_events(self) -> pd.DataFrame:
+        """Method to load dataframe containing events from all participants
+        (processed data version) from disk.
 
         Returns:
-            pd.DataFrame: Dataframe containing events
+        --------
+            pd.DataFrame: ((n_participants * n_events) x n_variables)-Dataframe
+                containing events
         """
-        return pd.read_pickle(f'{self.events_exp_fn}.pkl')
+        events_exp_fn = os.path.join(
+            self.paths.data, 'processed_data', 'exp', f'{self.exp_label}',
+            'sub-all_task-th_run-all_beh')
+        return pd.read_pickle(f'{events_exp_fn}.pkl')
 
     def load_sim100_group_lvl_stats(self) -> pd.DataFrame:
-        """Method to load stats
+        """Method to load group level descriptive statistics of the simulation
+        with 100 different task configurations from disk
 
         Returns:
-            pd.DataFrame: dataframe with group level stats
+        --------
+            pd.DataFrame: (n_agents x n_measures)-dataframe containing group
+                level stats
         """
-        return pd.read_pickle(f'{self.grp_stats_sim_100_fn}.pkl')
+        grp_stats_sim_100_fn = os.path.join(
+            self.paths.descr_stats, 'sim', 'sim_100_msc', 'grp_lvl_stats')
+        return pd.read_pickle(f'{grp_stats_sim_100_fn}.pkl')
 
     def load_sim100_trialwise_stats(self) -> dict:
         """Method to load trialwise descriptive statistics of the simulation
-        with 100 different task configurations.
+        with 100 different task configurations from disk.
 
         Returns:
-            dict: Dictiorany containting stats in dataframes
+        -------
+            dict: Dictiorany of dataframes. One entry per agent
         """
+        tw_sim_100_fn = os.path.join(
+            self.paths.descr_stats, 'sim', 'sim_100_msc', 't_wise_stats')
         tw_sim_100_aw = {}  # trial wise stats each agent over all blocks
         for agent in ['A1', 'A2', 'A3']:
             tw_sim_100_aw[agent] = pd.read_pickle(
-                f'{self.tw_sim_100_fn}_agent-Agent {agent}.pkl')
+                f'{tw_sim_100_fn}_agent-Agent {agent}.pkl')
         return tw_sim_100_aw
 
 
 @dataclass
 class TaskDesignParameters:
-    """A Class to store experimental parameters
+    """A data class to store experimental parameters
 
     Attributes
     ----------
-    n_blocks : int
-        number of blocks in one run;
-    n_rounds : int
-        number of rounds in one block
-    n_trials : int
-        number of trials in one run
-    dim : int
-        size (i.e. no. of rows and columns) in the 2-dimensional grid
-    n_hides : int
-        number of hiding spots in the grid world
-    n_nodes : int
-        number of fields in the grid world
+    n_blocks (int): number of blocks in one run.
+    n_rounds (int): number of rounds in one block
+    n_trials (int): number of trials in one run
+    dim (int): size (i.e. no. of both, rows and columns) in the 2-dimensional
+        grid
+    n_hides (int): number of hiding spots in the grid world
+    n_nodes (int): number of fields in the grid world
     """
     n_blocks: int = 1
     n_rounds: int = 10
@@ -543,42 +592,41 @@ class TaskDesignParameters:
 
 
 class TaskConfigurator:
-    """A Class to create or load task configurations given a set of
-    experimental parameters or configuration label respectively.
-    Sampled task configuration npy files are written to config directory.
+    """A Class to create task configurations given a set of
+    experimental parameters (i.e. no. trials, dimension of the grid, etc.) or
+    load existend task configurations from disk given the label of a task
+    configuration.
 
-    Attributes
+    Configuration-specific task state values are stored in the instance
+    attribute "states (dict)".
+    Newly sampled task configuration are written to .npy files are written and
+    save in config directory on disk.
+
+    Args:
+    -----
+        path (Path): Instance of class Paths
+
+    Attributes:
     ----------
-    params: obj
-        Object of class TaskDesignParams
-    states : dict  # TODO
-        dict of {str : array_like}
-        s_1 : (n_blocks)x(n_rounds)-dimensional array with values for
-        starting positions
-        s_3: (n_blocks)x(n_rounds)-dimensional array with values for
-        treasure locations
-        hides_loc: (n_blocks)x(n_hides)-dimensional array with values
-        for hiding spot locations
+        params (TaskDesignParameters): Instance of class TaskDesignParams
+        states (dict of str: np.ndarray): Configuration-specific state values
+            "s_1" : (n_blocks)x(n_rounds)-array of values indicating starting
+                node positions of each round
+            "s_3": (n_blocks)x(n_rounds)-array of values indicating treasure
+                locations
+            "hides_loc": (n_blocks)x(n_hides)-array of values indicating hiding
+                spot locations
     """
 
-    new_config_needed = False
-    config_label = None
-    # Initialize task states
-    states = {}
     params = TaskDesignParameters()
 
-    def __init__(self, path):
-        """
-
-        Parameters
-        ----------
-        path: Paths
-        """
+    def __init__(self, path: Paths):
         self.paths = path
+        self.states = {}
 
     def get_user_input(self):
-        """Get user input for simulation task configuration
-        """
+        """Method to get user input to create new task configurations"""
+
         n_blocks = "as in loaded configuration"
         new_config_needed = get_user_yes_no("Create new task configuration?")
         if new_config_needed:
@@ -604,14 +652,19 @@ class TaskConfigurator:
                     break
         return new_config_needed, config_label, n_blocks
 
-    def add_config_paths(self, config_label):
-        """Add path to this task configurations config files dir to path obj"""
+    def add_config_paths(self, config_label: str):
+        """Add path to this task configurations config files dir to path obj
+
+        Args:
+        -----
+            config_label (str): Name of task configuration, e.g. "exp_msc"
+        """
         self.paths.this_config = os.path.join(
             self.paths.task_configs, config_label)
 
     def sample_hiding_spots(self):
-        """Sample hiding spots from a discrete uniform distribution over
-         all nodes (without replacement)"""
+        """Method to sample hiding spots from a discrete uniform distribution
+        over all nodes (without replacement)"""
         hides_loc = np.empty((self.params.n_blocks,
                              self.params.n_hides), dtype=int)
         for block in range(self.params.n_blocks):
@@ -622,8 +675,8 @@ class TaskConfigurator:
         self.states['hides'] = hides_loc
 
     def sample_start_pos(self):
-        """Sample the starting position from a discrete uniform distribution
-        over all nodes"""
+        """Method to sample the starting position from a discrete uniform
+        distribution over all nodes"""
         s_1 = np.full((self.params.n_blocks,
                        self.params.n_rounds), np.nan)
         for block in range(self.params.n_blocks):
@@ -633,8 +686,8 @@ class TaskConfigurator:
         self.states['s_1'] = s_1
 
     def sample_treasure_loc(self):
-        """Sample the tr location from a discrete uniform distribution over all
-        hiding spots"""
+        """Method to sample the tr location from a discrete uniform
+        distribution over all hiding spots"""
         s_3 = np.full((self.params.n_blocks,
                        self.params.n_rounds), np.nan)
         for block in range(self.params.n_blocks):
@@ -649,7 +702,7 @@ class TaskConfigurator:
         self.states['s_3'] = s_3
 
     def save_task_config(self):
-        """Save newly sampled task states to task config directory"""
+        """Method to save newly sampled task states to task config directory"""
         os.makedirs(self.paths.this_config)
         for key, value in self.states.items():
             np.save(os.path.join(self.paths.this_config, f'{key}.npy'), value)
@@ -681,7 +734,7 @@ class TaskConfigurator:
             tsv_file.write(all_block_df.to_csv(sep='\t', index=False))
 
     def sample_task_config(self):
-        """Sample all task states s1, s3 and s4 for all trials/rounds
+        """Method to sample all task states s1, s3 and s4 for all trials/rounds
         and return dict with states"""
         self.sample_hiding_spots()
         self.sample_start_pos()
@@ -689,18 +742,28 @@ class TaskConfigurator:
         self.save_task_config()
 
     def load_task_config(self):
-        """Load existing task configuration files from task config directory"""
+        """Method to load existing task configuration files from task config
+        directory"""
         for item in ['s_1', 's_3', 'hides']:
             self.states[item] = np.load(
                 os.path.join(self.paths.this_config, f'{item}.npy'))
 
-    def get_config(self, config_label: str):
-        """Create or load task configuration according to user input"""
+    def get_config(self, config_label: str, new_config_requ: bool = False):
+        """Method to create or load task configuration
 
-        new_config_is_needed = False
+        Args:
+        -----
+            config_label (str): Name of task configuration, e.g. "exp_msc"
+            new_config_requested (bool, optional): If True, samples
+                new task configurations and saves it under given label to disk.
+                    Loads existing configuration otherwise. Defaults to False.
+
+        Returns:
+            TODO: TODO
+        """
         n_blocks = 3
         self.add_config_paths(config_label)
-        if new_config_is_needed:
+        if new_config_requ:
             self.params.n_blocks = n_blocks
             self.sample_task_config()
         else:
@@ -712,8 +775,8 @@ class TaskConfigurator:
 
 
 def get_arguments():
-    """Get arguments from environment, if script is executed from command line
-    or with a bash jobwrapper."""
+    """Function to fetch arguments from environment, if script is executed from
+    command line or called within a sehllscript, e.g. jobwrapper."""
     parser = argparse.ArgumentParser(description='Run model validation.')
     parser.add_argument('--parallel_computing', action="store_true")
     parser.add_argument('--version', type=str, default="")

@@ -27,33 +27,33 @@ n_block_this_label = {'exp_msc': 3, 'sim_100_msc': 100, 'test': 3, 'rm': 3,
 n_blocks = n_block_this_label[exp_label]
 
 # Specify directories and create if not existent
-working_dir = os.path.dirname(os.path.abspath(__file__))
-project_dir = os.sep.join(working_dir.split(os.sep)[:4])
-data_dir = os.path.join(project_dir, 'data')
-results_dir = os.path.join(project_dir, 'results')
-figures_dir = os.path.join(project_dir, 'figures')
-input_data_dir = os.path.join(
-    data_dir, 'rawdata', f'{dataset}', f'{exp_label}')
-out_proc_data_dir = os.path.join(
-    data_dir, 'processed_data', f'{dataset}', f'{exp_label}')
-out_descr_stats_dir = os.path.join(
-    results_dir, 'descr_stats', f'{dataset}', f'{exp_label}')
-out_fig_dir = os.path.join(figures_dir, f'{dataset}', f'{exp_label}')
-if not os.path.exists(out_proc_data_dir):
-    os.makedirs(out_proc_data_dir)
-if not os.path.exists(out_descr_stats_dir):
-    os.makedirs(out_descr_stats_dir)
-if not os.path.exists(out_fig_dir):
-    os.makedirs(out_fig_dir)
+working = os.path.dirname(os.path.abspath(__file__))
+project = os.sep.join(working.split(os.sep)[:4])
+data = os.path.join(project, 'data')
+results = os.path.join(project, 'results')
+figures = os.path.join(project, 'figures')
+input_data = os.path.join(
+    data, 'rawdata', f'{dataset}', f'{exp_label}')
+out_proc_data = os.path.join(
+    data, 'processed_data', f'{dataset}', f'{exp_label}')
+out_descr_stats = os.path.join(
+    results, 'descr_stats', f'{dataset}', f'{exp_label}')
+out_fig = os.path.join(figures, f'{dataset}', f'{exp_label}')
+if not os.path.exists(out_proc_data):
+    os.makedirs(out_proc_data)
+if not os.path.exists(out_descr_stats):
+    os.makedirs(out_descr_stats)
+if not os.path.exists(out_fig):
+    os.makedirs(out_fig)
 
 # Define file names
-part_fn = os.path.join(input_data_dir, 'participants.tsv')
+part_fn = os.path.join(input_data, 'participants.tsv')
 events_all_subs_fn = os.path.join(
-    out_proc_data_dir, f'sub-all_task-th_run-all_beh')
-descr_stats_fn = os.path.join(out_descr_stats_dir, 'descr_stats')
-grp_lvl_stats_fn = os.path.join(out_descr_stats_dir, 'grp_lvl_stats')
-t_wise_stats_fn = os.path.join(out_descr_stats_dir, 't_wise_stats')
-r_wise_stats_fn = os.path.join(out_descr_stats_dir, 'r_wise_stats')
+    out_proc_data, f'sub-all_task-th_run-all_beh')
+descr_stats_fn = os.path.join(out_descr_stats, 'descr_stats')
+grp_lvl_stats_fn = os.path.join(out_descr_stats, 'grp_lvl_stats')
+t_wise_stats_fn = os.path.join(out_descr_stats, 't_wise_stats')
+r_wise_stats_fn = os.path.join(out_descr_stats, 'r_wise_stats')
 
 # Initialize or Load dataframes for event and descr stats
 edited_events_all_subs = False
@@ -75,7 +75,7 @@ if os.path.exists(f'{events_all_subs_fn}.pkl'):
     # Load events block (run) wise all subs
     for block_, block_df in events_all_subs_bw.items():
         events_all_subs_bw[block_] = pd.read_pickle(os.path.join(
-            out_proc_data_dir, f'sub-all_task-th_run-{block_:02d}_beh.pkl'))
+            out_proc_data, f'sub-all_task-th_run-{block_:02d}_beh.pkl'))
 else:
     events_all_subs_df = pd.DataFrame()
     edited_events_all_subs = True
@@ -108,7 +108,7 @@ else:
     edited_r_wise_stats = True
 
 # Create file list for all subjects
-ev_file_list = glob.glob(input_data_dir + '/*/*/sub-*_task-th_beh.tsv')
+ev_file_list = glob.glob(input_data + '/*/*/sub-*_task-th_beh.tsv')
 ev_file_list.sort()
 
 # Initialize id list
@@ -132,21 +132,21 @@ for index, events_fn in enumerate(ev_file_list):
 
             # Check if processed data existent
             proc_data_fn = os.path.join(
-                out_proc_data_dir, f'sub-{sub_id}_task-th_run-all_beh')
+                out_proc_data, f'sub-{sub_id}_task-th_run-all_beh')
             if os.path.exists(f'{proc_data_fn}.pkl'):
                 print(f'unpacking sub-{sub_id} proc_events.pkl')
                 events_this_sub_df = pd.read_pickle(f'{proc_data_fn}.pkl')
 
             # Check separately, if processed data block wise existent
             events_bw_run1_this_sub_fn = \
-                f'{out_proc_data_dir}/sub-{sub_id}_task-th_run-01_beh.pkl'
+                f'{out_proc_data}/sub-{sub_id}_task-th_run-01_beh.pkl'
             if os.path.exists(events_bw_run1_this_sub_fn):
                 events_block_this_sub = {}
                 # Unpack each run's (block's) event dataframe and write to dict
                 for run_number in range(n_blocks):
                     block_ = run_number + 1
                     events_block_this_sub[block_] = pd.read_pickle(
-                        f'{out_proc_data_dir}/'
+                        f'{out_proc_data}/'
                         f'sub-{sub_id}_task-th_run-{block_:02d}_beh.pkl')
 
             else:
@@ -357,9 +357,9 @@ if edited_events_all_subs:
     # TODO: bw-events not robust!
     for block_, block_df in events_all_subs_bw.items():
         block_df.to_pickle(
-            f'{out_proc_data_dir}/sub-all_task-th_run-{block_:02d}_beh.pkl')
+            f'{out_proc_data}/sub-all_task-th_run-{block_:02d}_beh.pkl')
         with open(
-                f'{out_proc_data_dir}/'
+                f'{out_proc_data}/'
                 f'sub-all_task-th_run-{block_:02d}_beh.tsv', 'w') as f:
             f.write(block_df.to_csv(sep='\t', na_rep='n/a'))
 if edited_descr_stats:

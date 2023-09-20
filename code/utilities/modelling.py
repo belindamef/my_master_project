@@ -19,10 +19,10 @@ class BehavioralModel:
     log_likelihood: float = np.nan
     action_t = np.nan  # agent action
 
-    def __init__(self, tau: float, agent_object: Agent):
+    def __init__(self, tau_gen: float, agent_object: Agent):
 
         self.agent: Agent = agent_object
-        self.tau = tau  # decision noice parameter
+        self.tau = tau_gen  # decision noice parameter
 
     def eval_p_a_giv_tau(self):
         """Evaluate conditional probability distribution of actions given the
@@ -37,7 +37,7 @@ class BehavioralModel:
         self.rvs = rng.multinomial(1, self.p_a_giv_h)
 
     def return_action(self):
-        """This function returns the action value given agent's decision."""
+        """let behavioral model return action value given agent's decision."""
         # probability action given decision of 1
         if (np.isnan(self.tau) or self.tau == 0):
             self.action_t = cp.deepcopy(self.agent.decision_t)

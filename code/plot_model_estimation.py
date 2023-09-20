@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""This script plots model fitting for experimental data
+"""This script plots model validation with experimental data
 performance results: BICs"""
 import math
 import numpy as np
@@ -18,7 +18,7 @@ def plot_model_est_results(
                                           version=vers)
     data_loader = DataHandler(dir_mgr.paths, exp_label=exp_label)
     all_bics_df = data_loader.load_data_in_one_folder(
-        folder_path=dir_mgr.paths.this_model_est_results_dir
+        folder_path=dir_mgr.paths.this_model_est_results
         )
 
     bic_of_analizing_models = [

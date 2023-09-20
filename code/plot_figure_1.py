@@ -19,7 +19,7 @@ def main():
                                          make_dir=False)
 
     data_loader = DataHandler(dir_mgr.paths, EXP_LABEL)
-    exp_ev_all_subs_df = data_loader.load_exp_events()
+    exp_ev_all_subs_df = data_loader.load_proc_exp_events()
 
     grp_lvl_stats_sim_100 = data_loader.load_sim100_group_lvl_stats()
 

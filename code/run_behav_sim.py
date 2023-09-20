@@ -108,7 +108,7 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     EXP_LABEL = "exp_msc"
-    OUT_DIR_LABEL = "test_debug_08_23"
+    OUT_DIR_LABEL = "test_debug_09_19"
 
     # Define repetition_parameters
     N_REPS = 1

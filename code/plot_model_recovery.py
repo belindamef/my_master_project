@@ -26,7 +26,7 @@ def plot_model_recov_results(
     dir_mgr.define_grp_lvl_model_validation_results_fn_s()
     data_handler = DataHandler(dir_mgr.paths, exp_label=exp_label)
     sub_lvl_recov_results_df = data_handler.load_data_in_one_folder(
-        folder_path=dir_mgr.paths.this_model_recov_sub_lvl_results_dir
+        folder_path=dir_mgr.paths.this_model_recov_sub_lvl_results
         )
     grp_lvl_recov_results_df = data_handler.load_data_single_tsv(
         f"{dir_mgr.paths.grp_lvl_model_recovery_results_fn}.tsv"
