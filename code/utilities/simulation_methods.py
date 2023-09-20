@@ -11,7 +11,7 @@ import numpy as np
 from .task import Task
 from .agent import AgentAttributes, Agent, BayesianModelComps
 from .modelling import BehavioralModel
-from .config import TaskConfigurator
+from .config import TaskConfigurator, humanreadable_time
 np.set_printoptions(linewidth=500)
 
 
@@ -344,7 +344,11 @@ class Simulator():
         self.task.start_new_trial(this_trial)
         self.agent.start_new_trial()
         self.task.return_observation()
+        start = time.time()
         self.agent.update_belief_state(current_action=self.beh_model.action_t)
+        end = time.time()
+        print(f"agent belief state update, "
+              f"time needed: {humanreadable_time(end-start)} \n")
 
     def simulate_trial_interaction(self):
         """Method to simulate the agent-task interaction,
@@ -429,8 +433,9 @@ class Simulator():
     def sim_to_eval_llh(self, candidate_tau: float, candidate_lambda: float,
                         candidate_agent: str, data: pd.DataFrame) -> float:
         """Simulate trialwise interactions between agent and task to evaluate
-        the llh function value for a given tau and lambda and given data,
-        as sum of llh values over all trials
+        the conditional loglikelihood (llh) function value for a given
+        theta=(tau, lambda) and given data, as sum of llh values over all
+        trials.
 
         Args:
         -----
@@ -441,7 +446,13 @@ class Simulator():
 
         Returns:
         -------
-            float: Model loglikelihood given candidate parameters
+            float: Candidate models conditional llh function value for given
+                dataset
+
+        Notes:
+        -----
+            Conditional loglikelihood (llh) function refers to the formal
+            expression p^{theta}(a_n|a_{1:n}, o_{1:n})
         """
 
         # Read task design parameters from dataset
@@ -452,33 +463,36 @@ class Simulator():
         # Initialize llh recording array
         llhs_all_blocks = np.full((n_blocks, 1), np.nan)
 
-# TODO: hier weiter
         for block in range(n_blocks):
             self.create_interacting_objects(candidate_agent, block,
                                             candidate_tau, candidate_lambda)
-            llhs_all_rounds = np.full((n_rounds, 1), np.nan)
+            llhs_all_rounds = np.full((n_rounds, 1), np.nan)  # Init record df
 
             for round_ in range(n_rounds):
 
-                llhs_all_trials = np.full((n_trials, 1), np.nan)
+                llhs_all_trials = np.full((n_trials, 1), np.nan)  # Init rec df
 
+                # Extract this round's data
                 data_this_round = data[(
                             data.block == block + 1) & (
                             data.round_ == round_ + 1)]
 
+                # Let task and agent object start new round
                 self.task.start_new_round(block, round_)
                 self.agent.start_new_round(round_)
 
                 for trial in range(n_trials):
 
+                    # Extract this trial's data
                     data_this_trial = data_this_round.query(
                         'trial == (@trial + 1)')
 
+                    # Simulate agent-task-interaction
                     self.simulate_trial_start(trial)
 
                     self.simulate_trial_interation_for_llh_evaluation(
                         data_s_action=data_this_trial.a.item()
-                    )
+                        )
 
                     # End round, if treasure discovered
                     if self.task.r_t == 1:
@@ -487,8 +501,14 @@ class Simulator():
                         self.agent.update_belief_state(self.beh_model.action_t)
                         break
 
+                    # Record log likelihood
+                    # ------------------------
+
+                    # For control agents, use action valence
                     if np.isnan(candidate_tau):
                         prob_data_giv_action = self.agent.valence_t
+
+                        # Work-around to avoid divide zero error
                         prob_data_giv_action[prob_data_giv_action == 0] = 0.001
                         prob_data_giv_action = prob_data_giv_action / sum(
                             prob_data_giv_action)
@@ -497,7 +517,7 @@ class Simulator():
                             prob_data_giv_action[np.where(
                                 self.agent.a_s1 == self.beh_model.action_t)]
                                 )
-
+                    # For Bayesian agents, use conditional llh function value
                     else:
                         llhs_all_trials[trial] = self.beh_model.log_likelihood
 

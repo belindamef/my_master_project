@@ -74,10 +74,15 @@ def adjust_lambda_gen_space(sim_params: SimulationParameters):
 
 
 def define_estimation_parameters() -> EstimationParameters:
-    """_summary_
+    """Function to define agent model and parameter candidate spaces for brute
+    force estimations. If this script was called from command line or
+    shellscript, values are set to passed arguments during script call, or set
+    to hardcoded values otherwise.
 
     Returns:
-        EstimationParameters: _description_
+    --------
+        EstimationParameters: Dataclass object storing estimation parameter
+            values
     """
     estim_params = EstimationParameters()
     if arguments.parallel_computing:
@@ -93,10 +98,15 @@ def define_estimation_parameters() -> EstimationParameters:
 
 
 def define_validation_parameters() -> ValidationParameters:
-    """_summary_
+    """Function to define validation parameter (number of repetions and 
+    participants). If this script was called from command line or
+    shellscript, values are set to passed arguments during script call, or set
+    to hardcoded values otherwise.
 
     Returns:
-        ValidationParameters: _description_
+    -------
+        ValidationParameters: Dataclass object storing validation parameter
+            values
     """
     val_params = ValidationParameters()
     if arguments.parallel_computing:
@@ -154,7 +164,7 @@ def run_model_recovery_routine(sim_params: SimulationParameters,
     Note:
     -----
         Function is robust, in that it will skip routine for subjects if
-        respective output already exists.
+            respective output already exists.
     """
     # Prepare ouput path
     dir_mgr.define_model_recov_results_path(exp_label=EXP_LABEL,
@@ -197,6 +207,7 @@ def run_model_recovery_routine(sim_params: SimulationParameters,
 
                         # Run routine, only if results don't exist on disk
                         if not outfile_thisparams_exists:
+
                             # Evaluate model recovery performance
                             recovery_results = validator.run_model_recovery()
 
@@ -216,7 +227,8 @@ def run_model_est_routine(val_params: ValidationParameters,
     <val_params.n_repetition> times.
 
     Args:
-    -----
+    -----agent model and parameter candidate spaces for brute
+    -force estimations
         val_params (ValidationParameters): Validaton parameters
             (i.e., n_repetions, n_participants)
         validator (Validator): Object to run model validation analyses.
@@ -270,6 +282,7 @@ def run_model_est_routine(val_params: ValidationParameters,
 
             # Run routine, only if results don't exist on disk
             if not outfile_thisparams_exists:
+
                 # Evaluate model estimation performances
                 estimation_results = validator.run_model_estimation(
                     data=this_participants_data)
@@ -382,6 +395,7 @@ if __name__ == "__main__":
     # Define task configuration and version labels
     EXP_LABEL = "exp_msc"  # "exp_msc" for master project task configuration
     VERSION = "res-3_0918"  # Will be added to output directory path name
+    VERSION = "debug_0920"  # Will be added to output directory path name
 
     # Define number of repetitions and participants (only applied for recovery)
     N_REPS = 1

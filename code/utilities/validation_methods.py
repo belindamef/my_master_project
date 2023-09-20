@@ -156,15 +156,15 @@ class Validator:
 
         Args:
         ----
-            tau_estimate (float): _description_
+            tau_estimate (float): tau estimate value
         """
         self.data_dic["tau_mle"].append(tau_estimate)
 
     def record_lambda_estimate(self, lambda_estimate: float):
-        """_summary_
+        """Method to record tau estimate
 
         Args:
-            lambda_estimate (float): _description_
+            lambda_estimate (float): lambda estimate value
         """
         self.data_dic["lambda_mle"].append(lambda_estimate)
 
@@ -205,8 +205,8 @@ class Validator:
 
         Args:
         ----
-            data (pd.DataFrame): Behavioral data to be used for parameter
-                estimation
+            data (pd.DataFrame): (n_events x n_meausures)-dataframe of
+                behavioral data
         """
         self.estimator.estimate_parameters(
             data=data,
@@ -224,18 +224,22 @@ class Validator:
         self.record_lambda_estimate(mle_lambda_est)
 
     def evaluate_bics(self, data: pd.DataFrame, datatype: str):
-        """Method to evaluate BICs
+        """Method to let estimator object evaluate BICs (and mll estimates
+        as side produkt...) and record values. 
 
         Args:
         ----
-            data (pd.DataFrame): Behavioral data to be used for parameter
-                estimation
+            data (pd.DataFrame): (n_events x n_meausures)-dataframe of
+                behavioral data
             datatype (str): "sim" for simulated dataset, "exp" for experimental
                 dataset
         """
-        bics = self.estimator.evaluate_bic_s(est_method="brute_force",
+        # Let estimator run estimations
+        bics = self.estimator.evaluate_bic_s(method="brute_force",
                                              data=data,
                                              data_type=datatype)
+
+        # Record results
         self.record_bics(bics)
         self.record_mlls(self.estimator.mll_results)
         n_valid_action_choices = data.a.count()
@@ -294,9 +298,14 @@ class Validator:
         return pd.DataFrame(self.data_dic)
 
     def run_model_estimation(self, data: pd.DataFrame) -> pd.DataFrame:
-        """Method to run model estimation rountine. For one participant's
-        behavioral data, this method evaluates model validation performance
-        (i.e. MLL and BIC)
+        """Method to run model estimation for one participant's
+        behavioral data, this method evaluates model validation performances
+        (i.e. MLL and BIC) for each candidate model.
+
+        Args:
+        -----
+            data (pd.DataFrame): (n_events x n_meausures)-dataframe of
+                behavioral data
 
         Returns:
         -------
@@ -306,12 +315,12 @@ class Validator:
         self.init_data_dic(validation_type="model_estimation")
         self.record_participant_number()
 
-        # Instantiate simulation object for mll estimations
+        # Instantiate simulation-obj within estimator-obj for mll estimations
         self.estimator.instantiate_sim_obj(
             task_configs=self.simulator.task_configs,
             bayesian_comps=self.simulator.bayesian_comps)
 
-        # Start 
+        # Start estimations
         print("Running model estimation with experimental data ",
               f"from participant {self.val_params.current_part} ...")
         start = time.time()

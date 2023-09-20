@@ -72,7 +72,7 @@ class BMCObject:
 
     TODO:
     -----
-    !
+    !!!
 
     Attributes:
     -----------
@@ -109,7 +109,7 @@ class Estimator:
     Attributes:
     ---------
         mll (np.ndarray): (1 x n_agents)-array of maximum log likelihoods. 
-        
+
     Args:
     -----
         estim_params (EstimationParameters): _description_
@@ -128,7 +128,7 @@ class Estimator:
         self.est_params = estim_params
         self.mll_results = np.full((1,
                                     len(estim_params.agent_candidate_space)),
-                                    np.nan)
+                                   np.nan)
 
     def instantiate_sim_obj(self, task_configs: TaskConfigurator,
                             bayesian_comps: BayesianModelComps):
@@ -153,7 +153,7 @@ class Estimator:
 
     def eval_llh_data_no_params(self, candidate_agent: str,
                                 data: pd.DataFrame):
-        """Method to evaluate the "likelihood" of data. For control models
+        """Method to evaluate the likelihood for control models
         without parameters
 
         Args:
@@ -271,7 +271,7 @@ class Estimator:
                                     data: pd.DataFrame):
         """Method to evaluate the maximum likelihood estimation of the
         2-dimensional parameter space theta=(tau, lambda) based on dataset of
-        one participant with brute force method.
+        one participant with brute-force method.
 
         tau is the decision noise parameter and lambda the weighting parameter.
     
@@ -309,34 +309,6 @@ class Estimator:
             self.lambda_est_result_current_cand_agent = ml_lambda
             self.max_llh_current_cand_agent = np.max(llh_function)
 
-    def estimate_tau(self, method: str, candidate_agent: str,
-                     data: pd.DataFrame):
-        """Method to start parameter estimation using a method of choice.
-
-        Note:
-        -----
-            So far, only brute-force implemented
-
-        Args:
-        -----
-            method (str): If "brute-force"
-            candidate_agent (str): Current candidate agent
-                data (pd.DataFrame): (n_events x n_meausures)-dataframe of
-                behavioral data
-        """
-
-        if method == "brute_force":
-            self.eval_brute_force_est_tau(candidate_agent=candidate_agent,
-                                          data=data)
-
-    def estimate_tau_lambda(self, method: str, candidate_agent: str,
-                            data: pd.DataFrame):
-        """Estimate two-dimensional parameter vektor, tau and lambda"""
-
-        if method == "brute_force":
-            self.eval_brute_force_tau_lambda(candidate_agent=candidate_agent,
-                                             data=data)
-
     def estimate_parameters(self, data: pd.DataFrame,
                             method: str, candidate_agent: str,
                             task_configs: TaskConfigurator,
@@ -344,8 +316,10 @@ class Estimator:
         """_summary_
 
         Args:
-            data (pd.DataFrame): _description_
-            method (str): _description_
+            data (pd.DataFrame): (n_events x n_meausures)-dataframe of
+                behavioral data
+            method (str): _descrEstimation method. So far, only brute-force
+                implementediption_
             candidate_agent (str): _description_
             task_configs (TaskConfigurator): _description_
             bayesian_comps (BayesianModelComps): _description_
@@ -357,30 +331,34 @@ class Estimator:
             )
 
         # Set candidate agent model to generating agent
-        self.current_cand_agent = candidate_agent
-
+        self.current_cand_agent = candidate_agent  # TODO: redundant?
         self.reset_result_variables()
 
         if "C" in candidate_agent:
             pass
 
         elif candidate_agent in ["A1", "A2"]:
-            self.estimate_tau(method=method, candidate_agent=candidate_agent,
-                              data=data)
+            if method == "brute_force":
+                self.eval_brute_force_est_tau(candidate_agent=candidate_agent,
+                                              data=data)
 
         else:  # if candidate_agent == "A3"
-            self.estimate_tau_lambda(method=method,
-                                     candidate_agent=candidate_agent,
-                                     data=data)
+            if method == "brute_force":
+                self.eval_brute_force_tau_lambda(
+                    candidate_agent=candidate_agent,
+                    data=data)
 
-    def eval_llh_data(self, candidate_agent: str, method: str,
-                      data: pd.DataFrame):
-        """_summary_
+    def eval_llh_this_cand_agent(self, candidate_agent: str, method: str,
+                                 data: pd.DataFrame):
+        """Method to evaluate mll or likelihood of data and mll estimates with
+        given estimation method.
 
         Args:
             candidate_agent (str): _description_
-            method (str): _description_
-            data (pd.DataFrame): _description_
+            method (str): Estimation method. So far, only brute-force
+                implemented
+            data (pd.DataFrame): (n_events x n_meausures)-dataframe of
+                behavioral data
         """
         if "C" in candidate_agent:
             self.eval_llh_data_no_params(
@@ -388,14 +366,16 @@ class Estimator:
                 data=data)
 
         elif candidate_agent in ["A1", "A2"]:
-            self.estimate_tau(method=method,
-                              candidate_agent=candidate_agent,
-                              data=data)
+            if method == "brute_force":
+                self.eval_brute_force_est_tau(
+                    candidate_agent=candidate_agent,
+                    data=data)
 
         elif candidate_agent == "A3":
-            self.estimate_tau_lambda(method=method,
-                                     candidate_agent=candidate_agent,
-                                     data=data)
+            if method == "brute_force":
+                self.eval_brute_force_tau_lambda(
+                    candidate_agent=candidate_agent,
+                    data=data)
 
     def determine_n_parameters(self, agent_model_name: str) -> int:
         """_summary_
@@ -432,15 +412,28 @@ class Estimator:
         return this_bic
 
     def evaluate_pep_s(self, val_results_df: pd.DataFrame,
-                       data_type: str):
-        
+                       data_type: str) -> pd.DataFrame:
+        """Evaluate PEPs
+
+        Args:
+        -----
+            val_results_df (pd.DataFrame): (n_subject x n_val_result_measures)-
+                dataframe containing subj-lvl validation results
+            data_type (str): "sim" for simulated dataset or "exp" for
+                experimental dataset
+
+        Returns:
+        --------
+            pd.DataFrame: (1 x n_candidate_agents)-dataframe of PEP values
+        """
+
         peps_df = pd.DataFrame()
 
         mll_col_names = [col_name for col_name in val_results_df.columns
                          if "MLL" in col_name]
         bic_col_names = [col_name for col_name in val_results_df.columns
                          if "BIC" in col_name]
-        
+
         analizing_agents = sorted(list(set(
             [mll_col_name[-2:] for mll_col_name in mll_col_names
              ])), key=custom_sort_key)
@@ -460,8 +453,8 @@ class Estimator:
                 this_agents_df = val_results_df[val_results_df.agent == agent_gen]
 
                 for tau_gen in this_agents_df.tau_gen.unique():
-                    recording_dic["tau_gen"] =tau_gen
-            
+                    recording_dic["tau_gen"] = tau_gen
+
                     if "A" in agent_gen:
                         this_taus_df = this_agents_df[this_agents_df.tau_gen == tau_gen]
                     else:  # if "C" in agent
@@ -478,22 +471,24 @@ class Estimator:
 
                         mll_df = this_lambdas_df[
                             col_names_for_mll_array].set_index("participant")
-                        mll_df.rename(columns=lambda x: x[-2:], inplace=True)  # Rename columns to hold agent name only
+                        # Rename columns to hold agent name only
+                        mll_df.rename(columns=lambda x: x[-2:], inplace=True)
                         mll_array = xr.DataArray(
                             mll_df, dims=("participant", "analizing_agent"))
-                        
+
                         bic_df = this_lambdas_df[
                             col_names_for_bic_array].set_index("participant")
-                        bic_df.rename(columns=lambda x: x[-2:], inplace=True)  # Rename columns to hold agent name only
+                        # Rename columns to hold agent name only
+                        bic_df.rename(columns=lambda x: x[-2:], inplace=True)
                         bic_array = xr.DataArray(
                             mll_df, dims=("participant", "analizing_agent"))
 
                         bmc_object = BMCObject(mll=np.array(mll_array),
-                                            bic=np.array(bic_array),
-                                            n=np.full((1, n_models),
-                                                        320),  # dummy n TODO: save during mll estimation
-                                                        k=np.array([[0, 0, 0, 1, 1, 2]])
-                                            )
+                                               bic=np.array(bic_array),
+                                               n=np.full((1, n_models),
+                                                         320),  # dummy n TODO: save during mll estimation
+                                               k=np.array([[0, 0, 0, 1, 1, 2]])
+                                               )
 
                         abm_bmc.abm_bmc(bmc=bmc_object)
 
@@ -501,7 +496,8 @@ class Estimator:
                             recording_dic[
                                 f"PEP_{analizing_agent}"] = [bmc_object.phi[i]]
 
-                        this_gen_params_and_models_peps = pd.DataFrame(recording_dic)  # TODO: hier weiter
+                        this_gen_params_and_models_peps = pd.DataFrame(
+                            recording_dic)
 
                         peps_df = pd.concat(
                             [peps_df, this_gen_params_and_models_peps],
@@ -511,13 +507,15 @@ class Estimator:
             recording_dic = {}
             mll_df = val_results_df[
                 col_names_for_mll_array].set_index("participant")
-            mll_df.rename(columns=lambda x: x[-2:], inplace=True)  # Rename columns to hold agent name only
+            # Rename columns to hold agent name only
+            mll_df.rename(columns=lambda x: x[-2:], inplace=True)
             mll_array = xr.DataArray(
                 mll_df, dims=("participant", "analizing_agent"))
             
             bic_df = val_results_df[
                 col_names_for_bic_array].set_index("participant")
-            bic_df.rename(columns=lambda x: x[-2:], inplace=True)  # Rename columns to hold agent name only
+            # Rename columns to hold agent name only
+            bic_df.rename(columns=lambda x: x[-2:], inplace=True)
             bic_array = xr.DataArray(
                 mll_df, dims=("participant", "analizing_agent"))
 
@@ -542,49 +540,62 @@ class Estimator:
 
         return peps_df
 
-    def evaluate_bic_s(self, data: pd.DataFrame, est_method: str,
+    def evaluate_bic_s(self, data: pd.DataFrame, method: str,
                        data_type: str) -> dict:
-        """_summary_
+        """Method to evaluate mll estimates and BIC for each candidate agent
+        model
 
         Args:
-            data (pd.DataFrame): _description_
-            est_method (str): _description_
-            data_type (str): _description_
+        ----
+            data (pd.DataFrame): (n_events x n_meausures)-dataframe of
+                behavioral data
+            method (str): Estimation method. So far, only brute-force
+                implemented
+            data_type (str): "sim" for simulated dataset or "exp" for
+                experimental dataset
 
         Returns:
-            dict: _description_
+        -----
+            dict of str: flaoat: Agent specific BIC values.
+                <key> (str): agent
+                <value> (float): BIC values
         """
+        # Initialize recording dic
         agent_specific_bic_s = {
             "BIC_C1": np.nan, "BIC_C2": np.nan, "BIC_C3": np.nan,
             "BIC_A1": np.nan, "BIC_A2": np.nan, "BIC_A3": np.nan
-        }
+            }
 
         for i, agent_model in enumerate(self.est_params.agent_candidate_space):
             self.current_cand_agent = agent_model
 
+            # Get k and n to eval BIC
             n_params = self.determine_n_parameters(agent_model)
             n_valid_choices = data.a.count()
 
+            # Use ml estimates from parameter recovery, only existent if...
+            # ... candidate agent == generating agent
             if data_type == "sim":
                 if ("A" in agent_model and
                         agent_model == data.iloc[0]["agent"]):
                     max_llh_data = self.max_llh_current_gen_agent
                 else:
-                    self.eval_llh_data(candidate_agent=agent_model,
-                                       method=est_method,
-                                       data=data)
+                    self.eval_llh_this_cand_agent(candidate_agent=agent_model,
+                                                  method=method,
+                                                  data=data)
                     max_llh_data = self.max_llh_current_cand_agent
 
             else:  # if data_type == "exp"
-                self.eval_llh_data(candidate_agent=agent_model,
-                                   method=est_method,
-                                   data=data)
+                # Evaluate maximum loglikelihood for current candidate agent
+                self.eval_llh_this_cand_agent(candidate_agent=agent_model,
+                                              method=method,
+                                              data=data)
                 max_llh_data = self.max_llh_current_cand_agent
 
             # Record agent specific maximized loglikelihood
             self.mll_results[0, i] = max_llh_data
 
-            # Record agent specific BIC
+            # Evaluate and record agent specific BIC
             agent_specific_bic_s[
                 f"BIC_{agent_model}"] = self.eval_bic_giv_theta_hat(
                 llh_theta_hat=max_llh_data,

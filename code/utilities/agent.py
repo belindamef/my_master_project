@@ -467,27 +467,44 @@ class Agent:
 
     def eval_posterior(self, prior_belief_state, action, s_1, s2_giv_s1, obs
                        ) -> np.ndarray:
-        """Evaluate posterior belief state given prior, action, s1 and
-        observation"""
-        # Convert action value to 1, if step action
-        if action != 0:
-            action = 1
-        action = int(action)
+        """Method to evaluate posterior belief state given prior, action, s1
+        and observation
+
+        Args:
+        ----
+            prior_belief_state (np.ndarray): (n_nodes x n_s4_perms)-array of
+                the prior belief state.
+            action (int): Current action
+            s_1 (int): Current state s1 value
+            s2_giv_s1 (int): Current state s2[s1] value, i.e. node color
+                on current position s1
+            obs (int): Current observation
+
+        Returns:
+            np.ndarray: (n_nodes x n_s4_perms)-array of
+                the posterior belief state.
+        """
+        # Determine action type (informative or non-informative)
+        if action != 0:  # if step
+            action_type = 1
+        else:  # if drill
+            action_type = 0
+        action_type = int(action_type)
 
         if np.sum(prior_belief_state * self.bayes_comps.lklh[
-                action, s_1, s2_giv_s1, obs, :, :]) == 0:
+                action_type, s_1, s2_giv_s1, obs, :, :]) == 0:
             post_belief_state = (
                 prior_belief_state
-                * self.bayes_comps.lklh[action, s_1, s2_giv_s1, obs, :, :])
+                * self.bayes_comps.lklh[action_type, s_1, s2_giv_s1, obs, :, :])
             print('sum of prior * lklh = 0, leaving out normalization')
             # debug = 'here'
         else:
             post_belief_state = (
                 prior_belief_state
-                * self.bayes_comps.lklh[action, s_1, s2_giv_s1, obs, :, :]
+                * self.bayes_comps.lklh[action_type, s_1, s2_giv_s1, obs, :, :]
                 * (1 / np.sum(prior_belief_state
                               * self.bayes_comps.lklh[
-                                  action, s_1, s2_giv_s1, obs, :, :])))
+                                  action_type, s_1, s2_giv_s1, obs, :, :])))
 
         return post_belief_state
 
@@ -504,7 +521,10 @@ class Agent:
         for node in range(self.task.task_params.n_nodes):
             marg_s4_b[node] = belief[
                 :, self.bayes_comps.s4_perm_node_indices[node]].sum()
-        # sum_prob_hides = marg_s4_b[:].sum()
+
+        # Uncomment for debugging
+        # sum_prob_hides = marg_s4_b[:].sum()  # should evaluate to ~ n_hides
+        # sum_prob_treasure = marg_s3_b[:].sum()  # should evaluate to ~ 1
 
         return marg_s3_b, marg_s4_b
 
@@ -531,32 +551,45 @@ class Agent:
         #             self.eval_marg_b(self.prior_c)
 
     def update_belief_state(self, current_action):
-        """Update belief state"""
+        """Evaluate posterior belief state
+
+        Args:
+        -----
+            current_action (int): current action
+        """
+
+        # Only update if agent is bayesian, TODO: outsouce?
         if self.agent_attr.is_bayesian:
+
+            # ------ Define action and prior depending on current trial--------
+
+            # If first trial of task (i.e. before any action) use initial prior
+            # ...and step action (a=1).
             if self.task.current_round == 0 and self.task.current_trial == 0:
-                self.p_s_giv_o = self.eval_posterior(
-                    prior_belief_state=self.bayes_comps.prior_c0,
-                    action=1,
-                    s_1=self.task.s1_t,
-                    s2_giv_s1=self.task.s2_t[int(self.task.s1_t)],
-                    obs=self.task.o_t)
-
+                action = 1
+                prior = self.bayes_comps.prior_c0
+            
+            # If first trial in a new round, i.e. before any action,  pior_c
+            # ...which is the posterior of preceding round's last trial as
+            # ...prio and step action (a=1).
             elif self.task.current_trial == 0:
-                self.p_s_giv_o = self.eval_posterior(
-                    prior_belief_state=self.prior_c,
-                    action=1,
-                    s_1=self.task.s1_t,
-                    s2_giv_s1=self.task.s2_t[int(self.task.s1_t)],
-                    obs=self.task.o_t)
+                action = 1
+                prior = self.prior_c
 
+            # For all remaining trial use current action and posterior of
             else:
-                self.p_s_giv_o = self.eval_posterior(
-                    prior_belief_state=self.p_s_giv_o,
-                    action=current_action,
-                    s_1=self.task.s1_t,
-                    s2_giv_s1=self.task.s2_t[int(self.task.s1_t)],
-                    obs=self.task.o_t)
+                action = current_action
+                prior = self.p_s_giv_o
 
+            # ------Evaluate posterior----------------------------
+            self.p_s_giv_o = self.eval_posterior(
+                prior_belief_state=prior,
+                action=action,
+                s_1=self.task.s1_t,
+                s2_giv_s1=self.task.s2_t[int(self.task.s1_t)],
+                obs=self.task.o_t)
+
+            # ------ Evaluate marginal distributions-------------
             self.marg_s3_b, self.marg_s4_b = self.eval_marg_b(self.p_s_giv_o)
 
     def identify_a_giv_s1(self):
@@ -627,11 +660,16 @@ class Agent:
 
     def eval_p_o_giv_o(self):
         """Evaluate agent's belief state-dependent posterior predictive
-        distribution"""
+        distribution
+        
+        Note:
+        -----
+            Resulting self.p_o_giv_o is a (n_a_s1 x n_obs)-array"""
 
         # Evaluate p_0 with likelihood
         self.p_o_giv_o = np.full((len(self.a_s1), 4), 0.)
 
+        # Map action
         for i, action in enumerate(self.a_s1):
 
             new_s1 = self.task.s1_t + action
@@ -644,12 +682,19 @@ class Agent:
             self.identify_o_giv_s2_marg_s3(new_s1, action)
 
             for obs in self.o_s2:
+                # product_a_o.shape = (25 x 177100)
                 product_a_o = (self.p_s_giv_o
                                * self.bayes_comps.lklh[action, new_s1,
                                                        self.task.s2_t[new_s1],
                                                        obs, :, :])
+
                 sum_prod = np.sum(product_a_o)
                 self.p_o_giv_o[i, obs] = sum_prod
+
+        # Debugging ------------------------
+        test_tensor_dot_array = np.tensordot(
+            self.p_s_giv_o, self.bayes_comps.lklh, axes=([0, 1], [4, 5]))
+        stop = "here"
 
     @staticmethod
     def evaluate_kl_divergence(p_x, q_x):
@@ -682,7 +727,7 @@ class Agent:
         # end = time.time()
         # print(f'After masking zeros: {end - start}')
 
-        # Ensure KL is zero, if virtual postior and current belief state are 
+        # Ensure KL is zero, if virtual postior and current belief state are
         # equal
         if np.all(np.around(p_x, 10) == np.around(q_x, 10)):
             kl = 0.
@@ -883,8 +928,17 @@ class Agent:
             self.eval_closest_max_s3_b_nodes()
 
         if self.agent_attr.is_explorative:
+            start = time.time()
             self.eval_p_o_giv_o()
+            end = time.time()
+            print(
+                f"time needed for p_o_giv_o: {humanreadable_time(end-start)}")
+            
+            start = time.time()
             self.eval_kl()
+            end = time.time()
+            print(
+                f"time needed for kl: {humanreadable_time(end-start)}")
 
         # -------Evaluate valence and decision function----------
         # start = time.time()
