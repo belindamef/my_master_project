@@ -5,6 +5,7 @@ import os
 import time
 import pickle
 import numpy as np
+# import torch
 import more_itertools
 from utilities.task import Task
 from utilities.config import Paths, TaskDesignParameters, humanreadable_time
@@ -22,19 +23,14 @@ class BayesianModelComps:
     Newly computed model components are written to .npy files are written and
     save in code/utilities/ on disk.
 
-    Args:
-    -----
-        task_design_params (TaskDesignParameters, optional): Instance of data
-            class TaskDesignParameters.
-
     Attributes:
     -----------
         task_design_params (TaskDesignParameters): Instance of data
             class TaskDesignParameters.
 
-        paths(Paths): Instance of data class Paths.
+        paths (Paths): Instance of data class Paths.
 
-        s4_perms(list): All permutations of possible values for state s4
+        s4_perms (list): All permutations of possible values for state s4
 
         s4_perm_node_indices(dict of int: list): node-specific indices of
             "self.s4_perms" of all those entries that have the value 1 at
@@ -44,7 +40,7 @@ class BayesianModelComps:
 
         n_s4_perms (int): number of state s4 permutations
 
-        prior_c0 (np.ndarray): (n_nodes x n_s4_permutaions)-array of prior, 
+        prior_c0 (np.ndarray): (n_nodes x n_s4_permutaions)-array of prior,
             i.e. initial belief state before any observation
 
         lklh (np.ndarray): (n_action_type x n_nodes x n_node_colors x
@@ -371,16 +367,85 @@ class AgentAttributes:
 
 
 class Agent:
-    """A class used to represent an agent behavioral model.
+    """A class used to represent an agent model.
     An agent object can interact with a task object within an
     agent-based behavioral modelling framework
 
+    Attributes:
+    ----------
+        agent_attr (AgentAttributes): Object storing agent attributes
+        task_object (Task): Task object
+        lambda_ (float): Scalar value representing this agent's weighting
+            parameter, if applicable
+        moves (int): Remaining number of moves
+
+        a_s1 (np.ndarray): (1 x n_possible_actions)-array representing the
+            state-dependent set of actions. Varying size.
+        o_s2 (list): State-dependet set of possible observations. Varying size.
+
+        valence_t (np.ndarray): (1 x n_a_s1)-array of action valences
+
+        decision_t (np.ndarray): (1 x 1)-array of current decision
+
+        marg_s3_b (np.ndarray): (1 x n_nodes)-array of marginal posterior
+            belief state over possible values for s_3
+        marg_s3_prior (np.ndarray): (1 x n_nodes)-array of marginal posterior
+            belief state over possible values for s_3
+        marg_s4_b (np.ndarray): (1 x n_nodes)-array representing each node's
+            probability of being a hiding spot, based on posterior belief state
+        marg_s4_prior (np.ndarray): (1 x n_nodes)-array representing each
+            node's probability of being a hiding spot, based on prior belief
+                state
+        TODO: marg_s4_prior umbenennen. technically not the marginal distr.
+
+        bayes_comps(BayesianModelComps): Bayesian model components
+
+        prior_c (np.ndarray): (n_nodes x n_s4_permutations)-array representing
+            the prior belief state.
+
+        p_s_giv_o: (n_nodes x n_s4_permutations)-array representing
+            the posterior belief state.
+
+        max_s3_b_value (float): Scalar representing the currently maximum value
+            of marginal s3 belief state.
+
+        rounded_marg_s3_b (float): Scalar representing the rounded current
+            maximum value of marginal s3 belief state.
+        max_s3_b_nodes (TODO): all nodes for which marginal belief state equals
+            the current max marginal s3 belief state value
+
+        dist_to_max_s3_b_nodes (TODO): Distances to nodes with maximum marginal
+            belief state 
+        shortest_dist_to_max_s3_b (TODO): Shortest distance to one of the nodes
+            with maximum belief state
+        closest_max_s3_b_nodes_i_s (TODO): TODO
+        closest_max_s3_b_nodes (TODO): TODO
+
+        p_o_giv_o ((n_a_s1 x n_obs)-np.ndarray): (n_a_s1 x n_obs)-array representing the
+            predictive posterior distribution
+        kl_giv_a_o (np.ndarray): (n_a_s1 x n_obs)-array representing the KL
+            divergences of respective virtual belief states and current
+                posterior
+        virt_b (dict of TODO): (TODO mapping) of virtual belief states
+
+    Notes:
+    -----
+        belief state refers to the probability distribution p(s^3,s^4|o_{1:t}).
+        likelihood (as part of bayesian model component) refers to the
+        deterministic action- and state-dependent, state-conditional ob-
+        servation distribution p(o|s^3, s^4)
+
+    Args:
+    ------
+        agent_attr (AgentAttributes): Object storing agent attributes
+        task_object (Task): Task object
+        lambda_ (float): This agent's weighting parameter, if applicable
     """
 
     def __init__(self, agent_attr: AgentAttributes,
                  task_object: Task, lambda_):
-        self.agent_attr = agent_attr
 
+        self.agent_attr = agent_attr
         self.task: Task = task_object
         self.lambda_ = lambda_
 
@@ -398,7 +463,6 @@ class Agent:
         self.marg_s4_b = np.full(self.task.task_params.n_nodes, np.nan)
         self.marg_s3_prior = np.full(self.task.task_params.n_nodes, np.nan)
         self.marg_s4_prior = np.full(self.task.task_params.n_nodes, np.nan)
-        self.zero_sum_denominator = 0
 
         if self.agent_attr.is_bayesian:
             # Unpack bayesian beh_model components
@@ -423,13 +487,22 @@ class Agent:
         self.kl_giv_a_o: np.ndarray = np.array(np.nan)
         self.virt_b = {}
 
-    def add_bayesian_model_components(self, bayesian_comps):
-        """Load or create prior, likelihood and permutation lists etc"""
+    def add_bayesian_model_components(self,
+                                      bayesian_comps: BayesianModelComps):
+        """Method to load or create prior, likelihood and permutation lists etc
+
+        Args:
+        ------
+            bayesian_comps (BayesianModelComps): Object storing bayesian model
+                components
+        """
         self.bayes_comps = bayesian_comps
 
     def eval_prior_subs_rounds(self):
         """Reset belief states for s3 (treasure) based on marginal s4
-        (hiding spot) beliefs"""
+        (hiding spot) beliefs. This is necessary so the prior of the first
+        trial of a new round (that is not c=0) withholds information about
+        currently already revealed hiding spots"""
 
         # Initialize all as zero
         self.prior_c = np.full(
@@ -481,6 +554,7 @@ class Agent:
             obs (int): Current observation
 
         Returns:
+        -------
             np.ndarray: (n_nodes x n_s4_perms)-array of
                 the posterior belief state.
         """
@@ -509,8 +583,21 @@ class Agent:
         return post_belief_state
 
     def eval_marg_b(self, belief):
-        """Compute marginal posterior distributions for each node to the
-        treasure location or hiding spot"""
+
+        """Method to compute marginal posterior distributions for each node to
+        the treasure location or hiding spot
+
+        Args:
+        -----
+            belief (np.ndarray): (n_nodes x n_s4_permutations)-array
+                representing a belief state distribution
+
+        Returns:
+        -------
+            (np.ndarray, np.ndarray): marginal belief states
+
+            TODO: marg_s4 not actually margianl distribution. 
+        """
         # Evaluate marginal treasure distribution
         marg_s3_b = np.full(self.task.task_params.n_nodes, np.nan)
         for s_3 in range(self.task.task_params.n_nodes):
@@ -532,7 +619,6 @@ class Agent:
         """Reset dynamic states to initial values for a new trial"""
         self.valence_t = np.full(5, np.nan)  # decision valences
         self.decision_t = np.full(1, np.nan)  # decision
-        self.zero_sum_denominator = 0
 
     def start_new_round(self, round_number):
         """Reset dynamic states to initial values for a new round"""
@@ -590,7 +676,11 @@ class Agent:
                 obs=self.task.o_t)
 
             # ------ Evaluate marginal distributions-------------
+            start = time.time()
             self.marg_s3_b, self.marg_s4_b = self.eval_marg_b(self.p_s_giv_o)
+            end = time.time()
+            print(
+                f"time needed for marg_b: {humanreadable_time(end-start)}")
 
     def identify_a_giv_s1(self):
         """Identify state s1 dependent action set"""
@@ -610,7 +700,13 @@ class Agent:
                 self.a_s1 = self.a_s1[self.a_s1 != action]
 
     def identify_o_giv_s2_marg_s3(self, node, action):
-        """Identify state s2 dependent observation set"""
+        """Identify state s2 dependent observation set
+        
+        Args:
+        -----
+            node (int): scalar value representing the node of interest
+            action (int): scalar value representing action
+        """
         if action == 0:
             if self.task.s2_t[node] == 0:
                 if np.around(self.marg_s4_b[node], 10) == 0:
@@ -689,16 +785,34 @@ class Agent:
                                                        obs, :, :])
 
                 sum_prod = np.sum(product_a_o)
+                # self.p_o_giv_o[i, obs] = (self.p_s_giv_o
+                #                * self.bayes_comps.lklh[action, new_s1,
+                #                                        self.task.s2_t[new_s1],
+                #                                        obs, :, :]).sum()
                 self.p_o_giv_o[i, obs] = sum_prod
 
-        # Debugging ------------------------
-        test_tensor_dot_array = np.tensordot(
-            self.p_s_giv_o, self.bayes_comps.lklh, axes=([0, 1], [4, 5]))
+        # --- Tests ------------------------
+        # # Try sparse tensor
+        # sparse_lklh = torch.from_numpy(
+        #     self.bayes_comps.lklh
+        # ).to_sparse()
+
+        # # Try tensor dot multiplication
+        # test_tensor_dot_array = np.tensordot(
+        #     self.p_s_giv_o, self.bayes_comps.lklh, axes=([0, 1], [4, 5]))
         stop = "here"
 
     @staticmethod
     def evaluate_kl_divergence(p_x, q_x):
-        """Evaluate kl divergence between two distributions"""
+        """Evaluate kl divergence between two distributions
+        
+        Args:
+        -----
+            p_x (np.ndarray): (n_nodes x n_s4_permutations)-array representing
+                the virtual posterior belief state
+            q_x (np.ndarray): (n_nodes x n_s4_permutations)-array representing
+                the current posterior belief state.
+        """
         # # Evaluate directly
         # start = time.time()
         # log = np.log(p_x / q_x)
@@ -751,7 +865,9 @@ class Agent:
         and its virtual belief state on trial t + 1 given observation o_t
         and action
 
-        NOTE: to save computation time kl is only evaluated if p_o_giv_o != 0,
+        NOTE:
+        -----
+        to save computation time kl is only evaluated if p_o_giv_o != 0,
         else, kl == 0"""
 
         self.kl_giv_a_o = np.full((len(self.a_s1), 4), 0.)
@@ -844,13 +960,7 @@ class Agent:
         # --------------------------------------------------------------------------
         if self.agent_attr.name == 'A2':
 
-            # Iterate over possible actions (i.e. state-dependent actions)
-            for i, action_i in np.ndenumerate(self.a_s1):
-                self.valence_t[i] = \
-                    self.p_o_giv_o[i, 0] * self.kl_giv_a_o[i, 0] + \
-                    self.p_o_giv_o[i, 1] * self.kl_giv_a_o[i, 1] + \
-                    self.p_o_giv_o[i, 2] * self.kl_giv_a_o[i, 2] + \
-                    self.p_o_giv_o[i, 3] * self.kl_giv_a_o[i, 3]
+            self.valence_t = (self.p_o_giv_o * self.kl_giv_a_o).sum(axis=1)
 
             # Let agent stop drilling, if node is not black or if last round
             if self.task.current_round == (
@@ -882,6 +992,7 @@ class Agent:
                             ) * self.marg_s3_b[close_max_s3_node]
 
             # Add information value
+
             for i, action_i in np.ndenumerate(self.a_s1):
                 # Move to next loop, if a == 0, i.e. i == 0,
                 # because p_o[0] is already filled
@@ -892,6 +1003,8 @@ class Agent:
                     self.p_o_giv_o[i][1] * self.kl_giv_a_o[i][1] +
                     self.p_o_giv_o[i][2] * self.kl_giv_a_o[i][2] +
                     self.p_o_giv_o[i][3] * self.kl_giv_a_o[i][3])
+
+            self.valence_t += (self.p_o_giv_o * self.kl_giv_a_o).sum(axis=1)
 
             # Let agent stop drilling, if node is not black or if last round
             if self.task.current_round == (

@@ -394,8 +394,8 @@ if __name__ == "__main__":
 
     # Define task configuration and version labels
     EXP_LABEL = "exp_msc"  # "exp_msc" for master project task configuration
-    VERSION = "res-3_0918"  # Will be added to output directory path name
-    VERSION = "debug_0920"  # Will be added to output directory path name
+    VERSION = "res-3_0918"  # Will be added to pip3 output directory path name
+    VERSION = "debug_0921"  # Will be added to output directory path name
 
     # Define number of repetitions and participants (only applied for recovery)
     N_REPS = 1
@@ -418,7 +418,7 @@ if __name__ == "__main__":
         VERSION = arguments.version  # TODO: Add remaining args from env
 
     # For debugging, adjust total number of trials
-    IS_TEST = False  # If True, use test no. trials. Esle use exp's default no.
+    IS_TEST = True  # If True, use test no. trials. Esle use exp's default no.
     TEST_N_BLOCKS = 1
     TEST_N_ROUNDS = 1
     TEST_N_TRIALS = 3

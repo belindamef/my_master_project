@@ -182,7 +182,7 @@ class Recorder:
             self.data_one_round[var] = np.full(
                 n_trials + 1, np.nan, dtype=object)
 
-    def record_trial_start(self, trial:int, task: Task):
+    def record_trial_start(self, trial: int, task: Task):
         """Record all states and observations before agent makes decision,
         beh_model returns action and task evaluates state transition
 
@@ -347,8 +347,8 @@ class Simulator():
         start = time.time()
         self.agent.update_belief_state(current_action=self.beh_model.action_t)
         end = time.time()
-        print(f"agent belief state update, "
-              f"time needed: {humanreadable_time(end-start)} \n")
+        print(f"time needed for agent belief state update: "
+              f"{humanreadable_time(end-start)} \n")
 
     def simulate_trial_interaction(self):
         """Method to simulate the agent-task interaction,
