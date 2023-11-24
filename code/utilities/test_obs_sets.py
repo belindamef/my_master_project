@@ -1,14 +1,13 @@
 """ testing methods to create observation sets"""
-
-from encodings import utf_8
-import enum
-from itertools import product
-import black
+import os
 import more_itertools
 import csv
 import numpy as np
 import time
 from config import humanreadable_time
+from matplotlib import pyplot
+from config import DirectoryManager
+from very_plotter_new import VeryPlotter
 
 def compute_set_S(n_nodes, n_hides) -> np.ndarray:
     """Method to compute the set of states"""
@@ -232,6 +231,27 @@ def save_arrays(n_nodes, n_hides, **arrays):
             writer.writerows(array)
 
 
+def plot_color_map(n_nodes, n_hides, **arrays):
+
+    dir_mgr = DirectoryManager()
+
+    for key, array in arrays.items():
+        fig_fn = os.path.join(dir_mgr.paths.figures,
+                              f"{key}-{n_nodes}-nodes_{n_hides}-hides.pdf" )
+
+        # Preapre figure
+        plotter = VeryPlotter(paths=dir_mgr.paths)
+        plt = pyplot
+
+        rc_params = plotter.define_run_commands()
+        plt = pyplot
+        plt.rcParams.update(rc_params)
+        fig, ax = plt.subplots(figsize=(11, 5),
+                               layout="constrained")
+        ax.imshow(array)
+
+        plotter.save_figure(fig=fig, figure_filename=fig_fn)
+
 if __name__ == "__main__":
     DIM = 3
     N_HIDES = 2
@@ -243,11 +263,12 @@ if __name__ == "__main__":
     start = time.time()
     O = compute_set_O(n_nodes=N_NODES, n_hides=N_HIDES)
     S = compute_set_S(n_nodes=N_NODES, n_hides=N_HIDES)
-    A = [0, -dim, +1, dim, -1]
+    # A = [0, -dim, +1, dim, -1]
+    A = [0, 1]  # 0: drill, 1: step
     end = time.time()
     print(f"\n ... finished computung sets O, S and A, time needed: "
-            f"{humanreadable_time(end-start)}"
-            )
+          f"{humanreadable_time(end-start)}"
+          )
 
     print("\n Computing Omega...")
     start = time.time()
@@ -261,13 +282,17 @@ if __name__ == "__main__":
     start = time.time()
     save_arrays(n_nodes=N_NODES, n_hides=N_HIDES,
                 S=S, O=O,
-                Omega_1=Omega[0],
-                Omega_2=Omega[1],
-                Omega_3=Omega[2],
-                Omega_4=Omega[3],
-                Omega_5=Omega[4])
+                Omega_drill=Omega[0],
+                Omega_step=Omega[1],
+                # Omega_3=Omega[2],
+                # Omega_4=Omega[3],
+                # Omega_5=Omega[4]
+                )
     end = time.time()
     print(f"\n ...finished writing arrays to disk, time needed: "
           f"{humanreadable_time(end-start)}"
           )
 
+    plot_color_map(n_nodes=N_NODES, n_hides=N_HIDES,
+                   Omega_drill=Omega[0],
+                   Omega_step=Omega[1])
