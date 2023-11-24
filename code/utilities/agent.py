@@ -57,28 +57,28 @@ class BayesianModelComps:
     def __init__(self, task_design_params=TaskDesignParameters()):
         self.task_design_params = task_design_params
         self.paths: Paths = Paths()
-        self.s4_perms = []
-        self.s4_perm_node_indices = {}
-        self.n_s4_perms: int = 0
-        self.prior_c0: np.ndarray = np.array(np.nan)
-        self.lklh: np.ndarray = np.array(np.nan)
+        self.S4 = []  # State set S4  # TODO: sollte eigtl. zum task model? 
+        self.S4_incl_nodes_indices = {}
+        self.n_S4: int = 0
+        self.beta_0: np.ndarray = np.array(np.nan)
+        self.omega: np.ndarray = np.array(np.nan)
 
     def eval_s4_perms(self):
         """Method to evaluate permutations of s4 states"""
         s_4_values = [0] * (self.task_design_params.n_nodes -
                             self.task_design_params.n_hides)
         s_4_values.extend([1] * self.task_design_params.n_hides)
-        self.s4_perms = sorted(
+        self.S4 = sorted(
             more_itertools.distinct_permutations(s_4_values))
 
     def eval_prior(self):
         """Method to evaluate the prior belief state"""
         for s_3 in range(self.task_design_params.n_nodes):
-            for index, s4_perm in enumerate(self.s4_perms):
+            for index, s4_perm in enumerate(self.S4):
 
                 if s4_perm[s_3] == 1:
-                    self.prior_c0[s_3, index] = 1 / (
-                            self.n_s4_perms * self.task_design_params.n_hides)
+                    self.beta_0[s_3, index] = 1 / (
+                            self.n_S4 * self.task_design_params.n_hides)
                     # self.prior_c0[s3, index] = 1 / 1062600
 
     def eval_likelihood(self):
@@ -87,7 +87,7 @@ class BayesianModelComps:
         action = 0 and action not 0"""
 
         # Loop through s4_permutations:
-        for index, s4_perm in enumerate(self.s4_perms):
+        for index, s4_perm in enumerate(self.S4):
 
             # Loop through s1 values
             for s_1 in range(self.task_design_params.n_nodes):
@@ -101,14 +101,14 @@ class BayesianModelComps:
                     # for s2[s1] == 0 (black)
                     # -----------------------
                     s2_s1 = 0
-                    self.lklh[0, s_1, s2_s1, 1, :, index] = 1
-                    self.lklh[0, s_1, s2_s1, 1, s_1, index] = 0
+                    self.omega[0, s_1, s2_s1, 1, :, index] = 1
+                    self.omega[0, s_1, s2_s1, 1, s_1, index] = 0
 
                     # for s2[s1] == 1 (grey)
                     # -----------------------
                     s2_s1 = 1
-                    self.lklh[0, s_1, s2_s1, 1, :, index] = 1
-                    self.lklh[0, s_1, s2_s1, 1, s_1, index] = 0
+                    self.omega[0, s_1, s2_s1, 1, :, index] = 1
+                    self.omega[0, s_1, s2_s1, 1, s_1, index] = 0
 
                     # for s2[s1] == 2 (blue)
                     # -----------------------
@@ -123,8 +123,8 @@ class BayesianModelComps:
                     # -----------------------
                     s2_s1 = 0
                     # will deterministically turn to blue since s4_s1=1
-                    self.lklh[0, s_1, s2_s1, 2, :, index] = 1
-                    self.lklh[0, s_1, s2_s1, 2, s_1, index] = 0
+                    self.omega[0, s_1, s2_s1, 2, :, index] = 1
+                    self.omega[0, s_1, s2_s1, 2, s_1, index] = 0
 
                     # for s2[s1] == 1 (grey)
                     # -----------------------
@@ -135,8 +135,8 @@ class BayesianModelComps:
                     # -----------------------
                     # will return same color as already unveiled
                     s2_s1 = 2
-                    self.lklh[0, s_1, s2_s1, 2, :, index] = 1
-                    self.lklh[0, s_1, s2_s1, 2, s_1, index] = 0
+                    self.omega[0, s_1, s2_s1, 2, :, index] = 1
+                    self.omega[0, s_1, s2_s1, 2, s_1, index] = 0
 
                 # ---------for all a = 1---------------
 
@@ -148,8 +148,8 @@ class BayesianModelComps:
 
                     # For s3 == s1, lklh(o == 0 (black)) = 0,
                     # else lklh(o == 0 (black)) = 1
-                    self.lklh[1, s_1, s2_s1, 0, :, index] = 1
-                    self.lklh[1, s_1, s2_s1, 0, s_1, index] = 0
+                    self.omega[1, s_1, s2_s1, 0, :, index] = 1
+                    self.omega[1, s_1, s2_s1, 0, s_1, index] = 0
 
                     # all other observations ( o==1, o==2, o==3 remain 0)
 
@@ -159,8 +159,8 @@ class BayesianModelComps:
 
                     # For s3 == s1, lklh(o == 1 (grey)) = 0,
                     # else lklh(o == 1 (grey)) = 1
-                    self.lklh[1, s_1, s2_s1, 1, :, index] = 1
-                    self.lklh[1, s_1, s2_s1, 1, s_1, index] = 0
+                    self.omega[1, s_1, s2_s1, 1, :, index] = 1
+                    self.omega[1, s_1, s2_s1, 1, s_1, index] = 0
 
                     # all other observations ( o==0, o==2, o==3 remain 0)
 
@@ -177,12 +177,12 @@ class BayesianModelComps:
 
                     # For s3 == s1, lklh(o == 0 (black)) = 0,
                     # else lklh(o == 0 (black)) = 1
-                    self.lklh[1, s_1, s2_s1, 0, :, index] = 1
-                    self.lklh[1, s_1, s2_s1, 0, s_1, index] = 0
+                    self.omega[1, s_1, s2_s1, 0, :, index] = 1
+                    self.omega[1, s_1, s2_s1, 0, s_1, index] = 0
 
                     # For s3 == 1, lklh(o == 3 (treasure)) = 1,
                     # else remain zero
-                    self.lklh[1, s_1, s2_s1, 3, s_1, index] = 1
+                    self.omega[1, s_1, s2_s1, 3, s_1, index] = 1
 
                     # all other observations ( o==1, o==2 remain 0)
 
@@ -198,12 +198,12 @@ class BayesianModelComps:
 
                     # For s3 == s1, lklh(o == 2 (blue)) = 0,
                     # else lklh(o==2 (blue) = 1
-                    self.lklh[1, s_1, s2_s1, 2, :, index] = 1
-                    self.lklh[1, s_1, s2_s1, 2, s_1, index] = 0
+                    self.omega[1, s_1, s2_s1, 2, :, index] = 1
+                    self.omega[1, s_1, s2_s1, 2, s_1, index] = 0
 
                     # For s3 == 1, lklh(o == 3 (treasure)) = 1,
                     # else remain zero
-                    self.lklh[1, s_1, s2_s1, 3, s_1, index] = 1
+                    self.omega[1, s_1, s2_s1, 3, s_1, index] = 1
 
     def get_comps(self):
         """Create or load Bayesian components, i.e. s4-permutations, prior and
@@ -219,7 +219,7 @@ class BayesianModelComps:
             print("Loading s4_perms ...")
             start = time.time()
             with open(s4_perms_fn_pkl, "rb") as file:
-                self.s4_perms = pickle.load(file)
+                self.S4 = pickle.load(file)
             end = time.time()
             print(
                 " ... finished loading s4_perms, timed needed: "
@@ -228,16 +228,16 @@ class BayesianModelComps:
         else:
             print("Computing s4_perms ...")
             start = time.time()
-            self.s4_perms = []
+            self.S4 = []
             self.eval_s4_perms()
             end = time.time()
-            print(f" ... finished somputing s4_perms, time needed: "
+            print(f" ... finished computing s4_perms, time needed: "
                   f"{humanreadable_time(end-start)}"
                   )
             print("Saving s4_perms ...")
             start = time.time()
             with open(s4_perms_fn_pkl, "wb") as file:
-                pickle.dump(self.s4_perms, file)
+                pickle.dump(self.S4, file)
             end = time.time()
             print(f" ... finisehd saving s4_perms to files, time needed: "
                   f"{humanreadable_time(end-start)}"
@@ -246,8 +246,8 @@ class BayesianModelComps:
         print("Computing s4_marg_indices ...")
         start = time.time()
         for node in range(self.task_design_params.n_nodes):
-            self.s4_perm_node_indices[node] = [
-                index for index, s4_perm in enumerate(self.s4_perms)
+            self.S4_incl_nodes_indices[node] = [
+                index for index, s4_perm in enumerate(self.S4)
                 if s4_perm[node] == 1
             ]
             # --> 25 X 42504 indices per hide ( if 25 nodes and 6 hides)
@@ -257,7 +257,7 @@ class BayesianModelComps:
               )
 
         # Evaluate number of s4 permutations
-        self.n_s4_perms = len(self.s4_perms)
+        self.n_S4 = len(self.S4)
 
         # Load/evaluate agent's initial belief state in 1. trial ---(Prior)---
         prior_fn = os.path.join(self.paths.code, "utilities",
@@ -266,7 +266,7 @@ class BayesianModelComps:
         if os.path.exists(prior_fn):
             print("Loading prior array from file ...")
             start = time.time()
-            self.prior_c0 = np.load(prior_fn)
+            self.beta_0 = np.load(prior_fn)
             end = time.time()
             print(f" ... finished loading prior, time needed: "
                   f"{humanreadable_time(end-start)}"
@@ -275,8 +275,8 @@ class BayesianModelComps:
         else:
             print("Evaluating prior belief array for given task config ...")
             start = time.time()
-            self.prior_c0 = np.full((self.task_design_params.n_nodes,
-                                     self.n_s4_perms), 0.0)
+            self.beta_0 = np.full((self.task_design_params.n_nodes,
+                                     self.n_S4), 0.0)
             self.eval_prior()
             end = time.time()
             print(f" ... finished evaluating prior, time needed: "
@@ -284,7 +284,7 @@ class BayesianModelComps:
                   )
             print("Saving prior belief array to file ...")
             start = time.time()
-            np.save(prior_fn, self.prior_c0)
+            np.save(prior_fn, self.beta_0)
             end = time.time()
             print(f" ... finished saving prior to file, time needed:"
                   f"{humanreadable_time(end-start)}"
@@ -300,15 +300,15 @@ class BayesianModelComps:
         if os.path.exists(lklh_fn):
             print("Loading likelihood array from file ...")
             start = time.time()
-            self.lklh = np.load(lklh_fn)
+            self.omega = np.load(lklh_fn)
             end = time.time()
             print(f" ... finished loading likelihood array, time needed: "
                   f"{humanreadable_time(end-start)}\n")
         else:
             print("Computing likelihood array for given task config ...")
-            self.lklh = np.zeros(
+            self.omega = np.zeros(
                 (2, self.task_design_params.n_nodes, 3, 4,
-                 self.task_design_params.n_nodes, self.n_s4_perms),
+                 self.task_design_params.n_nodes, self.n_S4),
                 dtype=np.uint16)
             start = time.time()
             self.eval_likelihood()
@@ -317,7 +317,7 @@ class BayesianModelComps:
                   f"{humanreadable_time(end-start)}")
             print("Saving likelihood array to file")
             start = time.time()
-            np.save(lklh_fn, self.lklh)
+            np.save(lklh_fn, self.omega)
             end = time.time()
             print(f" ... saved likelihood array to file, time needed: "
                   f"{humanreadable_time(end-start)}")
@@ -506,7 +506,7 @@ class Agent:
 
         # Initialize all as zero
         self.prior_c = np.full(
-            (self.task.task_params.n_nodes, self.bayes_comps.n_s4_perms), 0.)
+            (self.task.task_params.n_nodes, self.bayes_comps.n_S4), 0.)
 
         # marg_s4_perm_b = np.full(self.n_s4_perms, np.nan)
         # for s4_perm in range(self.n_s4_perms):
@@ -517,9 +517,9 @@ class Agent:
 
         for s_3 in range(self.task.task_params.n_nodes):
             self.prior_c[s_3,
-                         self.bayes_comps.s4_perm_node_indices[s_3]
+                         self.bayes_comps.S4_incl_nodes_indices[s_3]
                          ] = marg_s4_perm_b[
-                             self.bayes_comps.s4_perm_node_indices[s_3]
+                             self.bayes_comps.S4_incl_nodes_indices[s_3]
                              ] * (1 / self.task.task_params.n_hides)
 
         # Uncomment for DEBUGGING to track evaluation of posteriors
@@ -565,19 +565,19 @@ class Agent:
             action_type = 0
         action_type = int(action_type)
 
-        if np.sum(prior_belief_state * self.bayes_comps.lklh[
+        if np.sum(prior_belief_state * self.bayes_comps.omega[
                 action_type, s_1, s2_giv_s1, obs, :, :]) == 0:
             post_belief_state = (
                 prior_belief_state
-                * self.bayes_comps.lklh[action_type, s_1, s2_giv_s1, obs, :, :])
+                * self.bayes_comps.omega[action_type, s_1, s2_giv_s1, obs, :, :])
             print('sum of prior * lklh = 0, leaving out normalization')
             # debug = 'here'
         else:
             post_belief_state = (
                 prior_belief_state
-                * self.bayes_comps.lklh[action_type, s_1, s2_giv_s1, obs, :, :]
+                * self.bayes_comps.omega[action_type, s_1, s2_giv_s1, obs, :, :]
                 * (1 / np.sum(prior_belief_state
-                              * self.bayes_comps.lklh[
+                              * self.bayes_comps.omega[
                                   action_type, s_1, s2_giv_s1, obs, :, :])))
 
         return post_belief_state
@@ -607,7 +607,7 @@ class Agent:
         marg_s4_b = np.full(self.task.task_params.n_nodes, np.nan)
         for node in range(self.task.task_params.n_nodes):
             marg_s4_b[node] = belief[
-                :, self.bayes_comps.s4_perm_node_indices[node]].sum()
+                :, self.bayes_comps.S4_incl_nodes_indices[node]].sum()
 
         # Uncomment for debugging
         # sum_prob_hides = marg_s4_b[:].sum()  # should evaluate to ~ n_hides
@@ -653,7 +653,7 @@ class Agent:
             # ...and step action (a=1).
             if self.task.current_round == 0 and self.task.current_trial == 0:
                 action = 1
-                prior = self.bayes_comps.prior_c0
+                prior = self.bayes_comps.beta_0
             
             # If first trial in a new round, i.e. before any action,  pior_c
             # ...which is the posterior of preceding round's last trial as
@@ -684,9 +684,9 @@ class Agent:
 
     def identify_a_giv_s1(self):
         """Identify state s1 dependent action set"""
-        self.a_s1 = self.task.a_set
+        self.a_s1 = self.task.A
 
-        for action in self.task.a_set:
+        for action in self.task.A:
             new_s1 = action + self.task.s1_t
             # Remove forbidden steps (walk outside border)
             if (not (0 <= new_s1 < self.task.task_params.n_nodes)
@@ -780,7 +780,7 @@ class Agent:
             for obs in self.o_s2:
                 # product_a_o.shape = (25 x 177100)
                 product_a_o = (self.p_s_giv_o
-                               * self.bayes_comps.lklh[action, new_s1,
+                               * self.bayes_comps.omega[action, new_s1,
                                                        self.task.s2_t[new_s1],
                                                        obs, :, :])
 
