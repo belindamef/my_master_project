@@ -14,7 +14,8 @@ class Task:
     agent-based behavioral modelling framework.
     """
 
-    def __init__(self, task_configs):
+    def __init__(self, task_configs,
+                 task_params: TaskDesignParameters = TaskDesignParameters()):
         """A class to represent the tresaure hunt task
 
         Args:
@@ -23,7 +24,7 @@ class Task:
         """
 
         self.task_configs: TaskConfigurator = task_configs
-        self.task_params = TaskDesignParameters()
+        self.task_params = task_params
 
         self.current_trial: int = 0
         self.current_round: int = 0
@@ -34,7 +35,7 @@ class Task:
         self.s2_t = np.full(self.task_params.n_nodes, 0)
         self.s3_c = np.full(1, np.nan)
         self.s4_b = np.full(self.task_params.n_nodes, 0)
-        self.a_set = np.array(
+        self.A = np.array(
             [0, -self.task_params.dim, 1, self.task_params.dim, -1])
         self.o_t = np.full(1, np.nan)
 
@@ -42,7 +43,6 @@ class Task:
         self.r_t = 0  # treasure discovery at s1 initial value: 0
         self.hides_loc = np.full(  # hiding spots of current block/task
             self.task_params.n_hides, np.nan)
-        self.n_black = self.task_params.n_nodes
         self.n_blue = 0
         self.n_grey = 0
         self.drill_finding = np.nan
@@ -78,7 +78,7 @@ class Task:
         # ------Initialize variables / objects--------------------------------
         n_nodes = self.task_params.n_nodes  # number of nodes in the graph
         dim = self.task_params.dim  # dimension of the grid world
-        moves = self.a_set[:4]  # possible moves / actions
+        moves = self.A[:4]  # possible moves / actions
 
         # ------Create adjacency matrix---------------------------------------
         adj_matrix = []  # Initialize adjacency matrix
@@ -271,6 +271,5 @@ class Task:
         else:
 
             # Update number of node colors
-            self.n_black = np.count_nonzero(self.s2_t == 0)
             self.n_grey = np.count_nonzero(self.s2_t == 1)
             self.n_blue = np.count_nonzero(self.s2_t == 2)

@@ -7,7 +7,7 @@ Author: Belinda Fleischmann
 """
 
 import time
-from utilities.config import DirectoryManager, TaskConfigurator, get_arguments
+from utilities.config import DirectoryManager, TaskConfigurator, TaskDesignParameters, get_arguments
 from utilities.config import DataHandler
 from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.agent import AgentAttributes, BayesianModelComps
@@ -57,14 +57,17 @@ def adjust_total_trial_numbers(task_configuration_object: TaskConfigurator):
     task_configuration_object.params.n_trials = TEST_N_TRIALS
 
 
-def main():
+def main(task_params: TaskDesignParameters):
     """Main function"""
     dir_mgr = DirectoryManager()
     dir_mgr.define_raw_beh_data_out_path(data_type="sim",
                                          exp_label=OUT_DIR_LABEL,
                                          make_dir=True)
 
-    task_config = TaskConfigurator(dir_mgr.paths).get_config(EXP_LABEL)
+    task_config = TaskConfigurator(
+        path=dir_mgr.paths,
+        params=task_params
+        ).get_config(EXP_LABEL)
     bayesian_comps = BayesianModelComps(task_config.params).get_comps()
 
     if IS_QUICK_TEST:
@@ -72,7 +75,9 @@ def main():
 
     sim_params = define_simulation_parameters()
     val_params = define_validation_parameters()
-    simulator = Simulator(task_config, bayesian_comps)
+    simulator = Simulator(task_configs=task_config,
+                          bayesian_comps=bayesian_comps,
+                          task_params=task_params)
 
     for repetition in val_params.repetition_numbers:
         val_params.current_rep = repetition
@@ -107,8 +112,17 @@ if __name__ == "__main__":
     start = time.time()
     arguments = get_arguments()
 
-    EXP_LABEL = "exp_msc"
-    OUT_DIR_LABEL = "test_debug_09_19"
+    EXP_LABEL = "test_ahmm"
+    OUT_DIR_LABEL = "test_ahmm_11_21"
+
+    # Define task configuration parameters
+    task_params = TaskDesignParameters(
+        dim=2,
+        n_hides=2,
+        n_nodes=4
+    )
+
+    # TODO hier weiter, warum nur C1 und dafür alle parameter durch, wenn script laufen lassen? 
 
     # Define repetition_parameters
     N_REPS = 1
@@ -119,7 +133,7 @@ if __name__ == "__main__":
     TEST_N_ROUNDS = 1
     TEST_N_TRIALS = 2
 
-    main()
+    main(task_params=task_params)
 
     end = time.time()
     print(f"Total time for simulation: {round((end-start), ndigits=2)} sec.")

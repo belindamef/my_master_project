@@ -183,7 +183,7 @@ class DirectoryManager:
 
     def define_processed_data_path(self, data_type: str,
                                    exp_label: str,
-                                   vers: str,
+                                   vers: str = "",
                                    make_dir: bool = False):
         """Define path variable for directory containing processed behavioral
         data
@@ -208,7 +208,7 @@ class DirectoryManager:
 
     def define_descr_stats_path(self, data_type: str,
                                 exp_label: str,
-                                version: str,
+                                version: str = "",
                                 make_dir: bool = False):
         """Method to define path variable for directory containing
         descriptive stats
@@ -618,11 +618,11 @@ class TaskConfigurator:
                 spot locations
     """
 
-    params = TaskDesignParameters()
-
-    def __init__(self, path: Paths):
+    def __init__(self, path: Paths, dim: int = 5, n_hiding_spots: int = 6,
+                 params: TaskDesignParameters = TaskDesignParameters()):
         self.paths = path
         self.states = {}
+        self.params = params
 
     def get_user_input(self):
         """Method to get user input to create new task configurations"""
@@ -677,19 +677,19 @@ class TaskConfigurator:
     def sample_start_pos(self):
         """Method to sample the starting position from a discrete uniform
         distribution over all nodes"""
-        s_1 = np.full((self.params.n_blocks,
-                       self.params.n_rounds), np.nan)
+        s_1 = np.empty((self.params.n_blocks,
+                       self.params.n_rounds), dtype=int)
         for block in range(self.params.n_blocks):
             for round_ in range(self.params.n_rounds):
-                s_1[block, round_] = np.random.choice(
-                    self.params.n_nodes, 1)
+                s_1[block, round_] = int(np.random.choice(
+                    self.params.n_nodes, 1))
         self.states['s_1'] = s_1
 
     def sample_treasure_loc(self):
         """Method to sample the tr location from a discrete uniform
         distribution over all hiding spots"""
-        s_3 = np.full((self.params.n_blocks,
-                       self.params.n_rounds), np.nan)
+        s_3 = np.empty((self.params.n_blocks,
+                       self.params.n_rounds), dtype=int)
         for block in range(self.params.n_blocks):
             for round_ in range(self.params.n_rounds):
                 # Set treasure to equal start position
@@ -697,8 +697,8 @@ class TaskConfigurator:
                     self.states['s_1'][block, round_])
                 # Sample tr location until it's not the starting position s_0
                 while s_3[block, round_] == self.states['s_1'][block, round_]:
-                    s_3[block, round_] = np.random.choice(
-                        self.states['hides'][block], 1)
+                    s_3[block, round_] = int(np.random.choice(
+                        self.states['hides'][block], 1))
         self.states['s_3'] = s_3
 
     def save_task_config(self):
@@ -748,7 +748,7 @@ class TaskConfigurator:
             self.states[item] = np.load(
                 os.path.join(self.paths.this_config, f'{item}.npy'))
 
-    def get_config(self, config_label: str, new_config_requ: bool = False):
+    def get_config(self, config_label: str):
         """Method to create or load task configuration
 
         Args:
@@ -763,7 +763,7 @@ class TaskConfigurator:
         """
         n_blocks = 3
         self.add_config_paths(config_label)
-        if new_config_requ:
+        if not os.path.exists(self.paths.this_config):
             self.params.n_blocks = n_blocks
             self.sample_task_config()
         else:

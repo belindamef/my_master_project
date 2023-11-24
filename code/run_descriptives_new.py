@@ -141,9 +141,9 @@ def main():
 
 
 if __name__ == "__main__":
-    EXP_LABEL = "exp_msc"  # 'exp_msc' or 'sim_100_msc' or 'test'""
+    EXP_LABEL = "test_ahmm_11_20"  # 'exp_msc' or 'sim_100_msc' or 'test'""
     EXP_OR_SIM = "sim"  # str(input("Enter dataset ('exp' or 'sim): "))
-    DIM = 5
-    N_BLOCKS = 3
+    DIM = 2
+    N_BLOCKS = 1
 
     main()

@@ -18,7 +18,7 @@ exists on disk.
 import time
 import os
 import numpy as np
-from utilities.config import DirectoryManager, TaskConfigurator, get_arguments
+from utilities.config import DirectoryManager, TaskConfigurator, TaskDesignParameters, get_arguments
 from utilities.config import DataHandler
 from utilities.simulation_methods import SimulationParameters
 from utilities.agent import AgentAttributes, BayesianModelComps
@@ -359,6 +359,7 @@ def main():
     validator = Validator(sim_params=sim_params,
                           val_params=val_params,
                           task_configs=task_config,
+                          task_params=TaskDesignParameters(),
                           bayesian_comps=bayesian_comps,
                           est_params=est_params)
 

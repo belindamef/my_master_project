@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.estimation_methods import Estimator, EstimationParameters
-from utilities.config import TaskConfigurator, humanreadable_time
+from utilities.config import TaskConfigurator, TaskDesignParameters, humanreadable_time
 from utilities.agent import BayesianModelComps
 
 
@@ -97,16 +97,19 @@ class Validator:
     def __init__(self, sim_params: SimulationParameters,
                  val_params: ValidationParameters,
                  task_configs: TaskConfigurator,
+                 task_params: TaskDesignParameters,
                  bayesian_comps: BayesianModelComps,
                  est_params: EstimationParameters):
 
         self.val_params = val_params
         self.sim_params: SimulationParameters = sim_params
         self.task_config = task_configs
+        self.task_params = task_params
         self.bayesian_comps = bayesian_comps
 
         self.simulator: Simulator = Simulator(task_configs=task_configs,
                                               bayesian_comps=bayesian_comps)
+                                              # tODO: add task_design_paramsa s argument
         self.estimator: Estimator = Estimator(estim_params=est_params)
 
     def init_data_dic(self, validation_type: str):
@@ -209,6 +212,7 @@ class Validator:
                 behavioral data
         """
         self.estimator.estimate_parameters(
+            task_params=self.task_params,
             data=data,
             method="brute_force",
             candidate_agent=self.sim_params.current_agent_gen,
@@ -318,7 +322,9 @@ class Validator:
         # Instantiate simulation-obj within estimator-obj for mll estimations
         self.estimator.instantiate_sim_obj(
             task_configs=self.simulator.task_configs,
-            bayesian_comps=self.simulator.bayesian_comps)
+            bayesian_comps=self.simulator.bayesian_comps,
+            task_params=self.simulator.task_params
+            )
 
         # Start estimations
         print("Running model estimation with experimental data ",

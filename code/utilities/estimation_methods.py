@@ -7,7 +7,7 @@ import xarray as xr
 # import utilities.abm_bmc as abm_bmc  # TODO uncomment back (python 3.8...)
 from utilities.simulation_methods import Simulator
 from utilities.agent import BayesianModelComps
-from utilities.config import TaskConfigurator, custom_sort_key
+from utilities.config import TaskConfigurator, TaskDesignParameters, custom_sort_key
 
 
 class EstimationParameters:
@@ -131,7 +131,8 @@ class Estimator:
                                    np.nan)
 
     def instantiate_sim_obj(self, task_configs: TaskConfigurator,
-                            bayesian_comps: BayesianModelComps):
+                            bayesian_comps: BayesianModelComps,
+                            task_params: TaskDesignParameters):
         """
         Method to instantiate simulation object
 
@@ -139,8 +140,11 @@ class Estimator:
         ----------
         sim_object (Simulator): Object to simulate agent-task-interaction
         """
-        self.sim_object = Simulator(task_configs=task_configs,
-                                    bayesian_comps=bayesian_comps)
+        self.sim_object = Simulator(
+            task_configs=task_configs,
+            bayesian_comps=bayesian_comps,
+            task_params=task_params)
+            # TODO: add task design_params as argument
 
     def reset_result_variables(self):
         """Method to reset result variables to nan values"""
@@ -312,7 +316,8 @@ class Estimator:
     def estimate_parameters(self, data: pd.DataFrame,
                             method: str, candidate_agent: str,
                             task_configs: TaskConfigurator,
-                            bayesian_comps: BayesianModelComps):
+                            bayesian_comps: BayesianModelComps,
+                            task_params: TaskDesignParameters):
         """_summary_
 
         Args:
@@ -327,7 +332,8 @@ class Estimator:
         """
         self.instantiate_sim_obj(
             task_configs=task_configs,
-            bayesian_comps=bayesian_comps
+            bayesian_comps=bayesian_comps,
+            task_params=task_params
             )
 
         # Set candidate agent model to generating agent
