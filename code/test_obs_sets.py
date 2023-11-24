@@ -4,10 +4,11 @@ import more_itertools
 import csv
 import numpy as np
 import time
-from config import humanreadable_time
+from utilities.config import humanreadable_time
 from matplotlib import pyplot
-from config import DirectoryManager
-from very_plotter_new import VeryPlotter
+from utilities.config import DirectoryManager
+from utilities.very_plotter_new import VeryPlotter
+
 
 def compute_set_S(n_nodes, n_hides) -> np.ndarray:
     """Method to compute the set of states"""
@@ -37,14 +38,6 @@ def compute_set_S(n_nodes, n_hides) -> np.ndarray:
                     S[i, 1] = possible_tr_loc
                     S[i, 2:4] = hiding_spot_combo
                     i += 1
-
-    # Define the output file name
-    output_file = f'/home/belindame_f/treasure-hunt/code/utilities/set_S_{n_nodes}-nodes_{n_hides}-hides.csv'
-
-    # Write the vectors to the TSV file
-    with open(output_file, 'w', newline='', encoding="utf8") as file:
-        writer = csv.writer(file, delimiter=',')
-        writer.writerows(S)
 
     return S
 
@@ -83,14 +76,6 @@ def compute_set_O(n_nodes, n_hides) -> np.ndarray:
 
             i += 1
     # TODO: linearer index
-
-    # Define the output file name
-    output_file = f'/home/belindame_f/treasure-hunt/code/utilities/set_O_{n_nodes}-nodes_{n_hides}-hides.csv'
-
-    # Write the vectors to the TSV file
-    with open(output_file, 'w', newline='', encoding="utf8") as file:
-        writer = csv.writer(file, delimiter=',')
-        writer.writerows(O)
 
     return O
 
@@ -208,11 +193,10 @@ def compute_Omega(S, O, A) -> np.ndarray:
                     if (
                             current_pos == tr_location
                             and current_pos in hiding_spots
-                            and tr_flag == 0
+                            and tr_flag == 1
                             and o[current_pos] in [node_colors["black"],
                                                    node_colors["blue"]]):
                         Omega[i_a, i_s, i_o] = 1
-
 
     return Omega
 
@@ -234,10 +218,8 @@ def save_arrays(n_nodes, n_hides, **arrays):
 def plot_color_map(n_nodes, n_hides, **arrays):
 
     dir_mgr = DirectoryManager()
-
     for key, array in arrays.items():
-        fig_fn = os.path.join(dir_mgr.paths.figures,
-                              f"{key}-{n_nodes}-nodes_{n_hides}-hides.pdf" )
+        fig_fn = f"{key}-{n_nodes}-nodes_{n_hides}-hides.pdf"
 
         # Preapre figure
         plotter = VeryPlotter(paths=dir_mgr.paths)
@@ -246,14 +228,14 @@ def plot_color_map(n_nodes, n_hides, **arrays):
         rc_params = plotter.define_run_commands()
         plt = pyplot
         plt.rcParams.update(rc_params)
-        fig, ax = plt.subplots(figsize=(11, 5),
-                               layout="constrained")
+        fig, ax = plt.subplots(figsize=(11, 5))
         ax.imshow(array)
 
         plotter.save_figure(fig=fig, figure_filename=fig_fn)
 
+
 if __name__ == "__main__":
-    DIM = 3
+    DIM = 2
     N_HIDES = 2
     N_NODES = DIM**2
 
@@ -281,7 +263,7 @@ if __name__ == "__main__":
     print("\n Writing files to disk...")
     start = time.time()
     save_arrays(n_nodes=N_NODES, n_hides=N_HIDES,
-                S=S, O=O,
+                set_S=S, set_O=O,
                 Omega_drill=Omega[0],
                 Omega_step=Omega[1],
                 # Omega_3=Omega[2],
