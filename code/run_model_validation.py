@@ -21,7 +21,7 @@ import numpy as np
 from utilities.config import DirectoryManager, TaskConfigurator, TaskDesignParameters, get_arguments
 from utilities.config import DataHandler
 from utilities.simulation_methods import SimulationParameters
-from utilities.agent import AgentAttributes, BayesianModelComps
+from utilities.agent import AgentAttributes, HiddenMarkovModel
 from utilities.validation_methods import Validator, ValidationParameters
 from utilities.estimation_methods import EstimationParameters
 
@@ -344,8 +344,8 @@ def main():
     # Load task configurations and bayesian model components from disk
     task_config = TaskConfigurator(path=dir_mgr.paths).get_config(
         config_label=EXP_LABEL)
-    bayesian_comps = BayesianModelComps(
-        task_design_params=task_config.params).get_comps()
+    bayesian_comps = HiddenMarkovModel(
+        task_design_params=task_config.params).get_comps_old()
 
     # For debigging, adjust total number of trials
     if IS_TEST:

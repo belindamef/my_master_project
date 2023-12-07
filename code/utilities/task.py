@@ -32,12 +32,12 @@ class Task:
 
         # Initialize task beh_model components
         self.s1_t: int = -999
-        self.s2_t = np.full(self.task_params.n_nodes, 0)
+        self.node_colors = np.full(self.task_params.n_nodes, 0)
         self.s3_c = np.full(1, np.nan)
         self.s4_b = np.full(self.task_params.n_nodes, 0)
         self.A = np.array(
             [0, -self.task_params.dim, 1, self.task_params.dim, -1])
-        self.o_t = np.full(1, np.nan)
+        self.o_t = np.full((self.task_params.n_nodes + 1), np.nan)
 
         # Initialize variables for computations
         self.r_t = 0  # treasure discovery at s1 initial value: 0
@@ -198,21 +198,30 @@ class Task:
         treasure disc (yes/no). This function maps action, reward and states
         s3 and s4 onto observation o_t, as specified in g
         """
-        # If node color black and no treasure
-        if (self.s2_t[self.s1_t] == 0) and (self.r_t == 0):
-            self.o_t = 0
 
-        # If node color = grey (always no treasure found)
-        elif self.s2_t[self.s1_t] == 1:
-            self.o_t = 1
+        # OLD------------------------------------
+        # # If node color black and no treasure
+        # if (self.s2_t[self.s1_t] == 0) and (self.r_t == 0):
+        #     self.o_t = 0
 
-        # If node color = blue and no treasure
-        elif (self.s2_t[self.s1_t] == 2) and (self.r_t == 0):
-            self.o_t = 2
+        # # If node color = grey (always no treasure found)
+        # elif self.s2_t[self.s1_t] == 1:
+        #     self.o_t = 1
 
-        # If treasure found
-        elif self.r_t == 1:
-            self.o_t = 3
+        # # If node color = blue and no treasure
+        # elif (self.s2_t[self.s1_t] == 2) and (self.r_t == 0):
+        #     self.o_t = 2
+
+        # # If treasure found
+        # elif self.r_t == 1:
+        #     self.o_t = 3
+        if self.r_t == 0:
+            self.o_t[0] = 0
+        else:
+            self.o_t[0] = 1
+        
+        self.o_t[1:] = self.node_colors
+
 
     def perform_state_transition_f(self, action_t):
         """Perform the state transition function f. """
@@ -224,22 +233,22 @@ class Task:
 
             # Change node colors (transition s_2)
             if self.s4_b[self.s1_t] == 0:  # If s_1 not hiding spot
-                if self.s2_t[self.s1_t] == 0:  # If node is (was) black
+                if self.node_colors[self.s1_t] == 0:  # If node is (was) black
                     self.drill_finding = 0
                 else:
                     # Drill finding = 3, if drilled on unveiled spot
                     # (i.e. not black)
                     self.drill_finding = 3
                     # Change color to grey (not a hiding spot)
-                self.s2_t[self.s1_t] = 1
+                self.node_colors[self.s1_t] = 1
             elif self.s4_b[self.s1_t] == 1:  # Elif s_1 is hiding spot
-                if self.s2_t[self.s1_t] == 0:  # If node is (was) black
+                if self.node_colors[self.s1_t] == 0:  # If node is (was) black
                     self.drill_finding = 1
                 else:
                     # Drill finding = 3, if drilled on unveiled spot
                     # (i.e. not black)
                     self.drill_finding = 3
-                self.s2_t[self.s1_t] = 2  # Change color to blue (hiding spot)
+                self.node_colors[self.s1_t] = 2  # Change color to blue (hiding spot)
 
     def eval_whether_treasure(self):
         """Evaluate whether new current position is the treasure location"""
@@ -247,9 +256,9 @@ class Task:
             self.r_t = 1
 
             # Evaluate whether found on hide
-            if self.s2_t[self.s1_t] == 2:
+            if self.node_colors[self.s1_t] == 2:
                 self.tr_found_on_blue = 1
-            elif self.s2_t[self.s1_t] == 0:
+            elif self.node_colors[self.s1_t] == 0:
                 self.tr_found_on_blue = 0
         else:
             self.r_t = 0
@@ -271,5 +280,5 @@ class Task:
         else:
 
             # Update number of node colors
-            self.n_grey = np.count_nonzero(self.s2_t == 1)
-            self.n_blue = np.count_nonzero(self.s2_t == 2)
+            self.n_grey = np.count_nonzero(self.node_colors == 1)
+            self.n_blue = np.count_nonzero(self.node_colors == 2)

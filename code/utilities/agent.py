@@ -4,14 +4,17 @@ hunt task.
 import os
 import time
 import pickle
+import csv
 import numpy as np
 # import torch
 import more_itertools
 from utilities.task import Task
-from utilities.config import Paths, TaskDesignParameters, humanreadable_time
+from utilities.config import Paths, TaskDesignParameters, humanreadable_time, DirectoryManager
+from matplotlib import cm, colorbar, pyplot
+from utilities.very_plotter_new import VeryPlotter
+from matplotlib.colors import ListedColormap
 
-
-class BayesianModelComps:
+class HiddenMarkovModel:
     """A Class to compute Bayesian model components given a set of
     task parameters (i.e. no. trials, dimension of the grid, etc.) or
     load model components from disk if the task-parameter-specific components
@@ -57,11 +60,15 @@ class BayesianModelComps:
     def __init__(self, task_design_params=TaskDesignParameters()):
         self.task_design_params = task_design_params
         self.paths: Paths = Paths()
-        self.S4 = []  # State set S4  # TODO: sollte eigtl. zum task model? 
-        self.S4_incl_nodes_indices = {}
-        self.n_S4: int = 0
-        self.beta_0: np.ndarray = np.array(np.nan)
-        self.omega: np.ndarray = np.array(np.nan)
+        self.S: np.ndarray = np.array(np.nan)
+        self.O: np.ndarray = np.array(np.nan)
+        self.A: list = [0, 1]  # 0: drill, 1: step
+        self.n: int = 0
+        self.m: int = 0
+        self.p: int = 0
+        self.beta_1_0: np.ndarray = np.array(np.nan)
+        self.Omega: np.ndarray = np.array(np.nan)
+        self.Phi: np.ndarray = np.array(np.nan)
 
     def eval_s4_perms(self):
         """Method to evaluate permutations of s4 states"""
@@ -71,15 +78,10 @@ class BayesianModelComps:
         self.S4 = sorted(
             more_itertools.distinct_permutations(s_4_values))
 
-    def eval_prior(self):
-        """Method to evaluate the prior belief state"""
-        for s_3 in range(self.task_design_params.n_nodes):
-            for index, s4_perm in enumerate(self.S4):
-
-                if s4_perm[s_3] == 1:
-                    self.beta_0[s_3, index] = 1 / (
-                            self.n_S4 * self.task_design_params.n_hides)
-                    # self.prior_c0[s3, index] = 1 / 1062600
+    def compute_beta_1_0(self):
+        """Method to evaluate the initial belief state beta in round 1,
+        trial 0"""
+        self.beta_1_0 = np.full((self.n, 1), 1 / self.n)
 
     def eval_likelihood(self):
         """Method to evaluate the action-dependent state-conditional
@@ -101,14 +103,14 @@ class BayesianModelComps:
                     # for s2[s1] == 0 (black)
                     # -----------------------
                     s2_s1 = 0
-                    self.omega[0, s_1, s2_s1, 1, :, index] = 1
-                    self.omega[0, s_1, s2_s1, 1, s_1, index] = 0
+                    self.Omega[0, s_1, s2_s1, 1, :, index] = 1
+                    self.Omega[0, s_1, s2_s1, 1, s_1, index] = 0
 
                     # for s2[s1] == 1 (grey)
                     # -----------------------
                     s2_s1 = 1
-                    self.omega[0, s_1, s2_s1, 1, :, index] = 1
-                    self.omega[0, s_1, s2_s1, 1, s_1, index] = 0
+                    self.Omega[0, s_1, s2_s1, 1, :, index] = 1
+                    self.Omega[0, s_1, s2_s1, 1, s_1, index] = 0
 
                     # for s2[s1] == 2 (blue)
                     # -----------------------
@@ -123,8 +125,8 @@ class BayesianModelComps:
                     # -----------------------
                     s2_s1 = 0
                     # will deterministically turn to blue since s4_s1=1
-                    self.omega[0, s_1, s2_s1, 2, :, index] = 1
-                    self.omega[0, s_1, s2_s1, 2, s_1, index] = 0
+                    self.Omega[0, s_1, s2_s1, 2, :, index] = 1
+                    self.Omega[0, s_1, s2_s1, 2, s_1, index] = 0
 
                     # for s2[s1] == 1 (grey)
                     # -----------------------
@@ -135,8 +137,8 @@ class BayesianModelComps:
                     # -----------------------
                     # will return same color as already unveiled
                     s2_s1 = 2
-                    self.omega[0, s_1, s2_s1, 2, :, index] = 1
-                    self.omega[0, s_1, s2_s1, 2, s_1, index] = 0
+                    self.Omega[0, s_1, s2_s1, 2, :, index] = 1
+                    self.Omega[0, s_1, s2_s1, 2, s_1, index] = 0
 
                 # ---------for all a = 1---------------
 
@@ -148,8 +150,8 @@ class BayesianModelComps:
 
                     # For s3 == s1, lklh(o == 0 (black)) = 0,
                     # else lklh(o == 0 (black)) = 1
-                    self.omega[1, s_1, s2_s1, 0, :, index] = 1
-                    self.omega[1, s_1, s2_s1, 0, s_1, index] = 0
+                    self.Omega[1, s_1, s2_s1, 0, :, index] = 1
+                    self.Omega[1, s_1, s2_s1, 0, s_1, index] = 0
 
                     # all other observations ( o==1, o==2, o==3 remain 0)
 
@@ -159,8 +161,8 @@ class BayesianModelComps:
 
                     # For s3 == s1, lklh(o == 1 (grey)) = 0,
                     # else lklh(o == 1 (grey)) = 1
-                    self.omega[1, s_1, s2_s1, 1, :, index] = 1
-                    self.omega[1, s_1, s2_s1, 1, s_1, index] = 0
+                    self.Omega[1, s_1, s2_s1, 1, :, index] = 1
+                    self.Omega[1, s_1, s2_s1, 1, s_1, index] = 0
 
                     # all other observations ( o==0, o==2, o==3 remain 0)
 
@@ -177,12 +179,12 @@ class BayesianModelComps:
 
                     # For s3 == s1, lklh(o == 0 (black)) = 0,
                     # else lklh(o == 0 (black)) = 1
-                    self.omega[1, s_1, s2_s1, 0, :, index] = 1
-                    self.omega[1, s_1, s2_s1, 0, s_1, index] = 0
+                    self.Omega[1, s_1, s2_s1, 0, :, index] = 1
+                    self.Omega[1, s_1, s2_s1, 0, s_1, index] = 0
 
                     # For s3 == 1, lklh(o == 3 (treasure)) = 1,
                     # else remain zero
-                    self.omega[1, s_1, s2_s1, 3, s_1, index] = 1
+                    self.Omega[1, s_1, s2_s1, 3, s_1, index] = 1
 
                     # all other observations ( o==1, o==2 remain 0)
 
@@ -198,14 +200,14 @@ class BayesianModelComps:
 
                     # For s3 == s1, lklh(o == 2 (blue)) = 0,
                     # else lklh(o==2 (blue) = 1
-                    self.omega[1, s_1, s2_s1, 2, :, index] = 1
-                    self.omega[1, s_1, s2_s1, 2, s_1, index] = 0
+                    self.Omega[1, s_1, s2_s1, 2, :, index] = 1
+                    self.Omega[1, s_1, s2_s1, 2, s_1, index] = 0
 
                     # For s3 == 1, lklh(o == 3 (treasure)) = 1,
                     # else remain zero
-                    self.omega[1, s_1, s2_s1, 3, s_1, index] = 1
+                    self.Omega[1, s_1, s2_s1, 3, s_1, index] = 1
 
-    def get_comps(self):
+    def get_comps_old(self):
         """Create or load Bayesian components, i.e. s4-permutations, prior and
         likelihood.
         """
@@ -242,19 +244,21 @@ class BayesianModelComps:
             print(f" ... finisehd saving s4_perms to files, time needed: "
                   f"{humanreadable_time(end-start)}"
                   )
-        # Create list with indices of all probs for each hide
-        print("Computing s4_marg_indices ...")
-        start = time.time()
-        for node in range(self.task_design_params.n_nodes):
-            self.S4_incl_nodes_indices[node] = [
-                index for index, s4_perm in enumerate(self.S4)
-                if s4_perm[node] == 1
-            ]
-            # --> 25 X 42504 indices per hide ( if 25 nodes and 6 hides)
-        end = time.time()
-        print(f" ... finished computing s4_marg_indices, time needed: "
-              f"{humanreadable_time(end-start)}"
-              )
+            
+        # TODO: old. not needed anymore? 
+        # # Create list with indices of all probs for each hide
+        # print("Computing s4_marg_indices ...")
+        # start = time.time()
+        # for node in range(self.task_design_params.n_nodes):
+        #     self.S4_incl_nodes_indices[node] = [
+        #         index for index, s4_perm in enumerate(self.S4)
+        #         if s4_perm[node] == 1
+        #     ]
+        #     # --> 25 X 42504 indices per hide ( if 25 nodes and 6 hides)
+        # end = time.time()
+        # print(f" ... finished computing s4_marg_indices, time needed: "
+        #       f"{humanreadable_time(end-start)}"
+        #       )
 
         # Evaluate number of s4 permutations
         self.n_S4 = len(self.S4)
@@ -266,7 +270,7 @@ class BayesianModelComps:
         if os.path.exists(prior_fn):
             print("Loading prior array from file ...")
             start = time.time()
-            self.beta_0 = np.load(prior_fn)
+            self.beta_1_0 = np.load(prior_fn)
             end = time.time()
             print(f" ... finished loading prior, time needed: "
                   f"{humanreadable_time(end-start)}"
@@ -275,7 +279,7 @@ class BayesianModelComps:
         else:
             print("Evaluating prior belief array for given task config ...")
             start = time.time()
-            self.beta_0 = np.full((self.task_design_params.n_nodes,
+            self.beta_1_0 = np.full((self.task_design_params.n_nodes,
                                      self.n_S4), 0.0)
             self.eval_prior()
             end = time.time()
@@ -284,7 +288,7 @@ class BayesianModelComps:
                   )
             print("Saving prior belief array to file ...")
             start = time.time()
-            np.save(prior_fn, self.beta_0)
+            np.save(prior_fn, self.beta_1_0)
             end = time.time()
             print(f" ... finished saving prior to file, time needed:"
                   f"{humanreadable_time(end-start)}"
@@ -300,13 +304,13 @@ class BayesianModelComps:
         if os.path.exists(lklh_fn):
             print("Loading likelihood array from file ...")
             start = time.time()
-            self.omega = np.load(lklh_fn)
+            self.Omega = np.load(lklh_fn)
             end = time.time()
             print(f" ... finished loading likelihood array, time needed: "
                   f"{humanreadable_time(end-start)}\n")
         else:
             print("Computing likelihood array for given task config ...")
-            self.omega = np.zeros(
+            self.Omega = np.zeros(
                 (2, self.task_design_params.n_nodes, 3, 4,
                  self.task_design_params.n_nodes, self.n_S4),
                 dtype=np.uint16)
@@ -317,11 +321,400 @@ class BayesianModelComps:
                   f"{humanreadable_time(end-start)}")
             print("Saving likelihood array to file")
             start = time.time()
-            np.save(lklh_fn, self.omega)
+            np.save(lklh_fn, self.Omega)
             end = time.time()
             print(f" ... saved likelihood array to file, time needed: "
                   f"{humanreadable_time(end-start)}")
         # start = time.time()
+        return self
+
+    def compute_set_S(self):
+        """Method to compute the set of states"""
+        n_nodes = self.task_design_params.n_nodes
+        n_hides = self.task_design_params.n_hides
+
+        hide_combos = sorted(
+            more_itertools.distinct_combinations(
+                range(1, n_nodes + 1), r=2
+                )
+        )
+
+        tr_possibility_factor = n_hides / n_nodes
+        cardinality_S = int(
+            n_nodes * n_nodes * len(hide_combos) * tr_possibility_factor)
+
+        self.S = np.full((cardinality_S,
+                          1 + 1 + n_hides),
+                          np.nan)
+
+        i = 0
+        for possible_position in range(n_nodes):
+            possible_position += 1
+            for possible_tr_loc in range(n_nodes):
+                possible_tr_loc += 1
+                for hiding_spot_combo in hide_combos:
+                    if possible_tr_loc in hiding_spot_combo:
+                        self.S[i, 0] = possible_position
+                        self.S[i, 1] = possible_tr_loc
+                        self.S[i, 2:4] = hiding_spot_combo
+                        i += 1
+
+    def compute_node_color_combos(self) -> list:
+        """Method to compute the node color components of observation set, i.e.
+        the last 4 entries of each set element's vector"""
+        n_nodes = self.task_design_params.n_nodes
+        n_hides = self.task_design_params.n_hides
+
+        obs_values = [0] * n_nodes
+        obs_values.extend([1] * (n_nodes - n_hides))
+        obs_values.extend([2] * n_hides)
+
+        node_color_combos = sorted(
+            more_itertools.distinct_permutations(obs_values, r=n_nodes))
+
+        return node_color_combos
+
+    def compute_set_O(self):
+        """Method to compute complete set of Observations"""
+        n_nodes = self.task_design_params.n_nodes
+
+        node_color_combos = self.compute_node_color_combos()
+
+        self.O = np.full((2 * len(node_color_combos), n_nodes + 1), np.nan)
+        i = 0
+
+        for treasure_found in [0, 1]:
+            
+            for color_combo in node_color_combos:
+
+                # TODO: write observations
+                self.O[i, 0] = treasure_found
+
+                self.O[i, 1:] = color_combo
+
+                i += 1
+        # TODO: linearer index!?
+
+    def compute_Omega(self):
+        """Method to compute Omega"""
+
+        self.Omega = np.full((self.p, self.n, self.m), 0)  # TODO init in init
+
+        node_colors = {"black": 0,
+                       "grey": 1,
+                       "blue": 2}
+
+        for i_a, a in enumerate(self.A):
+            for i_s, s in enumerate(self.S):
+                for i_o, o in enumerate(self.O):
+                    # Extract state components
+                    current_pos = int(s[0])  # NOTE: set S[0] := {1, ..., n}
+                    node_i_in_o = current_pos - 1  # NOTE: bc o[0] is tr flag
+                    tr_location = int(s[1])
+                    hiding_spots = s[2:]
+
+                    # Extract observation components
+                    tr_flag = o[0]
+
+                    # TODO: alle observations, wo node colors mit hiding spot
+                    #  locations keinen sinn machen
+                    # siehe Handwritten NOTE 24.11.
+
+                    # -------After DRILL actions: -----------------------------
+                    if a == 0:
+
+                        # CONDITION:                        CORRESP MODEL VARIABLE:
+                        # ---------------------------------------------------------
+                        # if new position...                                s[1]
+                        # ...IS NOT treasure location                       s[2]
+                        # ...IS NOT hiding spot,                            s[3:]
+                        # all observation, for which...
+                        # ...tr_flag == 0,                                  o[1]
+                        # ...and new node color == grey,                    o[2:]
+                        #  = 1
+                        if (
+                                current_pos != tr_location
+                                and current_pos not in hiding_spots
+                                and tr_flag == 0
+                                and o[node_i_in_o] == node_colors["grey"]):
+                            self.Omega[i_a, i_s, i_o] = 1
+
+                        # CONDITION:                        CORRESP MODEL VARIABLE:
+                        # ---------------------------------------------------------
+                        # if new position...                                s[1]
+                        # ...IS NOT treasure location                       s[2]
+                        # ...IS hiding spot,                                s[3:]
+                        # all observation, for which...
+                        # ...tr_flag == 0,                                  o[1]
+                        # ...and new node color == blue,                    o[2:]
+                        #  = 1
+                        if (
+                                current_pos != tr_location
+                                and current_pos in hiding_spots
+                                and tr_flag == 0
+                                and o[node_i_in_o] == node_colors["blue"]):
+                            self.Omega[i_a, i_s, i_o] = 1
+
+                        # All other observaton probabilites remain 0 as initiated.
+
+                    # -------After STEP actions: -----------------------------
+                    else:  # if a != 0
+                        # CONDITION:                        CORRESP MODEL VARIABLE:
+                        # ---------------------------------------------------------
+                        # if new position...                                s[1]
+                        # ...IS NOT treasure location                       s[2]
+                        # ...IS NOT hiding spot,                            s[3:]
+                        # all observation, for which...
+                        # ...tr_flag == 0,                                  o[1]
+                        # ...and new node color in ["black", "grey"],       o[2:]
+                        #  = 1
+                        if (
+                                current_pos != tr_location
+                                and current_pos not in hiding_spots
+                                and tr_flag == 0
+                                and o[node_i_in_o] in [node_colors["black"],
+                                                    node_colors["grey"]]):
+                            self.Omega[i_a, i_s, i_o] = 1
+
+                        # CONDITION:                        CORRESP MODEL VARIABLE:
+                        # ---------------------------------------------------------
+                        # if new position...                                s[1]
+                        # ...IS NOT treasure location                       s[2]
+                        # ...IS hiding spot,                                s[3:]
+                        # all observation, for which...
+                        # ...tr_flag == 0,                                  o[1]
+                        # ...and new node color in ["black", "blue"],       o[2:]
+                        #  = 1
+                        if (
+                                current_pos != tr_location
+                                and current_pos in hiding_spots
+                                and tr_flag == 0
+                                and o[node_i_in_o] in [node_colors["black"],
+                                                    node_colors["blue"]]):
+                            self.Omega[i_a, i_s, i_o] = 1
+
+                        # CONDITION:                        CORRESP MODEL VARIABLE:
+                        # ---------------------------------------------------------
+                        # if new position...                                s[1]
+                        # ...IS treasure location                           s[2]
+                        # ...IS hiding spot,                                s[3:]
+                        # all observation, for which...
+                        # ...tr_flag == 1,                                  o[1]
+                        # ...and new node color in ["black", "blue"],       o[2:]
+                        #  = 1
+                        if (
+                                current_pos == tr_location
+                                and current_pos in hiding_spots
+                                and tr_flag == 1
+                                and o[node_i_in_o] in [node_colors["black"],
+                                                    node_colors["blue"]]):
+                            self.Omega[i_a, i_s, i_o] = 1
+
+    def comput_Phi(self):
+        "Method to compute Phi"
+
+        action_set = [0,
+                      - self.task_design_params.dim, + 1,
+                      + self.task_design_params.dim, -1]
+
+        self.Phi = np.full((self.n, self.n, len(action_set)), np.nan)
+
+        # ---------------------------------------
+        # NOTE:
+        # s = (s_1, s_2, s_3, s_4)
+        # p^{a_t = a}(s_{t+1} = s|s_t = s_tilde)
+        # s_1 is the first component of s = s_{t+1}
+        # ---------------------------------------
+
+        for a_i, a in enumerate(action_set):
+
+            # Iterate possible old states s_{t}
+            for s_tilde_i, s_tilde in enumerate(self.S):
+
+                # Iterate possible new states s_{t+1}
+                for s_i, s in enumerate(self.S):
+
+                    s_1 = s[0]              # current position in t + 1
+                    s_1_tilde = s_tilde[0]  # current position in t
+                    s_1_tilde_plus_a = s_1_tilde + a
+
+                    # Filter out forbidden steps (wald outside border)
+                    if (1 <= s_1_tilde_plus_a <= self.task_design_params.n_nodes
+                            and not ((((s_1_tilde - 1)
+                                       % self.task_design_params.dim) == 0)
+                                     and a == -1)
+                            and not ((((s_1_tilde)
+                                       % self.task_design_params.dim) == 0)
+                                     and a == 1)
+                        ):
+                        if s_1 == s_1_tilde_plus_a:
+                            self.Phi[s_tilde_i, s_i, a_i] = 1
+                        
+                        elif s_1 != s_1_tilde_plus_a:
+                            self.Phi[s_tilde_i, s_i, a_i] = 0
+
+                    # tODO: Alle unerlaubten action
+                    # agent glaubt, dass er auf dem Feld stehen bleibt
+                    else:
+                        if s_1 == s_1_tilde:
+                            self.Phi[s_tilde_i, s_i, a_i] = 1
+                        elif s_1 != s_1_tilde:
+                            self.Phi[s_tilde_i, s_i, a_i] = 0
+
+    def save_arrays(self, **arrays):
+
+        n_nodes = self.task_design_params.n_nodes
+        n_hides = self.task_design_params.n_hides
+
+        for key, array in arrays.items():
+
+            # Define the output file name
+            out_fn = ("/home/belindame_f/treasure-hunt/code/utilities/"
+                      + f"{key}-{n_nodes}-nodes_{n_hides}-hides")
+
+            # Write the vectors to the TSV file
+            with open(f"{out_fn}.csv", 'w', newline='', encoding="utf8") as file:
+                writer = csv.writer(file, delimiter=',')
+                writer.writerows(array)
+
+            with open(f"{out_fn}.pkl", "wb") as file:
+                pickle.dump(array, file)
+
+    def plot_color_map(self, n_nodes, n_hides, **arrays):
+
+        dir_mgr = DirectoryManager()
+
+        for key, array in arrays.items():
+            fig_fn = f"{key}-{n_nodes}-nodes_{n_hides}-hides"
+
+            # Preapre figure
+            plotter = VeryPlotter(paths=dir_mgr.paths)
+            plt = pyplot
+
+            rc_params = plotter.define_run_commands()
+            plt = pyplot
+            plt.rcParams.update(rc_params)
+            fig, ax = plt.subplots(figsize=(11, 5))
+
+            # Create a custom discrete colormap
+            cmap = ListedColormap(['darkgrey', 'darkcyan'])
+            image = ax.matshow(array, cmap=cmap)
+
+            # Add colorbar
+            cbar = plt.colorbar(image, ticks=[0, 1], shrink=0.4)
+
+            # Save or display the plot
+            plotter.save_figure(fig=fig, figure_filename=fig_fn)
+
+    def compute_or_load_components(self):
+        """Create or load aHMM components, i.e. matrices of probability distributions.
+        """
+
+        # TODO: load if existing
+        # -----blueprint:-------------------------------------------------
+        # if os.path.exists(s4_perms_fn_pkl):
+        #     print("Loading s4_perms ...")
+        #     start = time.time()
+        #     with open(s4_perms_fn_pkl, "rb") as file:
+        #         self.S4 = pickle.load(file)
+        #     end = time.time()
+        #     print(
+        #         " ... finished loading s4_perms, timed needed: "
+        #         f"{humanreadable_time(end-start)}"
+        #         )
+
+        print("Computing set S ...")
+        start = time.time()
+        self.compute_set_S()
+        end = time.time()
+        print(f" ... finished computing set S, time needed: "
+              f"{humanreadable_time(end-start)}")
+
+        print("Saving set S ...")
+        start = time.time()
+        self.save_arrays(set_S=self.S)
+        end = time.time()
+        print(f" ... finisehd saving set S to files, time needed: "
+              f"{humanreadable_time(end-start)}"
+              )
+
+        print("Computing set O ...")
+        start = time.time()
+        self.compute_set_O()
+        end = time.time()
+        print(f" ... finished computing set O, time needed: "
+              f"{humanreadable_time(end-start)}")
+
+        print("Saving set O ...")
+        start = time.time()
+        self.save_arrays(set_O=self.O)
+        end = time.time()
+        print(f" ... finisehd saving set S to files, time needed: "
+              f"{humanreadable_time(end-start)}"
+              )
+
+        # Evaluate set cardinalities
+        self.n = len(self.S)
+        self.m = len(self.O)
+        self.p = len(self.A)  # TODO action set anders schreiben?, jetzt p = 2
+
+        # Load/evaluate initial belief state beta_1_0 -------------------------
+        print("Computing beta_1_0 for given task config ...")
+        start = time.time()
+        self.compute_beta_1_0()
+        end = time.time()
+        print(f" ... finished computing beta_1_0, time needed: "
+              f"{humanreadable_time(end-start)}"
+              )
+
+        start = time.time()
+        self.save_arrays(beta_0_1=self.beta_1_0)
+        end = time.time()
+        print(f" ... finisehd saving beta_0_1 to files, time needed: "
+              f"{humanreadable_time(end-start)}"
+              )
+
+        # Load/evaluate Omega-------------------------
+        print("Computing Omega for given task config ...")
+        start = time.time()
+        self.compute_Omega()
+        end = time.time()
+        print(f" ... finished computing Omega, time needed: "
+              f"{humanreadable_time(end-start)}")
+        start = time.time()
+        self.save_arrays(Omega_dill=self.Omega[0])
+        self.save_arrays(Omega_step=self.Omega[1])
+        end = time.time()
+        print(f" ... finisehd saving Omega to files, time needed: "
+              f"{humanreadable_time(end-start)}"
+              )
+
+        # Load/evaluate Phi-------------------------
+        print("Computing Phi for given task config ...")
+        start = time.time()
+        self.comput_Phi()
+        end = time.time()
+        print(f" ... finished computing Phi, time needed: "
+              f"{humanreadable_time(end-start)}")
+        start = time.time()
+        self.save_arrays(Phi_drill=self.Phi[:, :, 0])
+        self.save_arrays(Phi_minus_dim=self.Phi[:, :, 1])
+        self.save_arrays(Phi_plus_one=self.Phi[:, :, 2])
+        self.save_arrays(Phi_plus_dim=self.Phi[:, :, 3])
+        self.save_arrays(Phi_minus_one=self.Phi[:, :, 4])
+        end = time.time()
+        print(f" ... finisehd saving Phi to files, time needed: "
+              f"{humanreadable_time(end-start)}"
+              )
+
+        self.plot_color_map(n_nodes=self.task_design_params.n_nodes,
+                            n_hides=self.task_design_params.n_hides,
+                            Phi_drill=self.Phi[:, :, 0],
+                            Phi_minus_dim=self.Phi[:, :, 1],
+                            Phi_plus_one=self.Phi[:, :, 2],
+                            Phi_plus_dim=self.Phi[:, :, 3],
+                            Phi_minus_one=self.Phi[:, :, 4])
+
         return self
 
 
@@ -466,12 +859,12 @@ class Agent:
 
         if self.agent_attr.is_bayesian:
             # Unpack bayesian beh_model components
-            self.bayes_comps: BayesianModelComps = BayesianModelComps()
+            self.hmm_matrices: HiddenMarkovModel = HiddenMarkovModel()
 
             # ---(Prior, c != 0)---
-            self.prior_c: np.ndarray = np.array(np.nan)
+            self.p_s_giv_o_prior: np.ndarray = np.array(np.nan)
             # ---(Posterior)---
-            self.p_s_giv_o: np.ndarray = np.array(np.nan)
+            self.p_s_giv_o_post: np.ndarray = np.array(np.nan)
 
         # Initialize closest max s3 node variables for computations
         self.max_s3_b_value = np.nan
@@ -487,42 +880,47 @@ class Agent:
         self.kl_giv_a_o: np.ndarray = np.array(np.nan)
         self.virt_b = {}
 
-    def add_bayesian_model_components(self,
-                                      bayesian_comps: BayesianModelComps):
+    def attach_hmm_matrices(
+            self,
+            hmm_matrices: HiddenMarkovModel):
         """Method to load or create prior, likelihood and permutation lists etc
 
         Args:
         ------
-            bayesian_comps (BayesianModelComps): Object storing bayesian model
-                components
+        bayesian_comps (BayesianModelComps): Object storing bayesian model
+            components
         """
-        self.bayes_comps = bayesian_comps
+        self.hmm_matrices = hmm_matrices
 
     def eval_prior_subs_rounds(self):
         """Reset belief states for s3 (treasure) based on marginal s4
         (hiding spot) beliefs. This is necessary so the prior of the first
         trial of a new round (that is not c=0) withholds information about
         currently already revealed hiding spots"""
-
+        # TODO: major todo
         # Initialize all as zero
-        self.prior_c = np.full(
-            (self.task.task_params.n_nodes, self.bayes_comps.n_S4), 0.)
+        self.p_s_giv_o_prior = np.full(
+            (self.hmm_matrices.n, 1), 0.)
 
         # marg_s4_perm_b = np.full(self.n_s4_perms, np.nan)
         # for s4_perm in range(self.n_s4_perms):
         #     marg_s4_perm_b[s4_perm] = self.p_s_giv_o[:, s4_perm].sum()
 
-        marg_s4_perm_b = self.p_s_giv_o.sum(axis=0)
+        # TODO: how to evaluate marginal probs now??!
+        # -------------------------------------------
+        # THIS is the old code for marginal probs:
+        # marg_s4_perm_b = self.p_s_giv_o_post.sum(axis=0)
         # sum_prob_s4_perm = marg_s4_perm_b[:].sum()
 
-        for s_3 in range(self.task.task_params.n_nodes):
-            self.prior_c[s_3,
-                         self.bayes_comps.S4_incl_nodes_indices[s_3]
-                         ] = marg_s4_perm_b[
-                             self.bayes_comps.S4_incl_nodes_indices[s_3]
-                             ] * (1 / self.task.task_params.n_hides)
+        # for s_3 in range(self.task.task_params.n_nodes):
+        #     self.p_s_giv_o_prior[
+        #         s_3,
+        #         self.hmm_matrices.S4_incl_nodes_indices[s_3]
+        #         ] = marg_s4_perm_b[
+        #             self.hmm_matrices.S4_incl_nodes_indices[s_3]
+        #             ] * (1 / self.task.task_params.n_hides)
 
-        # Uncomment for DEBUGGING to track evaluation of posteriors
+        # Uncomment for DEBUGGING to track evaluation of posteriors (TODO: old!)
         # ------------------------------------------------------
         # # Evaluate marginal treasure distribution
         # marg_s3_b = np.full(self.task.n_nodes, np.nan)
@@ -538,8 +936,10 @@ class Agent:
         # sum_prob_hides = marg_s4_b[:].sum()
         # set_debug_breakpoint = 'here'
 
-    def eval_posterior(self, prior_belief_state, action, s_1, s2_giv_s1, obs
-                       ) -> np.ndarray:
+    def eval_p_s_giv_o_post(self,
+                            beta_prior,
+                            a_t, o_t
+                            ) -> np.ndarray:
         """Method to evaluate posterior belief state given prior, action, s1
         and observation
 
@@ -558,31 +958,39 @@ class Agent:
             np.ndarray: (n_nodes x n_s4_perms)-array of
                 the posterior belief state.
         """
-        # Determine action type (informative or non-informative)
-        if action != 0:  # if step
-            action_type = 1
-        else:  # if drill
-            action_type = 0
-        action_type = int(action_type)
 
-        if np.sum(prior_belief_state * self.bayes_comps.omega[
-                action_type, s_1, s2_giv_s1, obs, :, :]) == 0:
-            post_belief_state = (
-                prior_belief_state
-                * self.bayes_comps.omega[action_type, s_1, s2_giv_s1, obs, :, :])
+        # Determine action type (step or drill)
+        if a_t != 0:  # if step
+            a_t_type = 1
+        else:  # if drill
+            a_t_type = 0
+        a_t_type = int(a_t_type)
+
+        # Determine observation dependent omega index j
+        O = self.hmm_matrices.O
+        j = int(np.where(np.all(O == o_t, axis=1))[0])
+
+        # Extract components  # TODO: kopieren kostet working memory
+        Omega_j = self.hmm_matrices.Omega[a_t_type, :, j][:, np.newaxis]
+        Phi_k = self.hmm_matrices.Phi[a_t, :, :]
+
+        # TODO: still necessary?
+        if np.sum(beta_prior * Omega_j) == 0:
+
+            beta_post = (
+                beta_prior * Omega_j)
             print('sum of prior * lklh = 0, leaving out normalization')
             # debug = 'here'
+
         else:
-            post_belief_state = (
-                prior_belief_state
-                * self.bayes_comps.omega[action_type, s_1, s2_giv_s1, obs, :, :]
-                * (1 / np.sum(prior_belief_state
-                              * self.bayes_comps.omega[
-                                  action_type, s_1, s2_giv_s1, obs, :, :])))
+            # TODO: add state transition!
 
-        return post_belief_state
+            beta_post = Omega_j * (Phi_k.T @ beta_prior)
+            beta_post = beta_post / sum(beta_post)
 
-    def eval_marg_b(self, belief):
+        return beta_post
+
+    def eval_marg_beliefs(self, belief):
 
         """Method to compute marginal posterior distributions for each node to
         the treasure location or hiding spot
@@ -596,24 +1004,29 @@ class Agent:
         -------
             (np.ndarray, np.ndarray): marginal belief states
 
-            TODO: marg_s4 not actually margianl distribution. 
+            TODO: marg_s4 not actually margianl distribution.
         """
         # Evaluate marginal treasure distribution
-        marg_s3_b = np.full(self.task.task_params.n_nodes, np.nan)
-        for s_3 in range(self.task.task_params.n_nodes):
-            marg_s3_b[s_3] = belief[s_3, :].sum()
+        marg_treasure_belief = np.full(self.task.task_params.n_nodes, np.nan)
+        for node in range(self.task.task_params.n_nodes):
+            possible_tr_loc = node + 1
+            tr_state_i = 1
+
+            tr_spec_indices = np.where(
+                self.hmm_matrices.S[:, tr_state_i] == possible_tr_loc)
+            marg_treasure_belief[node] = belief[tr_spec_indices, :].sum()
 
         # Evaluate marginal hiding spot distribution
-        marg_s4_b = np.full(self.task.task_params.n_nodes, np.nan)
+        marg_hides_belief = np.full(self.task.task_params.n_nodes, np.nan)
         for node in range(self.task.task_params.n_nodes):
-            marg_s4_b[node] = belief[
-                :, self.bayes_comps.S4_incl_nodes_indices[node]].sum()
+            marg_hides_belief[node] = belief[
+                :, self.hmm_matrices.S4_incl_nodes_indices[node]].sum()
 
         # Uncomment for debugging
         # sum_prob_hides = marg_s4_b[:].sum()  # should evaluate to ~ n_hides
         # sum_prob_treasure = marg_s3_b[:].sum()  # should evaluate to ~ 1
 
-        return marg_s3_b, marg_s4_b
+        return marg_treasure_belief, marg_hides_belief
 
     def start_new_trial(self):
         """Reset dynamic states to initial values for a new trial"""
@@ -653,31 +1066,30 @@ class Agent:
             # ...and step action (a=1).
             if self.task.current_round == 0 and self.task.current_trial == 0:
                 action = 1
-                prior = self.bayes_comps.beta_0
+                prior = self.hmm_matrices.beta_1_0
             
             # If first trial in a new round, i.e. before any action,  pior_c
             # ...which is the posterior of preceding round's last trial as
             # ...prio and step action (a=1).
             elif self.task.current_trial == 0:
                 action = 1
-                prior = self.prior_c
+                prior = self.p_s_giv_o_prior
 
             # For all remaining trial use current action and posterior of
             else:
                 action = current_action
-                prior = self.p_s_giv_o
+                prior = self.p_s_giv_o_post
 
             # ------Evaluate posterior----------------------------
-            self.p_s_giv_o = self.eval_posterior(
-                prior_belief_state=prior,
-                action=action,
-                s_1=self.task.s1_t,
-                s2_giv_s1=self.task.s2_t[int(self.task.s1_t)],
-                obs=self.task.o_t)
+            self.p_s_giv_o_post = self.eval_p_s_giv_o_post(
+                beta_prior=prior,
+                a_t=action,
+                o_t=self.task.o_t)
 
             # ------ Evaluate marginal distributions-------------
+            # TODO: hier weiter!!
             start = time.time()
-            self.marg_s3_b, self.marg_s4_b = self.eval_marg_b(self.p_s_giv_o)
+            self.marg_s3_b, self.marg_s4_b = self.eval_marg_beliefs(self.p_s_giv_o_post)
             end = time.time()
             print(
                 f"time needed for marg_b: {humanreadable_time(end-start)}")
@@ -708,26 +1120,26 @@ class Agent:
             action (int): scalar value representing action
         """
         if action == 0:
-            if self.task.s2_t[node] == 0:
+            if self.task.node_colors[node] == 0:
                 if np.around(self.marg_s4_b[node], 10) == 0:
                     self.o_s2 = [1]
                 elif np.around(self.marg_s4_b[node], 10) == 1:
                     self.o_s2 = [2]
                 else:
                     self.o_s2 = [1, 2]
-            elif self.task.s2_t[node] == 1:
+            elif self.task.node_colors[node] == 1:
                 self.o_s2 = [1]
-            elif self.task.s2_t[node] == 2:
+            elif self.task.node_colors[node] == 2:
                 self.o_s2 = [2]
         elif action == 1:
-            if self.task.s2_t[node] == 0:
+            if self.task.node_colors[node] == 0:
                 if np.around(self.marg_s3_b[node], 10) == 0:
                     self.o_s2 = [0]
                 else:
                     self.o_s2 = [0, 3]
-            elif self.task.s2_t[node] == 1:
+            elif self.task.node_colors[node] == 1:
                 self.o_s2 = [1]
-            elif self.task.s2_t[node] == 2:
+            elif self.task.node_colors[node] == 2:
                 if np.around(self.marg_s3_b[node], 10) == 0:
                     self.o_s2 = [2]
                 else:
@@ -779,9 +1191,9 @@ class Agent:
 
             for obs in self.o_s2:
                 # product_a_o.shape = (25 x 177100)
-                product_a_o = (self.p_s_giv_o
-                               * self.bayes_comps.omega[action, new_s1,
-                                                       self.task.s2_t[new_s1],
+                product_a_o = (self.p_s_giv_o_post
+                               * self.hmm_matrices.Omega[action, new_s1,
+                                                       self.task.node_colors[new_s1],
                                                        obs, :, :])
 
                 sum_prod = np.sum(product_a_o)
@@ -888,13 +1300,13 @@ class Agent:
 
             for obs in self.o_s2:
                 # Evaluate virt belief state on t+1 giv potential o and a
-                self.virt_b[i][obs] = self.eval_posterior(  # type: ignore
-                    self.p_s_giv_o, action, new_s1,
-                    self.task.s2_t[new_s1], obs)
+                self.virt_b[i][obs] = self.eval_p_s_giv_o_post(  # type: ignore
+                    self.p_s_giv_o_post, action, new_s1,
+                    self.task.node_colors[new_s1], obs)
 
                 # Evaluate KL divergence
                 self.kl_giv_a_o[i, obs] = self.evaluate_kl_divergence(
-                    self.virt_b[i][obs], self.p_s_giv_o)
+                    self.virt_b[i][obs], self.p_s_giv_o_post)
 
     def evaluate_action_valences(self):
         """Evaluate action valences"""

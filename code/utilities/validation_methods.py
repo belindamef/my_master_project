@@ -6,7 +6,7 @@ import numpy as np
 from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.estimation_methods import Estimator, EstimationParameters
 from utilities.config import TaskConfigurator, TaskDesignParameters, humanreadable_time
-from utilities.agent import BayesianModelComps
+from utilities.agent import HiddenMarkovModel
 
 
 class ValidationParameters:
@@ -98,7 +98,7 @@ class Validator:
                  val_params: ValidationParameters,
                  task_configs: TaskConfigurator,
                  task_params: TaskDesignParameters,
-                 bayesian_comps: BayesianModelComps,
+                 bayesian_comps: HiddenMarkovModel,
                  est_params: EstimationParameters):
 
         self.val_params = val_params

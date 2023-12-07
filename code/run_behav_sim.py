@@ -7,10 +7,11 @@ Author: Belinda Fleischmann
 """
 
 import time
+import numpy as np
 from utilities.config import DirectoryManager, TaskConfigurator, TaskDesignParameters, get_arguments
 from utilities.config import DataHandler
 from utilities.simulation_methods import Simulator, SimulationParameters
-from utilities.agent import AgentAttributes, BayesianModelComps
+from utilities.agent import AgentAttributes, HiddenMarkovModel
 from utilities.validation_methods import ValidationParameters
 
 
@@ -25,7 +26,11 @@ def define_simulation_parameters() -> SimulationParameters:
     if arguments.parallel_computing:
         sim_parameters.get_params_from_args(arguments)
     else:
-        sim_parameters.define_params_manually()
+        sim_parameters.define_params_manually(
+            agent_gen_space=AGENT_GEN_SPACE,
+            tau_gen_space=TAU_GEN_SPACE,
+            lambda_gen_space=LAMBDA_GEN_SPACE
+        )
 
     return sim_parameters
 
@@ -68,7 +73,8 @@ def main(task_params: TaskDesignParameters):
         path=dir_mgr.paths,
         params=task_params
         ).get_config(EXP_LABEL)
-    bayesian_comps = BayesianModelComps(task_config.params).get_comps()
+    hmm_comps = HiddenMarkovModel(
+        task_config.params).compute_or_load_components()
 
     if IS_QUICK_TEST:
         adjust_total_trial_numbers(task_config)
@@ -76,7 +82,7 @@ def main(task_params: TaskDesignParameters):
     sim_params = define_simulation_parameters()
     val_params = define_validation_parameters()
     simulator = Simulator(task_configs=task_config,
-                          bayesian_comps=bayesian_comps,
+                          bayesian_comps=hmm_comps,
                           task_params=task_params)
 
     for repetition in val_params.repetition_numbers:
@@ -113,7 +119,7 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     EXP_LABEL = "test_ahmm"
-    OUT_DIR_LABEL = "test_ahmm_11_21"
+    OUT_DIR_LABEL = "test_ahmm_11_30"
 
     # Define task configuration parameters
     task_params = TaskDesignParameters(
@@ -122,7 +128,10 @@ if __name__ == "__main__":
         n_nodes=4
     )
 
-    # TODO hier weiter, warum nur C1 und dafür alle parameter durch, wenn script laufen lassen? 
+    # Define simulation parameters
+    AGENT_GEN_SPACE = ["A1"]
+    TAU_GEN_SPACE = [0.01]
+    LAMBDA_GEN_SPACE = [np.nan]
 
     # Define repetition_parameters
     N_REPS = 1
@@ -130,7 +139,7 @@ if __name__ == "__main__":
 
     IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1
-    TEST_N_ROUNDS = 1
+    TEST_N_ROUNDS = 1  # NOTE: only 1 round possible because prior_c (!?)
     TEST_N_TRIALS = 2
 
     main(task_params=task_params)

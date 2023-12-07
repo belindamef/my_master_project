@@ -9,7 +9,7 @@ import time
 import pandas as pd
 import numpy as np
 from .task import Task
-from .agent import AgentAttributes, Agent, BayesianModelComps
+from .agent import AgentAttributes, Agent, HiddenMarkovModel
 from .modelling import BehavioralModel
 from .config import TaskConfigurator, TaskDesignParameters, humanreadable_time
 np.set_printoptions(linewidth=500)
@@ -192,7 +192,7 @@ class Recorder:
         task (Task): Instance of class Task
         """
         self.data_one_round["s1"][trial] = task.s1_t
-        self.data_one_round["s2"][trial] = task.s2_t
+        self.data_one_round["s2"][trial] = task.node_colors
         self.data_one_round["s3"][trial] = task.s3_c
         self.data_one_round["s4"][trial] = task.s4_b
         self.data_one_round["n_grey"][trial] = task.n_grey
@@ -305,7 +305,7 @@ class Simulator():
     beh_model: BehavioralModel
 
     def __init__(self, task_configs: TaskConfigurator,
-                 bayesian_comps: BayesianModelComps,
+                 bayesian_comps: HiddenMarkovModel,
                  task_params: TaskDesignParameters = TaskDesignParameters()):
         self.task_configs = task_configs
         self.task_params = task_params
@@ -331,7 +331,7 @@ class Simulator():
                            task_object=self.task,
                            lambda_=lambda_gen)
         if agent_attributes.is_bayesian:
-            self.agent.add_bayesian_model_components(self.bayesian_comps)
+            self.agent.attach_hmm_matrices(self.bayesian_comps)
 
         self.beh_model = BehavioralModel(tau_gen=tau_gen,
                                          agent_object=self.agent)

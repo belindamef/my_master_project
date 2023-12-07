@@ -669,7 +669,7 @@ class TaskConfigurator:
                              self.params.n_hides), dtype=int)
         for block in range(self.params.n_blocks):
             hides_loc[block] = np.random.choice(
-                self.params.n_nodes,
+                np.arange(1, self.params.n_nodes + 1),
                 self.params.n_hides,
                 replace=False)
         self.states['hides'] = hides_loc
@@ -682,7 +682,8 @@ class TaskConfigurator:
         for block in range(self.params.n_blocks):
             for round_ in range(self.params.n_rounds):
                 s_1[block, round_] = int(np.random.choice(
-                    self.params.n_nodes, 1))
+                    np.arange(1, self.params.n_nodes + 1),
+                    1))
         self.states['s_1'] = s_1
 
     def sample_treasure_loc(self):

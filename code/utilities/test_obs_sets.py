@@ -4,10 +4,11 @@ import more_itertools
 import csv
 import numpy as np
 import time
-from utilities.config import humanreadable_time
-from matplotlib import pyplot
-from utilities.config import DirectoryManager
-from utilities.very_plotter_new import VeryPlotter
+  from config import humanreadable_time
+from matplotlib import cm, colorbar, pyplot
+from config import DirectoryManager
+from very_plotter_new import VeryPlotter
+from matplotlib.colors import ListedColormap
 
 
 def compute_set_S(n_nodes, n_hides) -> np.ndarray:
@@ -218,8 +219,9 @@ def save_arrays(n_nodes, n_hides, **arrays):
 def plot_color_map(n_nodes, n_hides, **arrays):
 
     dir_mgr = DirectoryManager()
+
     for key, array in arrays.items():
-        fig_fn = f"{key}-{n_nodes}-nodes_{n_hides}-hides.pdf"
+        fig_fn = f"{key}-{n_nodes}-nodes_{n_hides}-hides"
 
         # Preapre figure
         plotter = VeryPlotter(paths=dir_mgr.paths)
@@ -229,9 +231,24 @@ def plot_color_map(n_nodes, n_hides, **arrays):
         plt = pyplot
         plt.rcParams.update(rc_params)
         fig, ax = plt.subplots(figsize=(11, 5))
-        ax.imshow(array)
 
+        # Create a custom discrete colormap
+        cmap = ListedColormap(['darkgrey', 'darkcyan'])
+        image = ax.matshow(array, cmap=cmap)
+
+        # Add colorbar
+        cbar = plt.colorbar(image, ticks=[0, 1], shrink=0.4)
+
+        # Save or display the plot
         plotter.save_figure(fig=fig, figure_filename=fig_fn)
+
+
+def compute_beta_1_0(n_nodes, set_S):
+
+    n_S = len(set_S)
+    beta_1_0 = np.full((n_S, 1), 1 / n_S)
+
+    return beta_1_0
 
 
 if __name__ == "__main__":
