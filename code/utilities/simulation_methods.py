@@ -319,7 +319,7 @@ class Simulator():
         """
         agent_attributes = AgentAttributes(agent_name)
         self.task = Task(task_configs=self.task_configs,
-                         task_params=self.task_params)
+                         grid_config=self.task_params)
         self.task.start_new_block(this_block)
 
         self.agent = Agent(agent_attr=agent_attributes,
@@ -338,9 +338,9 @@ class Simulator():
         ------
             this_trial (int): Current trial number
         """
-        self.task.start_new_trial(this_trial)
+        self.task.t = this_trial
         self.agent.start_new_trial()
-        self.task.return_observation()
+        self.task.eval_obs_func_g()
         start = time.time()
         self.agent.update_belief_state(current_action=self.beh_model.action_t)
         end = time.time()
@@ -414,7 +414,7 @@ class Simulator():
                     # End round, if treasure discovered
                     if self.task.r_t == 1:
                         # Evaluate observation and belief update for t + 1
-                        self.task.return_observation()
+                        self.task.eval_obs_func_g()
                         self.agent.update_belief_state(self.beh_model.action_t)
                         recorder.record_trial_start(this_trial + 1, self.task)
                         break
@@ -494,7 +494,7 @@ class Simulator():
                     # End round, if treasure discovered
                     if self.task.r_t == 1:
                         # Evaluate observation and belief update for t + 1
-                        self.task.return_observation()
+                        self.task.eval_obs_func_g()
                         self.agent.update_belief_state(self.beh_model.action_t)
                         break
 

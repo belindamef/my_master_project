@@ -5,11 +5,13 @@ import os
 import argparse
 import copy as cp
 import glob
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 import pickle
 import csv
+
+from pygame import init
 
 def humanreadable_time(time_in_seconds: float) -> str:
     """_summary_
@@ -609,8 +611,10 @@ class GridConfigurationParameters:
     n_trials: int = 12
     dim: int = 5
     n_hides: int = 6
-    n_nodes: int = dim ** 2
+    n_nodes: int = field(init=False)
 
+    def __post_init__(self):
+        self.n_nodes = self.dim ** 2
 
 class TaskConfigurator:
     """A Class to create task configurations given a set of

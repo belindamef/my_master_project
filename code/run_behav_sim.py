@@ -124,8 +124,7 @@ if __name__ == "__main__":
     # Define task configuration parameters
     task_params = GridConfigurationParameters(
         dim=2,
-        n_hides=2,
-        n_nodes=4
+        n_hides=2
     )
 
     # Define simulation parameters

@@ -58,7 +58,7 @@ class HiddenMarkovModel:
 
     def __init__(self, task_object,
                  grid_config_params=GridConfigurationParameters()):
-        self.task = task_object
+        self.task: Task = task_object
         self.grid_config = grid_config_params
         self.paths: Paths = Paths()
         self.beta_0: np.ndarray = np.full((self.task.n, 1), np.nan)
@@ -193,7 +193,7 @@ class HiddenMarkovModel:
 
         for i_a, a in enumerate(A):
             for i_s, s in enumerate(self.task.S):
-                for i_o, o in enumerate(self.task.O):
+                for i_o, o in enumerate(self.task.O_):
                     # Extract state components
                     current_pos = int(s[0])  # NOTE: set S[0] := {1, ..., n}
                     node_index_in_o_t = current_pos  # NOTE: bc o[0] is tr flag
@@ -596,10 +596,10 @@ class Agent:
         self.decision_t = np.full(1, np.nan)  # decision
 
         # Initialize belief state objects
-        self.marg_tr_belief = np.full(self.task.grid_config.n_nodes, np.nan)
-        self.marg_hide_belief = np.full(self.task.grid_config.n_nodes, np.nan)
-        self.marg_tr_belief_prior = np.full(self.task.grid_config.n_nodes, np.nan)
-        self.marg_hide_belief_prior = np.full(self.task.grid_config.n_nodes, np.nan)
+        self.marg_tr_belief = np.full(self.task.grid.n_nodes, np.nan)
+        self.marg_hide_belief = np.full(self.task.grid.n_nodes, np.nan)
+        self.marg_tr_belief_prior = np.full(self.task.grid.n_nodes, np.nan)
+        self.marg_hide_belief_prior = np.full(self.task.grid.n_nodes, np.nan)
 
         if self.agent_attr.is_bayesian:
             # Unpack bayesian beh_model components
@@ -612,7 +612,7 @@ class Agent:
 
         # Initialize closest max s3 node variables for computations
         self.max_s3_b_value = np.nan
-        self.rounded_marg_s3_b = np.full(self.task.grid_config.n_nodes, np.nan)
+        self.rounded_marg_s3_b = np.full(self.task.grid.n_nodes, np.nan)
         self.max_tr_b_node_indices = np.nan
         self.dist_to_max_s3_b_nodes = np.nan
         self.shortest_dist_to_max_s3_b = np.nan
@@ -633,7 +633,7 @@ class Agent:
         bayesian_comps (BayesianModelComps): Object storing bayesian model
             components
         """
-        self.hmm_matrices = HiddenMarkovModel(self.task, self.task.grid_config)
+        self.hmm_matrices = HiddenMarkovModel(self.task, self.task.grid)
         self.hmm_matrices.compute_or_load_components()
 
     def eval_prior_subs_rounds(self):
@@ -711,7 +711,7 @@ class Agent:
         a_t_type = int(a_t_type)
 
         # Determine observation dependent omega index j
-        O_ = self.task.O
+        O_ = self.task.O_
         j = int(np.where(np.all(O_ == o_t, axis=1))[0])
 
         # Extract components  # TODO: kopieren kostet working memory
@@ -751,8 +751,8 @@ class Agent:
             TODO: marg_s4 not actually margianl distribution.
         """
         # Evaluate marginal treasure distribution
-        marg_treasure_belief = np.full(self.task.grid_config.n_nodes, np.nan)
-        for node in range(self.task.grid_config.n_nodes):
+        marg_treasure_belief = np.full(self.task.grid.n_nodes, np.nan)
+        for node in range(self.task.grid.n_nodes):
             possible_tr_loc = node + 1
             tr_index_in_state_vector = 1
 
@@ -765,12 +765,12 @@ class Agent:
             marg_treasure_belief[node] = belief[tr_spec_indices, :].sum()
 
         # Evaluate marginal hiding spot distribution
-        marg_hides_belief = np.full(self.task.grid_config.n_nodes, np.nan)
-        for node in range(self.task.grid_config.n_nodes):
+        marg_hides_belief = np.full(self.task.grid.n_nodes, np.nan)
+        for node in range(self.task.grid.n_nodes):
 
             possible_hide_loc = node + 1
             hide_indices_in_state_vector = range(
-                2,  2 + self.task.grid_config.n_hides)
+                2,  2 + self.task.grid.n_hides)
 
             hide_spec_indices = np.where(
                 np.any(
@@ -861,7 +861,7 @@ class Agent:
         for action in self.task.A:
             new_s1 = action + self.task.s1_t
             # Remove forbidden steps (walk outside border)
-            if (not (1 <= new_s1 <= self.task.grid_config.n_nodes)
+            if (not (1 <= new_s1 <= self.task.grid.n_nodes)
                     or (((self.task.s1_t - 1)
                          % self.task.task_configs.params.dim == 0)
                         and action == -1)
@@ -1071,7 +1071,7 @@ class Agent:
     def evaluate_action_valences(self):
         """Evaluate action valences"""
 
-        remaining_moves = self.task.grid_config.n_trials - self.task.t - 1
+        remaining_moves = self.task.grid.n_trials - self.task.t - 1
         # TODO: trial count weird?
 
 
