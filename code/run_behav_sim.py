@@ -8,7 +8,7 @@ Author: Belinda Fleischmann
 
 import time
 import numpy as np
-from utilities.config import DirectoryManager, TaskConfigurator, TaskDesignParameters, get_arguments
+from utilities.config import DirectoryManager, TaskConfigurator, GridConfigurationParameters, get_arguments
 from utilities.config import DataHandler
 from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.agent import AgentAttributes, HiddenMarkovModel
@@ -62,7 +62,7 @@ def adjust_total_trial_numbers(task_configuration_object: TaskConfigurator):
     task_configuration_object.params.n_trials = TEST_N_TRIALS
 
 
-def main(task_params: TaskDesignParameters):
+def main(task_params: GridConfigurationParameters):
     """Main function"""
     dir_mgr = DirectoryManager()
     dir_mgr.define_raw_beh_data_out_path(data_type="sim",
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     OUT_DIR_LABEL = "test_ahmm_12_14"
 
     # Define task configuration parameters
-    task_params = TaskDesignParameters(
+    task_params = GridConfigurationParameters(
         dim=2,
         n_hides=2,
         n_nodes=4

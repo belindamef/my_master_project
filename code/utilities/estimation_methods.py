@@ -7,7 +7,7 @@ import xarray as xr
 # import utilities.abm_bmc as abm_bmc  # TODO uncomment back (python 3.8...)
 from utilities.simulation_methods import Simulator
 from utilities.agent import HiddenMarkovModel
-from utilities.config import TaskConfigurator, TaskDesignParameters, custom_sort_key
+from utilities.config import TaskConfigurator, GridConfigurationParameters, custom_sort_key
 
 
 class EstimationParameters:
@@ -132,7 +132,7 @@ class Estimator:
 
     def instantiate_sim_obj(self, task_configs: TaskConfigurator,
                             bayesian_comps: HiddenMarkovModel,
-                            task_params: TaskDesignParameters):
+                            task_params: GridConfigurationParameters):
         """
         Method to instantiate simulation object
 
@@ -317,7 +317,7 @@ class Estimator:
                             method: str, candidate_agent: str,
                             task_configs: TaskConfigurator,
                             bayesian_comps: HiddenMarkovModel,
-                            task_params: TaskDesignParameters):
+                            task_params: GridConfigurationParameters):
         """_summary_
 
         Args:

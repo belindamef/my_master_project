@@ -18,7 +18,7 @@ exists on disk.
 import time
 import os
 import numpy as np
-from utilities.config import DirectoryManager, TaskConfigurator, TaskDesignParameters, get_arguments
+from utilities.config import DirectoryManager, TaskConfigurator, GridConfigurationParameters, get_arguments
 from utilities.config import DataHandler
 from utilities.simulation_methods import SimulationParameters
 from utilities.agent import AgentAttributes, HiddenMarkovModel
@@ -345,7 +345,7 @@ def main():
     task_config = TaskConfigurator(path=dir_mgr.paths).get_config(
         config_label=EXP_LABEL)
     bayesian_comps = HiddenMarkovModel(
-        task_design_params=task_config.params).get_comps_old()
+        grid_config_params=task_config.params).get_comps_old()
 
     # For debigging, adjust total number of trials
     if IS_TEST:
@@ -359,7 +359,7 @@ def main():
     validator = Validator(sim_params=sim_params,
                           val_params=val_params,
                           task_configs=task_config,
-                          task_params=TaskDesignParameters(),
+                          task_params=GridConfigurationParameters(),
                           bayesian_comps=bayesian_comps,
                           est_params=est_params)
 

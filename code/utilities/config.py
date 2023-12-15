@@ -8,7 +8,8 @@ import glob
 from dataclasses import dataclass
 import numpy as np
 import pandas as pd
-
+import pickle
+import csv
 
 def humanreadable_time(time_in_seconds: float) -> str:
     """_summary_
@@ -85,6 +86,7 @@ class Paths:
     code = os.path.dirname(utils)
     project = os.path.dirname(code)
     task_configs = os.path.join(code, "task_config")  # all configurations
+    stoch_mats = os.path.join(code, "stoch_matrices")  # HMM stoch. matrices
     data = os.path.join(project, "data")
     figures = os.path.join(project, "figures")
     sim_rawdata = os.path.join(data, "rawdata", "sim")
@@ -431,7 +433,7 @@ class DataHandler:
         exp_label (str): Name of experiment, i.e. task configuration
     """
 
-    def __init__(self, paths: Paths, exp_label: str):
+    def __init__(self, paths: Paths, exp_label: str = ""):
 
         self.paths = paths
         self.exp_label = exp_label
@@ -450,6 +452,25 @@ class DataHandler:
             paths.descr_stats, 'sim', f'{exp_label}', 'grp_lvl_stats')
         self.tw_exp_fn = os.path.join(
             paths.descr_stats, 'exp', f'{exp_label}', 't_wise_stats')
+
+    def save_arrays(self, n_nodes: int, n_hides: int, **arrays):
+
+        if not os.path.exists(self.paths.stoch_mats):
+            os.makedirs(self.paths.stoch_mats)
+
+        for key, array in arrays.items():
+
+            # Define the output file name
+            out_fn = os.path.join(self.paths.stoch_mats,
+                                  f"{key}-{n_nodes}-nodes_{n_hides}-hides")
+
+            # Write the vectors to the TSV file
+            with open(f"{out_fn}.csv", 'w', newline='', encoding="utf8") as file:
+                writer = csv.writer(file, delimiter=',')
+                writer.writerows(array)
+
+            with open(f"{out_fn}.pkl", "wb") as file:
+                pickle.dump(array, file)
 
     def save_data_to_tsv(self, data: pd.DataFrame, filename: str):
         """Safe dataframe to a .tsv file
@@ -570,7 +591,7 @@ class DataHandler:
 
 
 @dataclass
-class TaskDesignParameters:
+class GridConfigurationParameters:
     """A data class to store experimental parameters
 
     Attributes
@@ -619,7 +640,7 @@ class TaskConfigurator:
     """
 
     def __init__(self, path: Paths, dim: int = 5, n_hiding_spots: int = 6,
-                 params: TaskDesignParameters = TaskDesignParameters()):
+                 params: GridConfigurationParameters = GridConfigurationParameters()):
         self.paths = path
         self.states = {}
         self.params = params

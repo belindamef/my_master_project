@@ -5,7 +5,7 @@ import json
 import numpy as np
 from math import factorial as fac
 import more_itertools
-from utilities.config import TaskConfigurator, TaskDesignParameters
+from utilities.config import TaskConfigurator, GridConfigurationParameters
 from .config import Paths
 from functools import reduce
 
@@ -18,7 +18,7 @@ class Task:
     """
 
     def __init__(self, task_configs,
-                 task_params: TaskDesignParameters = TaskDesignParameters()):
+                 task_params: GridConfigurationParameters = GridConfigurationParameters()):
         """A class to represent the tresaure hunt task
 
         Args:

@@ -11,7 +11,7 @@ import numpy as np
 from .task import Task
 from .agent import AgentAttributes, Agent, HiddenMarkovModel
 from .modelling import BehavioralModel
-from .config import TaskConfigurator, TaskDesignParameters, humanreadable_time
+from .config import TaskConfigurator, GridConfigurationParameters, humanreadable_time
 np.set_printoptions(linewidth=500)
 
 
@@ -301,7 +301,7 @@ class Simulator():
 
     def __init__(self, task_configs: TaskConfigurator,
                  #bayesian_comps: HiddenMarkovModel,
-                 task_params: TaskDesignParameters = TaskDesignParameters()):
+                 task_params: GridConfigurationParameters = GridConfigurationParameters()):
         self.task_configs = task_configs
         self.task_params = task_params
         #self.bayesian_comps = bayesian_comps

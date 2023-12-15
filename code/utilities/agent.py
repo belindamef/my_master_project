@@ -4,14 +4,14 @@ hunt task.
 import os
 import time
 import pickle
-import csv
 import numpy as np
-import more_itertools
 from utilities.task import Task
-from utilities.config import Paths, TaskDesignParameters, humanreadable_time, DirectoryManager
-from matplotlib import cm, colorbar, pyplot
+from utilities.config import Paths, GridConfigurationParameters, humanreadable_time, DirectoryManager
+from utilities.config import DataHandler
+from matplotlib import pyplot
 from utilities.very_plotter_new import VeryPlotter
 from matplotlib.colors import ListedColormap
+
 
 class HiddenMarkovModel:
     """A Class to compute Bayesian model components given a set of
@@ -56,9 +56,10 @@ class HiddenMarkovModel:
             class TaskDesignParameters.
     """
 
-    def __init__(self, task_object, task_design_params=TaskDesignParameters()):
+    def __init__(self, task_object,
+                 grid_config_params=GridConfigurationParameters()):
         self.task = task_object
-        self.task_design_params = task_design_params
+        self.grid_config = grid_config_params
         self.paths: Paths = Paths()
         self.beta_0: np.ndarray = np.full((self.task.n, 1), np.nan)
         self.Omega: np.ndarray = np.array(np.nan)
@@ -82,8 +83,8 @@ class HiddenMarkovModel:
         # Initialize and evaluate s_4 permutations
         s4_perms_fn_pkl = os.path.join(
             self.paths.code, "utilities",
-            f"s4_perms_dim-{self.task_design_params.dim}_"
-            f"h{self.task_design_params.n_hides}.pkl")
+            f"s4_perms_dim-{self.grid_config.dim}_"
+            f"h{self.grid_config.n_hides}.pkl")
 
         if os.path.exists(s4_perms_fn_pkl):
             print("Loading s4_perms ...")
@@ -115,8 +116,8 @@ class HiddenMarkovModel:
 
         # Load/evaluate agent's initial belief state in 1. trial ---(Prior)---
         prior_fn = os.path.join(self.paths.code, "utilities",
-                                f"prior_dim-{self.task_design_params.dim}_"
-                                f"h{self.task_design_params.n_hides}.npy")
+                                f"prior_dim-{self.grid_config.dim}_"
+                                f"h{self.grid_config.n_hides}.npy")
         if os.path.exists(prior_fn):
             print("Loading prior array from file ...")
             start = time.time()
@@ -129,7 +130,7 @@ class HiddenMarkovModel:
         else:
             print("Evaluating prior belief array for given task config ...")
             start = time.time()
-            self.beta_0 = np.full((self.task_design_params.n_nodes,
+            self.beta_0 = np.full((self.grid_config.n_nodes,
                                      self.n_S4), 0.0)
             self.eval_prior()
             end = time.time()
@@ -148,8 +149,8 @@ class HiddenMarkovModel:
         lklh_fn = os.path.join(
             self.paths.code,
             "utilities",
-            f"lklh_dim-{self.task_design_params.dim}_"
-            f"h{self.task_design_params.n_hides}.npy"
+            f"lklh_dim-{self.grid_config.dim}_"
+            f"h{self.grid_config.n_hides}.npy"
         )
         if os.path.exists(lklh_fn):
             print("Loading likelihood array from file ...")
@@ -161,8 +162,8 @@ class HiddenMarkovModel:
         else:
             print("Computing likelihood array for given task config ...")
             self.Omega = np.zeros(
-                (2, self.task_design_params.n_nodes, 3, 4,
-                 self.task_design_params.n_nodes, self.n_S4),
+                (2, self.grid_config.n_nodes, 3, 4,
+                 self.grid_config.n_nodes, self.n_S4),
                 dtype=np.uint16)
             start = time.time()
             self.eval_likelihood()
@@ -300,8 +301,8 @@ class HiddenMarkovModel:
         "Method to compute Phi"
 
         action_set = [0,
-                      - self.task_design_params.dim, + 1,
-                      + self.task_design_params.dim, -1]
+                      - self.grid_config.dim, + 1,
+                      + self.grid_config.dim, -1]
 
         self.Phi = np.full((self.task.n, self.task.n, len(action_set)), np.nan)
 
@@ -325,12 +326,12 @@ class HiddenMarkovModel:
                     s_1_tilde_plus_a = s_1_tilde + a
 
                     # Filter out forbidden steps (wald outside border)
-                    if (1 <= s_1_tilde_plus_a <= self.task_design_params.n_nodes
+                    if (1 <= s_1_tilde_plus_a <= self.grid_config.n_nodes
                             and not ((((s_1_tilde - 1)
-                                       % self.task_design_params.dim) == 0)
+                                       % self.grid_config.dim) == 0)
                                      and a == -1)
                             and not ((((s_1_tilde)
-                                       % self.task_design_params.dim) == 0)
+                                       % self.grid_config.dim) == 0)
                                      and a == 1)
                             ):
                         if s_1 == s_1_tilde_plus_a:
@@ -346,25 +347,6 @@ class HiddenMarkovModel:
                             self.Phi[s_tilde_i, s_i, a_i] = 1
                         elif s_1 != s_1_tilde:
                             self.Phi[s_tilde_i, s_i, a_i] = 0
-
-    def save_arrays(self, **arrays):
-
-        n_nodes = self.task_design_params.n_nodes
-        n_hides = self.task_design_params.n_hides
-
-        for key, array in arrays.items():
-
-            # Define the output file name
-            out_fn = ("/home/belindame_f/treasure-hunt/code/utilities/"
-                      + f"{key}-{n_nodes}-nodes_{n_hides}-hides")
-
-            # Write the vectors to the TSV file
-            with open(f"{out_fn}.csv", 'w', newline='', encoding="utf8") as file:
-                writer = csv.writer(file, delimiter=',')
-                writer.writerows(array)
-
-            with open(f"{out_fn}.pkl", "wb") as file:
-                pickle.dump(array, file)
 
     def plot_color_map(self, n_nodes, n_hides, **arrays):
 
@@ -425,6 +407,7 @@ class HiddenMarkovModel:
         # print(f" ... finisehd saving beta_0_1 to files, time needed: "
         #       f"{humanreadable_time(end-start)}"
         #       )
+        data_handler = DataHandler(paths=self.paths)
 
         # Load/evaluate Omega-------------------------
         print("Computing Omega for given task config ...")
@@ -434,14 +417,18 @@ class HiddenMarkovModel:
         print(f" ... finished computing Omega, time needed: "
               f"{humanreadable_time(end-start)}")
         start = time.time()
-        self.save_arrays(Omega_dill=self.Omega[:, :, 0])
-        self.save_arrays(Omega_step=self.Omega[:, :, 1])
+        data_handler.save_arrays(n_nodes=self.grid_config.n_nodes,
+                    n_hides=self.grid_config.n_hides,
+                    Omega_dill=self.Omega[:, :, 0])
+        data_handler.save_arrays(n_nodes=self.grid_config.n_nodes,
+                    n_hides=self.grid_config.n_hides,
+                    Omega_step=self.Omega[:, :, 1])
         end = time.time()
         print(f" ... finisehd saving Omega to files, time needed: "
               f"{humanreadable_time(end-start)}"
               )
-        self.plot_color_map(n_nodes=self.task_design_params.n_nodes,
-                            n_hides=self.task_design_params.n_hides,
+        self.plot_color_map(n_nodes=self.grid_config.n_nodes,
+                            n_hides=self.grid_config.n_hides,
                             Omega_drill=self.Omega[:, :, 0],
                             Omega_step=self.Omega[:, :, 1])
 
@@ -453,18 +440,20 @@ class HiddenMarkovModel:
         print(f" ... finished computing Phi, time needed: "
               f"{humanreadable_time(end-start)}")
         start = time.time()
-        self.save_arrays(Phi_drill=self.Phi[:, :, 0])
-        self.save_arrays(Phi_minus_dim=self.Phi[:, :, 1])
-        self.save_arrays(Phi_plus_one=self.Phi[:, :, 2])
-        self.save_arrays(Phi_plus_dim=self.Phi[:, :, 3])
-        self.save_arrays(Phi_minus_one=self.Phi[:, :, 4])
+        data_handler.save_arrays(n_nodes=self.grid_config.n_nodes,
+                    n_hides=self.grid_config.n_hides,
+                    Phi_drill=self.Phi[:, :, 0],
+                    Phi_minus_dim=self.Phi[:, :, 1],
+                    Phi_plus_one=self.Phi[:, :, 2],
+                    Phi_plus_dim=self.Phi[:, :, 3],
+                    Phi_minus_one=self.Phi[:, :, 4])
         end = time.time()
         print(f" ... finisehd saving Phi to files, time needed: "
               f"{humanreadable_time(end-start)}"
               )
 
-        self.plot_color_map(n_nodes=self.task_design_params.n_nodes,
-                            n_hides=self.task_design_params.n_hides,
+        self.plot_color_map(n_nodes=self.grid_config.n_nodes,
+                            n_hides=self.grid_config.n_hides,
                             Phi_drill=self.Phi[:, :, 0],
                             Phi_minus_dim=self.Phi[:, :, 1],
                             Phi_plus_one=self.Phi[:, :, 2],
