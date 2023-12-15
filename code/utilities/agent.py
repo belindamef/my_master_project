@@ -6,7 +6,6 @@ import time
 import pickle
 import csv
 import numpy as np
-# import torch
 import more_itertools
 from utilities.task import Task
 from utilities.config import Paths, TaskDesignParameters, humanreadable_time, DirectoryManager
@@ -57,155 +56,24 @@ class HiddenMarkovModel:
             class TaskDesignParameters.
     """
 
-    def __init__(self, task_design_params=TaskDesignParameters()):
+    def __init__(self, task_object, task_design_params=TaskDesignParameters()):
+        self.task = task_object
         self.task_design_params = task_design_params
         self.paths: Paths = Paths()
-        self.S: np.ndarray = np.array(np.nan)
-        self.O: np.ndarray = np.array(np.nan)
-        self.A: list = [0, 1]  # 0: drill, 1: step
-        self.n: int = 0
-        self.m: int = 0
-        self.p: int = 0
-        self.beta_1_0: np.ndarray = np.array(np.nan)
+        self.beta_0: np.ndarray = np.full((self.task.n, 1), np.nan)
         self.Omega: np.ndarray = np.array(np.nan)
         self.Phi: np.ndarray = np.array(np.nan)
 
-    def eval_s4_perms(self):
-        """Method to evaluate permutations of s4 states"""
-        s_4_values = [0] * (self.task_design_params.n_nodes -
-                            self.task_design_params.n_hides)
-        s_4_values.extend([1] * self.task_design_params.n_hides)
-        self.S4 = sorted(
-            more_itertools.distinct_permutations(s_4_values))
-
-    def compute_beta_1_0(self):
+    def compute_beta_0(self):
         """Method to evaluate the initial belief state beta in round 1,
-        trial 0"""
-        self.beta_1_0 = np.full((self.n, 1), 1 / self.n)
+        trial 1 given the first state current position"""
 
-    def eval_likelihood(self):
-        """Method to evaluate the action-dependent state-conditional
-        observation distribution p(o|s) (likelihood), separately for
-        action = 0 and action not 0"""
-
-        # Loop through s4_permutations:
-        for index, s4_perm in enumerate(self.S4):
-
-            # Loop through s1 values
-            for s_1 in range(self.task_design_params.n_nodes):
-
-                # ---------for all a = 0---------------
-
-                # If s4[s1] == 0 (not hiding spot), lklh(o == 1 (grey)) = 1,
-                #   else remain zero
-                if s4_perm[s_1] == 0:
-
-                    # for s2[s1] == 0 (black)
-                    # -----------------------
-                    s2_s1 = 0
-                    self.Omega[0, s_1, s2_s1, 1, :, index] = 1
-                    self.Omega[0, s_1, s2_s1, 1, s_1, index] = 0
-
-                    # for s2[s1] == 1 (grey)
-                    # -----------------------
-                    s2_s1 = 1
-                    self.Omega[0, s_1, s2_s1, 1, :, index] = 1
-                    self.Omega[0, s_1, s2_s1, 1, s_1, index] = 0
-
-                    # for s2[s1] == 2 (blue)
-                    # -----------------------
-                    # s2_s1 = 2
-                    # bg color blue is impossible for s4_s1=0
-
-                # If s4[s1] == 1 (hiding spot), lklh( o == 2 (blue)) = 1,
-                    # else remain zero
-                if s4_perm[s_1] == 1:
-
-                    # for s2[s1] == 0 (black)
-                    # -----------------------
-                    s2_s1 = 0
-                    # will deterministically turn to blue since s4_s1=1
-                    self.Omega[0, s_1, s2_s1, 2, :, index] = 1
-                    self.Omega[0, s_1, s2_s1, 2, s_1, index] = 0
-
-                    # for s2[s1] == 1 (grey)
-                    # -----------------------
-                    # s2_s1 = 1
-                    # grey node bg color impossible for s4_s1=1
-
-                    # for s2[s1] == 2 (blue)
-                    # -----------------------
-                    # will return same color as already unveiled
-                    s2_s1 = 2
-                    self.Omega[0, s_1, s2_s1, 2, :, index] = 1
-                    self.Omega[0, s_1, s2_s1, 2, s_1, index] = 0
-
-                # ---------for all a = 1---------------
-
-                # If s4[s1] == 0 (not hiding spot)
-                if s4_perm[s_1] == 0:
-                    # for s2[s1] == 0 (black)
-                    # -----------------------
-                    s2_s1 = 0
-
-                    # For s3 == s1, lklh(o == 0 (black)) = 0,
-                    # else lklh(o == 0 (black)) = 1
-                    self.Omega[1, s_1, s2_s1, 0, :, index] = 1
-                    self.Omega[1, s_1, s2_s1, 0, s_1, index] = 0
-
-                    # all other observations ( o==1, o==2, o==3 remain 0)
-
-                    # for s2[s1] == 1 (grey)
-                    # -----------------------
-                    s2_s1 = 1
-
-                    # For s3 == s1, lklh(o == 1 (grey)) = 0,
-                    # else lklh(o == 1 (grey)) = 1
-                    self.Omega[1, s_1, s2_s1, 1, :, index] = 1
-                    self.Omega[1, s_1, s2_s1, 1, s_1, index] = 0
-
-                    # all other observations ( o==0, o==2, o==3 remain 0)
-
-                    # for s2[s1] == 2 (blue)
-                    # -----------------------
-                    # s2_s1 = 2
-                    # node color blue is impossible
-
-                # If s4[s1] == 1 (node is a hiding spot)
-                if s4_perm[s_1] == 1:
-                    # for s2[s1] == 0 (black)
-                    # -----------------------
-                    s2_s1 = 0
-
-                    # For s3 == s1, lklh(o == 0 (black)) = 0,
-                    # else lklh(o == 0 (black)) = 1
-                    self.Omega[1, s_1, s2_s1, 0, :, index] = 1
-                    self.Omega[1, s_1, s2_s1, 0, s_1, index] = 0
-
-                    # For s3 == 1, lklh(o == 3 (treasure)) = 1,
-                    # else remain zero
-                    self.Omega[1, s_1, s2_s1, 3, s_1, index] = 1
-
-                    # all other observations ( o==1, o==2 remain 0)
-
-                    # for s2[s1] == 1 (grey)
-                    # -----------------------
-                    # s2_s1 = 1
-
-                    # observation grey impossible --> all zero
-
-                    # for s2[s1] == 2 (blue)
-                    # -----------------------
-                    s2_s1 = 2
-
-                    # For s3 == s1, lklh(o == 2 (blue)) = 0,
-                    # else lklh(o==2 (blue) = 1
-                    self.Omega[1, s_1, s2_s1, 2, :, index] = 1
-                    self.Omega[1, s_1, s2_s1, 2, s_1, index] = 0
-
-                    # For s3 == 1, lklh(o == 3 (treasure)) = 1,
-                    # else remain zero
-                    self.Omega[1, s_1, s2_s1, 3, s_1, index] = 1
+        # Set all states, that are in line with current position to 1
+        self.beta_0[np.where(self.task.S[:, 0] == self.task.s1_t)[0], 0] = 1
+        # Set alle remaining states zero
+        self.beta_0[np.where(self.task.S[:, 0] != self.task.s1_t)[0], 0] = 0
+        # Normalize belief state
+        self.beta_0 = self.beta_0 / sum(self.beta_0)
 
     def get_comps_old(self):
         """Create or load Bayesian components, i.e. s4-permutations, prior and
@@ -244,24 +112,6 @@ class HiddenMarkovModel:
             print(f" ... finisehd saving s4_perms to files, time needed: "
                   f"{humanreadable_time(end-start)}"
                   )
-            
-        # TODO: old. not needed anymore? 
-        # # Create list with indices of all probs for each hide
-        # print("Computing s4_marg_indices ...")
-        # start = time.time()
-        # for node in range(self.task_design_params.n_nodes):
-        #     self.S4_incl_nodes_indices[node] = [
-        #         index for index, s4_perm in enumerate(self.S4)
-        #         if s4_perm[node] == 1
-        #     ]
-        #     # --> 25 X 42504 indices per hide ( if 25 nodes and 6 hides)
-        # end = time.time()
-        # print(f" ... finished computing s4_marg_indices, time needed: "
-        #       f"{humanreadable_time(end-start)}"
-        #       )
-
-        # Evaluate number of s4 permutations
-        self.n_S4 = len(self.S4)
 
         # Load/evaluate agent's initial belief state in 1. trial ---(Prior)---
         prior_fn = os.path.join(self.paths.code, "utilities",
@@ -270,7 +120,7 @@ class HiddenMarkovModel:
         if os.path.exists(prior_fn):
             print("Loading prior array from file ...")
             start = time.time()
-            self.beta_1_0 = np.load(prior_fn)
+            self.beta_0 = np.load(prior_fn)
             end = time.time()
             print(f" ... finished loading prior, time needed: "
                   f"{humanreadable_time(end-start)}"
@@ -279,7 +129,7 @@ class HiddenMarkovModel:
         else:
             print("Evaluating prior belief array for given task config ...")
             start = time.time()
-            self.beta_1_0 = np.full((self.task_design_params.n_nodes,
+            self.beta_0 = np.full((self.task_design_params.n_nodes,
                                      self.n_S4), 0.0)
             self.eval_prior()
             end = time.time()
@@ -288,7 +138,7 @@ class HiddenMarkovModel:
                   )
             print("Saving prior belief array to file ...")
             start = time.time()
-            np.save(prior_fn, self.beta_1_0)
+            np.save(prior_fn, self.beta_0)
             end = time.time()
             print(f" ... finished saving prior to file, time needed:"
                   f"{humanreadable_time(end-start)}"
@@ -328,88 +178,24 @@ class HiddenMarkovModel:
         # start = time.time()
         return self
 
-    def compute_set_S(self):
-        """Method to compute the set of states"""
-        n_nodes = self.task_design_params.n_nodes
-        n_hides = self.task_design_params.n_hides
-
-        hide_combos = sorted(
-            more_itertools.distinct_combinations(
-                range(1, n_nodes + 1), r=2
-                )
-        )
-
-        tr_possibility_factor = n_hides / n_nodes
-        cardinality_S = int(
-            n_nodes * n_nodes * len(hide_combos) * tr_possibility_factor)
-
-        self.S = np.full((cardinality_S,
-                          1 + 1 + n_hides),
-                          np.nan)
-
-        i = 0
-        for possible_position in range(n_nodes):
-            possible_position += 1
-            for possible_tr_loc in range(n_nodes):
-                possible_tr_loc += 1
-                for hiding_spot_combo in hide_combos:
-                    if possible_tr_loc in hiding_spot_combo:
-                        self.S[i, 0] = possible_position
-                        self.S[i, 1] = possible_tr_loc
-                        self.S[i, 2:4] = hiding_spot_combo
-                        i += 1
-
-    def compute_node_color_combos(self) -> list:
-        """Method to compute the node color components of observation set, i.e.
-        the last 4 entries of each set element's vector"""
-        n_nodes = self.task_design_params.n_nodes
-        n_hides = self.task_design_params.n_hides
-
-        obs_values = [0] * n_nodes
-        obs_values.extend([1] * (n_nodes - n_hides))
-        obs_values.extend([2] * n_hides)
-
-        node_color_combos = sorted(
-            more_itertools.distinct_permutations(obs_values, r=n_nodes))
-
-        return node_color_combos
-
-    def compute_set_O(self):
-        """Method to compute complete set of Observations"""
-        n_nodes = self.task_design_params.n_nodes
-
-        node_color_combos = self.compute_node_color_combos()
-
-        self.O = np.full((2 * len(node_color_combos), n_nodes + 1), np.nan)
-        i = 0
-
-        for treasure_found in [0, 1]:
-            
-            for color_combo in node_color_combos:
-
-                # TODO: write observations
-                self.O[i, 0] = treasure_found
-
-                self.O[i, 1:] = color_combo
-
-                i += 1
-        # TODO: linearer index!?
-
     def compute_Omega(self):
         """Method to compute Omega"""
 
-        self.Omega = np.full((self.p, self.n, self.m), 0)  # TODO init in init
+        self.Omega = np.full((self.task.n, self.task.m, self.task.p), 0)  # TODO init in init
 
         node_colors = {"black": 0,
                        "grey": 1,
                        "blue": 2}
+        
+        # Encode set A to either drill or step
+        A = [0, 1]  # 0: drill, 1: step
 
-        for i_a, a in enumerate(self.A):
-            for i_s, s in enumerate(self.S):
-                for i_o, o in enumerate(self.O):
+        for i_a, a in enumerate(A):
+            for i_s, s in enumerate(self.task.S):
+                for i_o, o in enumerate(self.task.O):
                     # Extract state components
                     current_pos = int(s[0])  # NOTE: set S[0] := {1, ..., n}
-                    node_i_in_o = current_pos - 1  # NOTE: bc o[0] is tr flag
+                    node_index_in_o_t = current_pos  # NOTE: bc o[0] is tr flag
                     tr_location = int(s[1])
                     hiding_spots = s[2:]
 
@@ -436,8 +222,8 @@ class HiddenMarkovModel:
                                 current_pos != tr_location
                                 and current_pos not in hiding_spots
                                 and tr_flag == 0
-                                and o[node_i_in_o] == node_colors["grey"]):
-                            self.Omega[i_a, i_s, i_o] = 1
+                                and o[node_index_in_o_t] == node_colors["grey"]):
+                            self.Omega[i_s, i_o, i_a] = 1
 
                         # CONDITION:                        CORRESP MODEL VARIABLE:
                         # ---------------------------------------------------------
@@ -452,8 +238,8 @@ class HiddenMarkovModel:
                                 current_pos != tr_location
                                 and current_pos in hiding_spots
                                 and tr_flag == 0
-                                and o[node_i_in_o] == node_colors["blue"]):
-                            self.Omega[i_a, i_s, i_o] = 1
+                                and o[node_index_in_o_t] == node_colors["blue"]):
+                            self.Omega[i_s, i_o, i_a] = 1
 
                         # All other observaton probabilites remain 0 as initiated.
 
@@ -472,9 +258,9 @@ class HiddenMarkovModel:
                                 current_pos != tr_location
                                 and current_pos not in hiding_spots
                                 and tr_flag == 0
-                                and o[node_i_in_o] in [node_colors["black"],
+                                and o[node_index_in_o_t] in [node_colors["black"],
                                                     node_colors["grey"]]):
-                            self.Omega[i_a, i_s, i_o] = 1
+                            self.Omega[i_s, i_o, i_a] = 1
 
                         # CONDITION:                        CORRESP MODEL VARIABLE:
                         # ---------------------------------------------------------
@@ -489,9 +275,9 @@ class HiddenMarkovModel:
                                 current_pos != tr_location
                                 and current_pos in hiding_spots
                                 and tr_flag == 0
-                                and o[node_i_in_o] in [node_colors["black"],
+                                and o[node_index_in_o_t] in [node_colors["black"],
                                                     node_colors["blue"]]):
-                            self.Omega[i_a, i_s, i_o] = 1
+                            self.Omega[i_s, i_o, i_a] = 1
 
                         # CONDITION:                        CORRESP MODEL VARIABLE:
                         # ---------------------------------------------------------
@@ -506,9 +292,9 @@ class HiddenMarkovModel:
                                 current_pos == tr_location
                                 and current_pos in hiding_spots
                                 and tr_flag == 1
-                                and o[node_i_in_o] in [node_colors["black"],
+                                and o[node_index_in_o_t] in [node_colors["black"],
                                                     node_colors["blue"]]):
-                            self.Omega[i_a, i_s, i_o] = 1
+                            self.Omega[i_s, i_o, i_a] = 1
 
     def comput_Phi(self):
         "Method to compute Phi"
@@ -517,7 +303,7 @@ class HiddenMarkovModel:
                       - self.task_design_params.dim, + 1,
                       + self.task_design_params.dim, -1]
 
-        self.Phi = np.full((self.n, self.n, len(action_set)), np.nan)
+        self.Phi = np.full((self.task.n, self.task.n, len(action_set)), np.nan)
 
         # ---------------------------------------
         # NOTE:
@@ -529,10 +315,10 @@ class HiddenMarkovModel:
         for a_i, a in enumerate(action_set):
 
             # Iterate possible old states s_{t}
-            for s_tilde_i, s_tilde in enumerate(self.S):
+            for s_tilde_i, s_tilde in enumerate(self.task.S):
 
                 # Iterate possible new states s_{t+1}
-                for s_i, s in enumerate(self.S):
+                for s_i, s in enumerate(self.task.S):
 
                     s_1 = s[0]              # current position in t + 1
                     s_1_tilde = s_tilde[0]  # current position in t
@@ -546,7 +332,7 @@ class HiddenMarkovModel:
                             and not ((((s_1_tilde)
                                        % self.task_design_params.dim) == 0)
                                      and a == 1)
-                        ):
+                            ):
                         if s_1 == s_1_tilde_plus_a:
                             self.Phi[s_tilde_i, s_i, a_i] = 1
                         
@@ -623,56 +409,22 @@ class HiddenMarkovModel:
         #         f"{humanreadable_time(end-start)}"
         #         )
 
-        print("Computing set S ...")
-        start = time.time()
-        self.compute_set_S()
-        end = time.time()
-        print(f" ... finished computing set S, time needed: "
-              f"{humanreadable_time(end-start)}")
 
-        print("Saving set S ...")
-        start = time.time()
-        self.save_arrays(set_S=self.S)
-        end = time.time()
-        print(f" ... finisehd saving set S to files, time needed: "
-              f"{humanreadable_time(end-start)}"
-              )
-
-        print("Computing set O ...")
-        start = time.time()
-        self.compute_set_O()
-        end = time.time()
-        print(f" ... finished computing set O, time needed: "
-              f"{humanreadable_time(end-start)}")
-
-        print("Saving set O ...")
-        start = time.time()
-        self.save_arrays(set_O=self.O)
-        end = time.time()
-        print(f" ... finisehd saving set S to files, time needed: "
-              f"{humanreadable_time(end-start)}"
-              )
-
-        # Evaluate set cardinalities
-        self.n = len(self.S)
-        self.m = len(self.O)
-        self.p = len(self.A)  # TODO action set anders schreiben?, jetzt p = 2
-
-        # Load/evaluate initial belief state beta_1_0 -------------------------
-        print("Computing beta_1_0 for given task config ...")
-        start = time.time()
-        self.compute_beta_1_0()
-        end = time.time()
-        print(f" ... finished computing beta_1_0, time needed: "
-              f"{humanreadable_time(end-start)}"
-              )
-
-        start = time.time()
-        self.save_arrays(beta_0_1=self.beta_1_0)
-        end = time.time()
-        print(f" ... finisehd saving beta_0_1 to files, time needed: "
-              f"{humanreadable_time(end-start)}"
-              )
+        # # Load/evaluate initial belief state beta_1_0 -------------------------
+        # print("Computing beta_1_0 for given task config ...")
+        # start = time.time()
+        # self.compute_beta_0()
+        # end = time.time()
+        # print(f" ... finished computing beta_1_0, time needed: "
+        #       f"{humanreadable_time(end-start)}"
+        #       )
+        # 
+        # start = time.time()
+        # self.save_arrays(beta_0_1=self.beta_0)
+        # end = time.time()
+        # print(f" ... finisehd saving beta_0_1 to files, time needed: "
+        #       f"{humanreadable_time(end-start)}"
+        #       )
 
         # Load/evaluate Omega-------------------------
         print("Computing Omega for given task config ...")
@@ -682,12 +434,16 @@ class HiddenMarkovModel:
         print(f" ... finished computing Omega, time needed: "
               f"{humanreadable_time(end-start)}")
         start = time.time()
-        self.save_arrays(Omega_dill=self.Omega[0])
-        self.save_arrays(Omega_step=self.Omega[1])
+        self.save_arrays(Omega_dill=self.Omega[:, :, 0])
+        self.save_arrays(Omega_step=self.Omega[:, :, 1])
         end = time.time()
         print(f" ... finisehd saving Omega to files, time needed: "
               f"{humanreadable_time(end-start)}"
               )
+        self.plot_color_map(n_nodes=self.task_design_params.n_nodes,
+                            n_hides=self.task_design_params.n_hides,
+                            Omega_drill=self.Omega[:, :, 0],
+                            Omega_step=self.Omega[:, :, 1])
 
         # Load/evaluate Phi-------------------------
         print("Computing Phi for given task config ...")
@@ -843,7 +599,6 @@ class Agent:
         self.lambda_ = lambda_
 
         # Initialize dynamic agent attributes
-        self.moves = self.task.task_configs.params.n_trials
         self.a_s1: np.ndarray = np.array(np.nan)  # state-dependent action-set
         self.o_s2 = []  # state-dep observation-set
 
@@ -852,24 +607,24 @@ class Agent:
         self.decision_t = np.full(1, np.nan)  # decision
 
         # Initialize belief state objects
-        self.marg_s3_b = np.full(self.task.task_params.n_nodes, np.nan)
-        self.marg_s4_b = np.full(self.task.task_params.n_nodes, np.nan)
-        self.marg_s3_prior = np.full(self.task.task_params.n_nodes, np.nan)
-        self.marg_s4_prior = np.full(self.task.task_params.n_nodes, np.nan)
+        self.marg_tr_belief = np.full(self.task.grid_config.n_nodes, np.nan)
+        self.marg_hide_belief = np.full(self.task.grid_config.n_nodes, np.nan)
+        self.marg_tr_belief_prior = np.full(self.task.grid_config.n_nodes, np.nan)
+        self.marg_hide_belief_prior = np.full(self.task.grid_config.n_nodes, np.nan)
 
         if self.agent_attr.is_bayesian:
             # Unpack bayesian beh_model components
-            self.hmm_matrices: HiddenMarkovModel = HiddenMarkovModel()
+            self.hmm_matrices: HiddenMarkovModel = HiddenMarkovModel(task_object)
 
             # ---(Prior, c != 0)---
-            self.p_s_giv_o_prior: np.ndarray = np.array(np.nan)
+            self.p_s_giv_o_prior_new_c: np.ndarray = np.array(np.nan)
             # ---(Posterior)---
             self.p_s_giv_o_post: np.ndarray = np.array(np.nan)
 
         # Initialize closest max s3 node variables for computations
         self.max_s3_b_value = np.nan
-        self.rounded_marg_s3_b = np.full(self.task.task_params.n_nodes, np.nan)
-        self.max_s3_b_nodes = np.nan
+        self.rounded_marg_s3_b = np.full(self.task.grid_config.n_nodes, np.nan)
+        self.max_tr_b_node_indices = np.nan
         self.dist_to_max_s3_b_nodes = np.nan
         self.shortest_dist_to_max_s3_b = np.nan
         self.closest_max_s3_b_nodes_i_s: np.ndarray = np.array(np.nan)
@@ -881,8 +636,7 @@ class Agent:
         self.virt_b = {}
 
     def attach_hmm_matrices(
-            self,
-            hmm_matrices: HiddenMarkovModel):
+            self,):
         """Method to load or create prior, likelihood and permutation lists etc
 
         Args:
@@ -890,7 +644,8 @@ class Agent:
         bayesian_comps (BayesianModelComps): Object storing bayesian model
             components
         """
-        self.hmm_matrices = hmm_matrices
+        self.hmm_matrices = HiddenMarkovModel(self.task, self.task.grid_config)
+        self.hmm_matrices.compute_or_load_components()
 
     def eval_prior_subs_rounds(self):
         """Reset belief states for s3 (treasure) based on marginal s4
@@ -899,8 +654,8 @@ class Agent:
         currently already revealed hiding spots"""
         # TODO: major todo
         # Initialize all as zero
-        self.p_s_giv_o_prior = np.full(
-            (self.hmm_matrices.n, 1), 0.)
+        self.p_s_giv_o_prior_new_c = np.full(
+            (self.hmm_matrices.task.n, 1), 0.)
 
         # marg_s4_perm_b = np.full(self.n_s4_perms, np.nan)
         # for s4_perm in range(self.n_s4_perms):
@@ -967,12 +722,12 @@ class Agent:
         a_t_type = int(a_t_type)
 
         # Determine observation dependent omega index j
-        O = self.hmm_matrices.O
-        j = int(np.where(np.all(O == o_t, axis=1))[0])
+        O_ = self.task.O
+        j = int(np.where(np.all(O_ == o_t, axis=1))[0])
 
         # Extract components  # TODO: kopieren kostet working memory
-        Omega_j = self.hmm_matrices.Omega[a_t_type, :, j][:, np.newaxis]
-        Phi_k = self.hmm_matrices.Phi[a_t, :, :]
+        Omega_j = self.hmm_matrices.Omega[:, j, a_t_type][:, np.newaxis]
+        Phi_k = self.hmm_matrices.Phi[:, :, a_t]
 
         # TODO: still necessary?
         if np.sum(beta_prior * Omega_j) == 0:
@@ -985,7 +740,7 @@ class Agent:
         else:
             # TODO: add state transition!
 
-            beta_post = Omega_j * (Phi_k.T @ beta_prior)
+            beta_post = Omega_j * np.matmul(Phi_k.T, beta_prior)
             beta_post = beta_post / sum(beta_post)
 
         return beta_post
@@ -1007,20 +762,35 @@ class Agent:
             TODO: marg_s4 not actually margianl distribution.
         """
         # Evaluate marginal treasure distribution
-        marg_treasure_belief = np.full(self.task.task_params.n_nodes, np.nan)
-        for node in range(self.task.task_params.n_nodes):
+        marg_treasure_belief = np.full(self.task.grid_config.n_nodes, np.nan)
+        for node in range(self.task.grid_config.n_nodes):
             possible_tr_loc = node + 1
-            tr_state_i = 1
+            tr_index_in_state_vector = 1
 
             tr_spec_indices = np.where(
-                self.hmm_matrices.S[:, tr_state_i] == possible_tr_loc)
+                self.task.S[
+                    :, tr_index_in_state_vector
+                    ] == possible_tr_loc
+                )[0]
+
             marg_treasure_belief[node] = belief[tr_spec_indices, :].sum()
 
         # Evaluate marginal hiding spot distribution
-        marg_hides_belief = np.full(self.task.task_params.n_nodes, np.nan)
-        for node in range(self.task.task_params.n_nodes):
-            marg_hides_belief[node] = belief[
-                :, self.hmm_matrices.S4_incl_nodes_indices[node]].sum()
+        marg_hides_belief = np.full(self.task.grid_config.n_nodes, np.nan)
+        for node in range(self.task.grid_config.n_nodes):
+
+            possible_hide_loc = node + 1
+            hide_indices_in_state_vector = range(
+                2,  2 + self.task.grid_config.n_hides)
+
+            hide_spec_indices = np.where(
+                np.any(
+                    self.task.S[
+                        :, hide_indices_in_state_vector
+                        ] == possible_hide_loc, axis=1
+                    )
+                )[0]
+            marg_hides_belief[node] = belief[hide_spec_indices, :].sum()
 
         # Uncomment for debugging
         # sum_prob_hides = marg_s4_b[:].sum()  # should evaluate to ~ n_hides
@@ -1064,16 +834,17 @@ class Agent:
 
             # If first trial of task (i.e. before any action) use initial prior
             # ...and step action (a=1).
-            if self.task.current_round == 0 and self.task.current_trial == 0:
+            if self.task.c == 0 and self.task.t == 0:
                 action = 1
-                prior = self.hmm_matrices.beta_1_0
+                self.hmm_matrices.compute_beta_0()
+                prior = self.hmm_matrices.beta_0
             
             # If first trial in a new round, i.e. before any action,  pior_c
             # ...which is the posterior of preceding round's last trial as
-            # ...prio and step action (a=1).
-            elif self.task.current_trial == 0:
+            # ...prior and step action (a=1).
+            elif self.task.t == 0:
                 action = 1
-                prior = self.p_s_giv_o_prior
+                prior = self.p_s_giv_o_prior_new_c
 
             # For all remaining trial use current action and posterior of
             else:
@@ -1089,7 +860,7 @@ class Agent:
             # ------ Evaluate marginal distributions-------------
             # TODO: hier weiter!!
             start = time.time()
-            self.marg_s3_b, self.marg_s4_b = self.eval_marg_beliefs(self.p_s_giv_o_post)
+            self.marg_tr_belief, self.marg_hide_belief = self.eval_marg_beliefs(self.p_s_giv_o_post)
             end = time.time()
             print(
                 f"time needed for marg_b: {humanreadable_time(end-start)}")
@@ -1101,12 +872,12 @@ class Agent:
         for action in self.task.A:
             new_s1 = action + self.task.s1_t
             # Remove forbidden steps (walk outside border)
-            if (not (0 <= new_s1 < self.task.task_params.n_nodes)
-                    or ((self.task.s1_t
+            if (not (1 <= new_s1 <= self.task.grid_config.n_nodes)
+                    or (((self.task.s1_t - 1)
                          % self.task.task_configs.params.dim == 0)
                         and action == -1)
-                    or (((self.task.s1_t + 1
-                          ) % self.task.task_configs.params.dim == 0)
+                    or (((self.task.s1_t)
+                         % self.task.task_configs.params.dim == 0)
                         and action == 1)):
 
                 self.a_s1 = self.a_s1[self.a_s1 != action]
@@ -1121,9 +892,9 @@ class Agent:
         """
         if action == 0:
             if self.task.node_colors[node] == 0:
-                if np.around(self.marg_s4_b[node], 10) == 0:
+                if np.around(self.marg_hide_belief[node], 10) == 0:
                     self.o_s2 = [1]
-                elif np.around(self.marg_s4_b[node], 10) == 1:
+                elif np.around(self.marg_hide_belief[node], 10) == 1:
                     self.o_s2 = [2]
                 else:
                     self.o_s2 = [1, 2]
@@ -1133,14 +904,14 @@ class Agent:
                 self.o_s2 = [2]
         elif action == 1:
             if self.task.node_colors[node] == 0:
-                if np.around(self.marg_s3_b[node], 10) == 0:
+                if np.around(self.marg_tr_belief[node], 10) == 0:
                     self.o_s2 = [0]
                 else:
                     self.o_s2 = [0, 3]
             elif self.task.node_colors[node] == 1:
                 self.o_s2 = [1]
             elif self.task.node_colors[node] == 2:
-                if np.around(self.marg_s3_b[node], 10) == 0:
+                if np.around(self.marg_tr_belief[node], 10) == 0:
                     self.o_s2 = [2]
                 else:
                     self.o_s2 = [2, 3]
@@ -1148,22 +919,22 @@ class Agent:
     def eval_closest_max_s3_b_nodes(self):
         """Identify nodes with maximum s3 belief state values"""
         # Identify maximum s3 belief state value
-        self.max_s3_b_value = np.around(np.amax(self.marg_s3_b), 10)
+        self.max_s3_b_value = np.around(np.amax(self.marg_tr_belief), 10)
 
         # Find all nodes with maximum belief state value
-        self.rounded_marg_s3_b = np.around(self.marg_s3_b, 10)
-        self.max_s3_b_nodes = np.where(
+        self.rounded_marg_s3_b = np.around(self.marg_tr_belief, 10)
+        self.max_tr_b_node_indices = np.where(
             self.rounded_marg_s3_b == self.max_s3_b_value)[0]
 
         # Evaluate shortest distances to max_s3_nodes
-        self.dist_to_max_s3_b_nodes = np.full(len(self.max_s3_b_nodes), np.nan)
-        for index, node in np.ndenumerate(self.max_s3_b_nodes):
+        self.dist_to_max_s3_b_nodes = np.full(len(self.max_tr_b_node_indices), np.nan)
+        for index, node in np.ndenumerate(self.max_tr_b_node_indices):
             self.dist_to_max_s3_b_nodes[index] = \
-                self.task.shortest_dist_dic[f'{int(self.task.s1_t)}_to_{node}']
+                self.task.shortest_dist_dic[f'{int(self.task.s1_t)}_to_{node + 1}']
         self.shortest_dist_to_max_s3_b = np.amin(self.dist_to_max_s3_b_nodes)
         self.closest_max_s3_b_nodes_i_s = np.where(
             self.dist_to_max_s3_b_nodes == self.shortest_dist_to_max_s3_b)[0]
-        self.closest_max_s3_b_nodes = self.max_s3_b_nodes[
+        self.closest_max_s3_b_nodes = self.max_tr_b_node_indices[
             self.closest_max_s3_b_nodes_i_s]
 
     def eval_p_o_giv_o(self):
@@ -1311,6 +1082,10 @@ class Agent:
     def evaluate_action_valences(self):
         """Evaluate action valences"""
 
+        remaining_moves = self.task.grid_config.n_trials - self.task.t - 1
+        # TODO: trial count weird?
+
+
         # 'C1' Valence for random choice agent
         # ---------------------------------------------------------------------
         if self.agent_attr.name == 'C1':
@@ -1349,13 +1124,13 @@ class Agent:
 
                 for close_max_s3_node in self.closest_max_s3_b_nodes:
                     current_dist_to_max_belief = self.task.shortest_dist_dic[
-                        f'{int(self.task.s1_t)}_to_{close_max_s3_node}']
+                        f'{int(self.task.s1_t)}_to_{close_max_s3_node + 1}']
                     new_dist_to_closest_max_beliefs = \
                         self.task.shortest_dist_dic[
-                            f'{int(new_s1)}_to_{close_max_s3_node}']
-                    if self.task.moves >= new_dist_to_closest_max_beliefs \
+                            f'{int(new_s1)}_to_{close_max_s3_node + 1}']
+                    if remaining_moves >= new_dist_to_closest_max_beliefs \
                             < current_dist_to_max_belief:
-                        self.valence_t[index] += self.marg_s3_b[
+                        self.valence_t[index] += self.marg_tr_belief[
                             close_max_s3_node]
 
             # Set drill action to minus value
@@ -1363,7 +1138,7 @@ class Agent:
             # self.v[np.where(self.a_s1 == 0)] = -1  # Needed,
             # otherwise A1 will drill in last trials
             # Let agent stop drilling, if node is not black or if last round
-            if self.task.current_round == (
+            if self.task.c == (
                     self.task.task_configs.params.n_rounds - 1):
                 # or self.task.s_2_node_color[self.task.s_1] != 0:
                 self.valence_t[np.where(self.a_s1 == 0)] = -1
@@ -1375,7 +1150,7 @@ class Agent:
             self.valence_t = (self.p_o_giv_o * self.kl_giv_a_o).sum(axis=1)
 
             # Let agent stop drilling, if node is not black or if last round
-            if self.task.current_round == (
+            if self.task.c == (
                     self.task.task_configs.params.n_rounds - 1):
                 # or self.task.s_2_node_color[self.task.s_1] != 0:
                 self.valence_t[np.where(self.a_s1 == 0)] = -1
@@ -1393,15 +1168,15 @@ class Agent:
 
                 for close_max_s3_node in self.closest_max_s3_b_nodes:
                     current_dist_to_max_belief = self.task.shortest_dist_dic[
-                        f'{int(self.task.s1_t)}_to_{close_max_s3_node}']
+                        f'{int(self.task.s1_t)}_to_{close_max_s3_node + 1}']
                     new_dist_to_closest_max_beliefs = \
                         self.task.shortest_dist_dic[
-                            f'{int(new_s1)}_to_{close_max_s3_node}']
-                    if self.task.moves >= new_dist_to_closest_max_beliefs \
+                            f'{int(new_s1)}_to_{close_max_s3_node + 1}']
+                    if remaining_moves >= new_dist_to_closest_max_beliefs \
                             < current_dist_to_max_belief:
                         self.valence_t[i] += (
                             1 - self.lambda_
-                            ) * self.marg_s3_b[close_max_s3_node]
+                            ) * self.marg_tr_belief[close_max_s3_node]
 
             # Add information value
 
@@ -1419,7 +1194,7 @@ class Agent:
             self.valence_t += (self.p_o_giv_o * self.kl_giv_a_o).sum(axis=1)
 
             # Let agent stop drilling, if node is not black or if last round
-            if self.task.current_round == (
+            if self.task.c == (
                     self.task.task_configs.params.n_rounds - 1):
                 # or self.task.s_2_node_color[self.task.s_1] != 0:
                 self.valence_t[np.where(self.a_s1 == 0)] = -1

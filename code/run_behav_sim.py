@@ -73,8 +73,8 @@ def main(task_params: TaskDesignParameters):
         path=dir_mgr.paths,
         params=task_params
         ).get_config(EXP_LABEL)
-    hmm_comps = HiddenMarkovModel(
-        task_config.params).compute_or_load_components()
+    # hmm_comps = HiddenMarkovModel(
+    #     task_config.params).compute_or_load_components()
 
     if IS_QUICK_TEST:
         adjust_total_trial_numbers(task_config)
@@ -82,7 +82,7 @@ def main(task_params: TaskDesignParameters):
     sim_params = define_simulation_parameters()
     val_params = define_validation_parameters()
     simulator = Simulator(task_configs=task_config,
-                          bayesian_comps=hmm_comps,
+                          #bayesian_comps=hmm_comps,
                           task_params=task_params)
 
     for repetition in val_params.repetition_numbers:
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     arguments = get_arguments()
 
     EXP_LABEL = "test_ahmm"
-    OUT_DIR_LABEL = "test_ahmm_11_30"
+    OUT_DIR_LABEL = "test_ahmm_12_14"
 
     # Define task configuration parameters
     task_params = TaskDesignParameters(
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     IS_QUICK_TEST = True
     TEST_N_BLOCKS = 1
     TEST_N_ROUNDS = 1  # NOTE: only 1 round possible because prior_c (!?)
-    TEST_N_TRIALS = 2
+    TEST_N_TRIALS = 12
 
     main(task_params=task_params)
 

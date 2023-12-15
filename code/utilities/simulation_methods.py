@@ -156,15 +156,14 @@ class Recorder:
         list: list of variables to be recorded
         """
         self.variable_list = [
-            "s1", "s2", "s3", "s4",
-            "o", "a_giv_s1", "o_giv_s2", "p_o_giv_o", "kl_giv_a_o",
-            "v", "d", "a", "log_p_a_giv_h", "r", "information",
-            "tr_found_on_blue",
+            "s1_t", "s2_t", "s3_t",
+            "o_t", "a_giv_s1", "o_giv_s2", "p_o_giv_o", "kl_giv_a_o",
+            "v", "d", "a", "log_p_a_giv_h", "r_t",
             "marg_s3_posterior", "marg_s3_prior_t0",
             "marg_s4_posterior", "marg_s4_prior_t0",
             "max_s3_belief", "argsmax_s3_belief",
             "min_dist_argsmax_s3_belief", "closest_argsmax_s3_belief",
-            "hiding_spots", "n_black", "n_grey", "n_blue"]
+            "node_colors"]
         self.variable_list += [*args]
 
     def create_rec_df_one_block(self):
@@ -191,13 +190,11 @@ class Recorder:
         trial (int): Current trial number
         task (Task): Instance of class Task
         """
-        self.data_one_round["s1"][trial] = task.s1_t
-        self.data_one_round["s2"][trial] = task.node_colors
-        self.data_one_round["s3"][trial] = task.s3_c
-        self.data_one_round["s4"][trial] = task.s4_b
-        self.data_one_round["n_grey"][trial] = task.n_grey
-        self.data_one_round["n_blue"][trial] = task.n_blue
-        self.data_one_round["o"][trial] = task.o_t
+        self.data_one_round["s1_t"][trial] = task.s1_t
+        self.data_one_round["s2_t"][trial] = task.s2_t
+        self.data_one_round["s3_t"][trial] = task.s3_t
+        self.data_one_round["node_colors"][trial] = task.node_colors
+        self.data_one_round["o_t"][trial] = task.o_t
 
     def record_trial_ending(self, trial: int, task: Task, agent: Agent,
                             beh_model: BehavioralModel):
@@ -221,20 +218,18 @@ class Recorder:
         self.data_one_round["d"][trial] = agent.decision_t
         self.data_one_round["a"][trial] = beh_model.action_t
         self.data_one_round["log_p_a_giv_h"][trial] = beh_model.log_likelihood
-        self.data_one_round["r"][trial] = task.r_t
-        self.data_one_round["information"][trial] = task.drill_finding
-        self.data_one_round["tr_found_on_blue"] = task.tr_found_on_blue
-        self.data_one_round["marg_s3_posterior"][trial] = agent.marg_s3_b
-        self.data_one_round["marg_s3_prior_t0"][trial] = agent.marg_s3_prior
-        self.data_one_round["marg_s4_posterior"][trial] = agent.marg_s4_b
-        self.data_one_round["marg_s4_prior_t0"][trial] = agent.marg_s4_prior
+        self.data_one_round["r_t"][trial] = task.r_t
+        self.data_one_round["marg_s3_posterior"][trial] = agent.marg_tr_belief
+        self.data_one_round["marg_s3_prior_t0"][trial] = agent.marg_tr_belief_prior
+        self.data_one_round["marg_s4_posterior"][trial] = agent.marg_hide_belief
+        self.data_one_round["marg_s4_prior_t0"][trial] = agent.marg_hide_belief_prior
         self.data_one_round["max_s3_belief"][trial] = agent.max_s3_b_value
-        self.data_one_round["argsmax_s3_belief"][trial] = agent.max_s3_b_nodes
+        self.data_one_round["argsmax_s3_belief"][trial] = agent.max_tr_b_node_indices
         self.data_one_round["min_dist_argsmax_s3_belief"][
             trial] = agent.shortest_dist_to_max_s3_b
         self.data_one_round["closest_argsmax_s3_belief"][
             trial] = agent.closest_max_s3_b_nodes
-        self.data_one_round["hiding_spots"][trial] = task.hides_loc
+        self.data_one_round["s3_t"][trial] = task.s3_t
 
     def append_this_round_to_block_df(self, this_round: int, n_trials:int):
         """Append this round's dataframe to this block's dataframe
@@ -305,11 +300,11 @@ class Simulator():
     beh_model: BehavioralModel
 
     def __init__(self, task_configs: TaskConfigurator,
-                 bayesian_comps: HiddenMarkovModel,
+                 #bayesian_comps: HiddenMarkovModel,
                  task_params: TaskDesignParameters = TaskDesignParameters()):
         self.task_configs = task_configs
         self.task_params = task_params
-        self.bayesian_comps = bayesian_comps
+        #self.bayesian_comps = bayesian_comps
 
     def create_interacting_objects(self, agent_name: str, this_block: int,
                                    tau_gen: float, lambda_gen: float):
@@ -331,7 +326,7 @@ class Simulator():
                            task_object=self.task,
                            lambda_=lambda_gen)
         if agent_attributes.is_bayesian:
-            self.agent.attach_hmm_matrices(self.bayesian_comps)
+            self.agent.attach_hmm_matrices()
 
         self.beh_model = BehavioralModel(tau_gen=tau_gen,
                                          agent_object=self.agent)

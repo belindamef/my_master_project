@@ -339,7 +339,7 @@ class ConditionalFrequencies:
     def compute_all_p(self):
         """Compute all relative frequencies"""
         self.tr_giv_n_hides()
-        self.p_unv_giv_action_v()
+        # self.p_unv_giv_action_v()  # TODO: commented out, because "information removed"
         self.p_visible_hide_giv_tr_disc()
 
 
