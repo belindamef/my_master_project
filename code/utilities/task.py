@@ -2,10 +2,13 @@
 task interaction."""
 import os
 import json
+import pickle
+import time
 import numpy as np
 from math import factorial as fac
 import more_itertools
 from utilities.config import TaskConfigurator, GridConfigurationParameters
+from utilities.config import DataHandler, humanreadable_time
 from .config import Paths
 
 
@@ -24,9 +27,10 @@ class Task:
             task_configs (TaskConfigurator): configuration e.g. hiding spots,
                 treasure location, starting nodes etc
         """
+        self.paths: Paths = Paths()  # TODO:  lieber übergeben?
+        self.task_configs: TaskConfigurator = task_configs
 
         # Observabale gridworld components
-        self.task_configs: TaskConfigurator = task_configs
         self.grid: GridConfigurationParameters = grid_config
         self.node_colors = np.full(self.grid.n_nodes, 0)
         self.shortest_dist_dic: dict = {}
@@ -57,9 +61,10 @@ class Task:
             (1, self.grid.n_hides), np.nan)
         self.o_t = np.full(                        # Current observation    o_t
             (1 + self.grid.n_nodes), np.nan)
-        self.r_t: int = 0                           # Current reward        r_t
+        self.r_t: int = 0                          # Current reward         r_t
 
         # Compute or load sets and matrices of task model
+        self.compute_or_load_set_matrices()
         self.compute_set_S()
         self.compute_set_O()
         # Compute or load shortest distances between nodes
@@ -70,9 +75,8 @@ class Task:
         save to json if not existent"""
 
         # Specify path for shortest_distances storage file
-        paths = Paths()
         short_dist_fn = os.path.join(
-            paths.code, 'utilities',
+            self.paths.code, 'utilities',
             f'shortest_dist_dim-{self.grid.dim}.json')
         # Read in json file as dic if existent for given dimensionality
         if os.path.exists(short_dist_fn):
@@ -179,6 +183,83 @@ class Task:
                             # Mark node as explored
                             explored.append(node)
 
+    def compute_or_load_set_matrices(self):
+        """Function to check if files of state and observation sets exist
+        on disk and start compution of both individually, otherwise."""
+
+        data_handler = DataHandler(paths=self.paths)
+
+        # ------ Set of states-------------------------------------------------
+        set_S_path = data_handler.create_matrix_fn(matrix_name="set_S",
+                                                   n_nodes=self.grid.n_nodes,
+                                                   n_hides=self.grid.n_hides)
+
+        if os.path.exists(f"{set_S_path}.pkl"):
+            print("Loading set S of states from disk for given task config ("
+                  f"{self.grid.n_nodes} nodes and "
+                  f"{self.grid.n_hides} hiding spots) ...")
+            start = time.time()
+            with open(f"{set_S_path}.pkl", "rb") as file:
+                self.S = pickle.load(file)
+            end = time.time()
+            print(f" ... finished loading. \n ... time:  "
+                  f"{humanreadable_time(end-start)}\n")
+        else:
+            print("Computing set S for given task config ("
+                  f"{self.grid.n_nodes} nodes and "
+                  f"{self.grid.n_hides} hiding spots) ...")
+            start = time.time()
+            self.compute_set_S()
+            end = time.time()
+            print(f" ... finished computing S. \n ... time:  "
+                  f"{humanreadable_time(end-start)}\n")
+            start = time.time()
+            data_handler.save_arrays(
+                n_nodes=self.grid.n_nodes,
+                n_hides=self.grid.n_hides,
+                set_S=self.S
+                )
+            end = time.time()
+            print(f" ... finisehd writing S to disk. \n ... time:  "
+                  f"{humanreadable_time(end-start)}\n"
+                  )
+
+        # ------ Set of observations-------------------------------------------
+        set_O_path = data_handler.create_matrix_fn(
+            matrix_name="set_O",
+            n_nodes=self.grid.n_nodes,
+            n_hides=self.grid.n_hides)
+
+        if os.path.exists(f"{set_O_path}.pkl"):
+            print("Loading set S of states from disk for given task config ("
+                  f"{self.grid.n_nodes} nodes and "
+                  f"{self.grid.n_hides} hiding spots) ...")
+            start = time.time()
+            with open(f"{set_O_path}.pkl", "rb") as file:
+                self.O_ = pickle.load(file)
+            end = time.time()
+            print(f" ... finished loading. \n ... time:  "
+                  f"{humanreadable_time(end-start)}\n")
+        else:
+            print("Computing set O for given task config ("
+                  f"{self.grid.n_nodes} nodes and "
+                  f"{self.grid.n_hides} hiding spots) ...")
+            start = time.time()
+            self.compute_set_O()
+            end = time.time()
+            print(f" ... finished computing S. \n ... time:  "
+                  f"{humanreadable_time(end-start)}\n")
+            start = time.time()
+            data_handler.save_arrays(
+                n_nodes=self.grid.n_nodes,
+                n_hides=self.grid.n_hides,
+                set_O=self.O_
+                )
+            end = time.time()
+            print(f" ... finisehd writing O to disk. \n ... time:  "
+                  f"{humanreadable_time(end-start)}\n"
+                  )
+
     def compute_S_cardinality_n(self):
         """Function to compute n = cardinality of set S, which is
         the number of possible current position times (the number of
@@ -217,8 +298,6 @@ class Task:
                 range(1, n_nodes + 1), r=n_hides
                 )
         )
-
-        # s_debug_list = []
 
         i = 0
         for possible_position in range(n_nodes):

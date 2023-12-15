@@ -102,7 +102,7 @@ class HiddenMarkovModel:
             self.S4 = []
             self.eval_s4_perms()
             end = time.time()
-            print(f" ... finished computing s4_perms, time needed: "
+            print(f" ... finished computing s4_perms, \n ... time:  "
                   f"{humanreadable_time(end-start)}"
                   )
             print("Saving s4_perms ...")
@@ -110,7 +110,7 @@ class HiddenMarkovModel:
             with open(s4_perms_fn_pkl, "wb") as file:
                 pickle.dump(self.S4, file)
             end = time.time()
-            print(f" ... finisehd saving s4_perms to files, time needed: "
+            print(f" ... finisehd saving s4_perms to files, \n ... time:  "
                   f"{humanreadable_time(end-start)}"
                   )
 
@@ -123,7 +123,7 @@ class HiddenMarkovModel:
             start = time.time()
             self.beta_0 = np.load(prior_fn)
             end = time.time()
-            print(f" ... finished loading prior, time needed: "
+            print(f" ... finished loading prior, \n ... time:  "
                   f"{humanreadable_time(end-start)}"
                   )
             # sum_p_c0 = np.sum(self.prior_c0)
@@ -134,14 +134,14 @@ class HiddenMarkovModel:
                                      self.n_S4), 0.0)
             self.eval_prior()
             end = time.time()
-            print(f" ... finished evaluating prior, time needed: "
+            print(f" ... finished evaluating prior, \n ... time:  "
                   f"{humanreadable_time(end-start)}"
                   )
             print("Saving prior belief array to file ...")
             start = time.time()
             np.save(prior_fn, self.beta_0)
             end = time.time()
-            print(f" ... finished saving prior to file, time needed:"
+            print(f" ... finished saving prior to file, \n ... time: "
                   f"{humanreadable_time(end-start)}"
                   )
 
@@ -157,7 +157,7 @@ class HiddenMarkovModel:
             start = time.time()
             self.Omega = np.load(lklh_fn)
             end = time.time()
-            print(f" ... finished loading likelihood array, time needed: "
+            print(f" ... finished loading likelihood array, \n ... time:  "
                   f"{humanreadable_time(end-start)}\n")
         else:
             print("Computing likelihood array for given task config ...")
@@ -168,13 +168,13 @@ class HiddenMarkovModel:
             start = time.time()
             self.eval_likelihood()
             end = time.time()
-            print(f" ... finished computing likelihood, time needed: "
+            print(f" ... finished computing likelihood, \n ... time:  "
                   f"{humanreadable_time(end-start)}")
             print("Saving likelihood array to file")
             start = time.time()
             np.save(lklh_fn, self.Omega)
             end = time.time()
-            print(f" ... saved likelihood array to file, time needed: "
+            print(f" ... saved likelihood array to file, \n ... time:  "
                   f"{humanreadable_time(end-start)}")
         # start = time.time()
         return self
@@ -397,14 +397,14 @@ class HiddenMarkovModel:
         # start = time.time()
         # self.compute_beta_0()
         # end = time.time()
-        # print(f" ... finished computing beta_1_0, time needed: "
+        # print(f" ... finished computing beta_1_0, \n ... time:  "
         #       f"{humanreadable_time(end-start)}"
         #       )
         # 
         # start = time.time()
         # self.save_arrays(beta_0_1=self.beta_0)
         # end = time.time()
-        # print(f" ... finisehd saving beta_0_1 to files, time needed: "
+        # print(f" ... finisehd saving beta_0_1 to files, \n ... time:  "
         #       f"{humanreadable_time(end-start)}"
         #       )
         data_handler = DataHandler(paths=self.paths)
@@ -414,7 +414,7 @@ class HiddenMarkovModel:
         start = time.time()
         self.compute_Omega()
         end = time.time()
-        print(f" ... finished computing Omega, time needed: "
+        print(f" ... finished computing Omega, \n ... time:  "
               f"{humanreadable_time(end-start)}")
         start = time.time()
         data_handler.save_arrays(n_nodes=self.grid_config.n_nodes,
@@ -424,7 +424,7 @@ class HiddenMarkovModel:
                     n_hides=self.grid_config.n_hides,
                     Omega_step=self.Omega[:, :, 1])
         end = time.time()
-        print(f" ... finisehd saving Omega to files, time needed: "
+        print(f" ... finisehd saving Omega to files, \n ... time:  "
               f"{humanreadable_time(end-start)}"
               )
         self.plot_color_map(n_nodes=self.grid_config.n_nodes,
@@ -437,7 +437,7 @@ class HiddenMarkovModel:
         start = time.time()
         self.comput_Phi()
         end = time.time()
-        print(f" ... finished computing Phi, time needed: "
+        print(f" ... finished computing Phi, \n ... time:  "
               f"{humanreadable_time(end-start)}")
         start = time.time()
         data_handler.save_arrays(n_nodes=self.grid_config.n_nodes,
@@ -448,7 +448,7 @@ class HiddenMarkovModel:
                     Phi_plus_dim=self.Phi[:, :, 3],
                     Phi_minus_one=self.Phi[:, :, 4])
         end = time.time()
-        print(f" ... finisehd saving Phi to files, time needed: "
+        print(f" ... finisehd saving Phi to files, \n ... time:  "
               f"{humanreadable_time(end-start)}"
               )
 

@@ -344,8 +344,8 @@ class Simulator():
         start = time.time()
         self.agent.update_belief_state(current_action=self.beh_model.action_t)
         end = time.time()
-        print(f"time needed for agent belief state update: "
-              f"{humanreadable_time(end-start)} \n")
+        print(f"trial {this_trial} agent belief state update took "
+              f":  {humanreadable_time(end-start)}\n")
 
     def simulate_trial_interaction(self):
         """Method to simulate the agent-task interaction,

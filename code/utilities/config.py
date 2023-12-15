@@ -455,6 +455,12 @@ class DataHandler:
         self.tw_exp_fn = os.path.join(
             paths.descr_stats, 'exp', f'{exp_label}', 't_wise_stats')
 
+    def create_matrix_fn(self, matrix_name: str,
+                         n_nodes: int, n_hides: int) -> str:
+        return os.path.join(
+            self.paths.stoch_mats,
+            f"{matrix_name}_{n_nodes}-nodes_{n_hides}-hides")
+
     def save_arrays(self, n_nodes: int, n_hides: int, **arrays):
 
         if not os.path.exists(self.paths.stoch_mats):
@@ -463,16 +469,17 @@ class DataHandler:
         for key, array in arrays.items():
 
             # Define the output file name
-            out_fn = os.path.join(self.paths.stoch_mats,
-                                  f"{key}-{n_nodes}-nodes_{n_hides}-hides")
+            out_fn = self.create_matrix_fn(matrix_name=key,
+                                           n_nodes=n_nodes,
+                                           n_hides=n_hides)
 
             # Write the vectors to the TSV file
-            with open(f"{out_fn}.csv", 'w', newline='', encoding="utf8") as file:
-                writer = csv.writer(file, delimiter=',')
+            with open(f"{out_fn}.csv", 'w', newline='', encoding="utf8") as f:
+                writer = csv.writer(f, delimiter=',')
                 writer.writerows(array)
 
-            with open(f"{out_fn}.pkl", "wb") as file:
-                pickle.dump(array, file)
+            with open(f"{out_fn}.pkl", "wb") as f:
+                pickle.dump(array, f)
 
     def save_data_to_tsv(self, data: pd.DataFrame, filename: str):
         """Safe dataframe to a .tsv file

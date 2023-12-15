@@ -265,7 +265,7 @@ if __name__ == "__main__":
     # A = [0, -dim, +1, dim, -1]
     A = [0, 1]  # 0: drill, 1: step
     end = time.time()
-    print(f"\n ... finished computung sets O, S and A, time needed: "
+    print(f"\n ... finished computung sets O, S and A, \n ... time:  "
           f"{humanreadable_time(end-start)}"
           )
 
@@ -273,7 +273,7 @@ if __name__ == "__main__":
     start = time.time()
     Omega = compute_Omega(S=S, O=O, A=A)
     end = time.time()
-    print(f"\n ... finished computung Omega, time needed: "
+    print(f"\n ... finished computung Omega, \n ... time:  "
           f"{humanreadable_time(end-start)}"
           )
 
@@ -288,7 +288,7 @@ if __name__ == "__main__":
                 # Omega_5=Omega[4]
                 )
     end = time.time()
-    print(f"\n ...finished writing arrays to disk, time needed: "
+    print(f"\n ...finished writing arrays to disk, \n ... time:  "
           f"{humanreadable_time(end-start)}"
           )
 

@@ -287,7 +287,7 @@ class Validator:
         self.estimate_parameter_values(data=simulated_data)
         end = time.time()
         print(" ... finished ML parameter estimation "
-              f"\n     time needed: {humanreadable_time(end-start)}")
+              f"\n     \n ... time:  {humanreadable_time(end-start)}\n")
 
         # ------(3) Start model recovery --------------------------------------
         print("Running model estimation with simulated data from",
@@ -297,7 +297,7 @@ class Validator:
                            datatype="sim")
         end = time.time()
         print(" ... finished model estimationting ",
-              f"\n     time needed: {humanreadable_time(end-start)}")
+              f"\n     \n ... time:  {humanreadable_time(end-start)}\n")
 
         return pd.DataFrame(self.data_dic)
 
@@ -335,6 +335,6 @@ class Validator:
         print("finished model validaton with experimental data of participant",
               f" {self.val_params.current_part}, ",
               f"repitition no. {self.val_params}",
-              f"\n     time needed: {humanreadable_time(end-start)}")
+              f"\n     \n ... time:  {humanreadable_time(end-start)}\n")
 
         return pd.DataFrame(self.data_dic)
