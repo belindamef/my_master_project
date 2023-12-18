@@ -5,8 +5,9 @@ import pandas as pd
 import numpy as np
 from utilities.simulation_methods import Simulator, SimulationParameters
 from utilities.estimation_methods import Estimator, EstimationParameters
-from utilities.config import TaskConfigurator, GridConfigurationParameters, humanreadable_time
-from utilities.agent import HiddenMarkovModel
+from utilities.config import humanreadable_time
+from utilities.task import TaskConfigurator, GridConfigParameters
+from utilities.agent import StochasticMatrices
 
 
 class ValidationParameters:
@@ -97,8 +98,8 @@ class Validator:
     def __init__(self, sim_params: SimulationParameters,
                  val_params: ValidationParameters,
                  task_configs: TaskConfigurator,
-                 task_params: GridConfigurationParameters,
-                 bayesian_comps: HiddenMarkovModel,
+                 task_params: GridConfigParameters,
+                 bayesian_comps: StochasticMatrices,
                  est_params: EstimationParameters):
 
         self.val_params = val_params

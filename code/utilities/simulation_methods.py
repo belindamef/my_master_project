@@ -8,10 +8,10 @@ Author: Belinda Fleischmann
 import time
 import pandas as pd
 import numpy as np
-from .task import Task
-from .agent import AgentAttributes, Agent, HiddenMarkovModel
+from .task import Task, TaskConfigurator, GridConfigParameters
+from .agent import AgentAttributes, Agent, StochasticMatrices
 from .modelling import BehavioralModel
-from .config import TaskConfigurator, GridConfigurationParameters, humanreadable_time
+from .config import humanreadable_time
 np.set_printoptions(linewidth=500)
 
 
@@ -301,7 +301,7 @@ class Simulator():
 
     def __init__(self, task_configs: TaskConfigurator,
                  #bayesian_comps: HiddenMarkovModel,
-                 task_params: GridConfigurationParameters = GridConfigurationParameters()):
+                 task_params: GridConfigParameters = GridConfigParameters()):
         self.task_configs = task_configs
         self.task_params = task_params
         #self.bayesian_comps = bayesian_comps

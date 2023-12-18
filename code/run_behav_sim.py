@@ -8,10 +8,10 @@ Author: Belinda Fleischmann
 
 import time
 import numpy as np
-from utilities.config import DirectoryManager, TaskConfigurator, GridConfigurationParameters, get_arguments
-from utilities.config import DataHandler
+from utilities.config import DataHandler, DirectoryManager, get_arguments
 from utilities.simulation_methods import Simulator, SimulationParameters
-from utilities.agent import AgentAttributes, HiddenMarkovModel
+from utilities.task import TaskConfigurator, GridConfigParameters
+from utilities.agent import AgentAttributes, StochasticMatrices
 from utilities.validation_methods import ValidationParameters
 
 
@@ -62,19 +62,23 @@ def adjust_total_trial_numbers(task_configuration_object: TaskConfigurator):
     task_configuration_object.params.n_trials = TEST_N_TRIALS
 
 
-def main(task_params: GridConfigurationParameters):
+def main(grid_config: GridConfigParameters):
     """Main function"""
     dir_mgr = DirectoryManager()
     dir_mgr.define_raw_beh_data_out_path(data_type="sim",
                                          exp_label=OUT_DIR_LABEL,
                                          make_dir=True)
 
+    # Load or create Task configuration
     task_config = TaskConfigurator(
         path=dir_mgr.paths,
-        params=task_params
+        params=grid_config
         ).get_config(EXP_LABEL)
-    # hmm_comps = HiddenMarkovModel(
-    #     task_config.params).compute_or_load_components()
+    
+    # Load or create Stochastic Matrices for Hidden Markov Model
+
+    stoch_matrices = StochasticMatrices(
+        task_config.params).compute_or_load_components()
 
     if IS_QUICK_TEST:
         adjust_total_trial_numbers(task_config)
@@ -83,7 +87,7 @@ def main(task_params: GridConfigurationParameters):
     val_params = define_validation_parameters()
     simulator = Simulator(task_configs=task_config,
                           #bayesian_comps=hmm_comps,
-                          task_params=task_params)
+                          task_params=grid_config)
 
     for repetition in val_params.repetition_numbers:
         val_params.current_rep = repetition
@@ -122,7 +126,7 @@ if __name__ == "__main__":
     OUT_DIR_LABEL = "test_ahmm_12_14"
 
     # Define task configuration parameters
-    task_params = GridConfigurationParameters(
+    task_params = GridConfigParameters(
         dim=2,
         n_hides=2
     )
@@ -141,7 +145,7 @@ if __name__ == "__main__":
     TEST_N_ROUNDS = 1  # NOTE: only 1 round possible because prior_c (!?)
     TEST_N_TRIALS = 12
 
-    main(task_params=task_params)
+    main(grid_config=task_params)
 
     end = time.time()
     print(f"Total time for simulation: {round((end-start), ndigits=2)} sec.")

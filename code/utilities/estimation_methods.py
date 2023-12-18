@@ -6,8 +6,9 @@ import pandas as pd
 import xarray as xr
 # import utilities.abm_bmc as abm_bmc  # TODO uncomment back (python 3.8...)
 from utilities.simulation_methods import Simulator
-from utilities.agent import HiddenMarkovModel
-from utilities.config import TaskConfigurator, GridConfigurationParameters, custom_sort_key
+from utilities.agent import StochasticMatrices
+from utilities.task import TaskConfigurator, GridConfigParameters
+from utilities.config import custom_sort_key
 
 
 class EstimationParameters:
@@ -131,8 +132,8 @@ class Estimator:
                                    np.nan)
 
     def instantiate_sim_obj(self, task_configs: TaskConfigurator,
-                            bayesian_comps: HiddenMarkovModel,
-                            task_params: GridConfigurationParameters):
+                            bayesian_comps: StochasticMatrices,
+                            task_params: GridConfigParameters):
         """
         Method to instantiate simulation object
 
@@ -316,8 +317,8 @@ class Estimator:
     def estimate_parameters(self, data: pd.DataFrame,
                             method: str, candidate_agent: str,
                             task_configs: TaskConfigurator,
-                            bayesian_comps: HiddenMarkovModel,
-                            task_params: GridConfigurationParameters):
+                            bayesian_comps: StochasticMatrices,
+                            task_params: GridConfigParameters):
         """_summary_
 
         Args:

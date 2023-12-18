@@ -18,10 +18,10 @@ exists on disk.
 import time
 import os
 import numpy as np
-from utilities.config import DirectoryManager, TaskConfigurator, GridConfigurationParameters, get_arguments
-from utilities.config import DataHandler
+from utilities.config import DataHandler, DirectoryManager, get_arguments
 from utilities.simulation_methods import SimulationParameters
-from utilities.agent import AgentAttributes, HiddenMarkovModel
+from utilities.task import TaskConfigurator, GridConfigParameters
+from utilities.agent import AgentAttributes, StochasticMatrices
 from utilities.validation_methods import Validator, ValidationParameters
 from utilities.estimation_methods import EstimationParameters
 
@@ -344,7 +344,7 @@ def main():
     # Load task configurations and bayesian model components from disk
     task_config = TaskConfigurator(path=dir_mgr.paths).get_config(
         config_label=EXP_LABEL)
-    bayesian_comps = HiddenMarkovModel(
+    bayesian_comps = StochasticMatrices(
         grid_config_params=task_config.params).get_comps_old()
 
     # For debigging, adjust total number of trials
@@ -359,7 +359,7 @@ def main():
     validator = Validator(sim_params=sim_params,
                           val_params=val_params,
                           task_configs=task_config,
-                          task_params=GridConfigurationParameters(),
+                          task_params=GridConfigParameters(),
                           bayesian_comps=bayesian_comps,
                           est_params=est_params)
 

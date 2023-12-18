@@ -4,10 +4,11 @@ import os
 import json
 import pickle
 import time
+from dataclasses import dataclass
 import numpy as np
 from math import factorial as fac
 import more_itertools
-from utilities.config import TaskConfigurator, GridConfigurationParameters
+from utilities.config import TaskConfigurator, GridConfigParameters
 from utilities.config import DataHandler, humanreadable_time
 from .config import Paths
 
@@ -20,7 +21,7 @@ class Task:
     """
 
     def __init__(self, task_configs,
-                 grid_config: GridConfigurationParameters):
+                 grid_config: GridConfigParameters):
         """A class to represent the tresaure hunt task
 
         Args:
@@ -31,7 +32,7 @@ class Task:
         self.task_configs: TaskConfigurator = task_configs
 
         # Observabale gridworld components
-        self.grid: GridConfigurationParameters = grid_config
+        self.grid: GridConfigParameters = grid_config
         self.node_colors = np.full(self.grid.n_nodes, 0)
         self.shortest_dist_dic: dict = {}
 
@@ -423,3 +424,212 @@ class Task:
 
             # Evaluate whether new position is treasure location
             self.eval_reward_r()
+
+
+@dataclass
+class GridConfigParameters:
+    """A data class to store experimental parameters
+
+    Attributes
+    ----------
+    n_blocks (int): number of blocks in one run.
+    n_rounds (int): number of rounds in one block
+    n_trials (int): number of trials in one run
+    dim (int): size (i.e. no. of both, rows and columns) in the 2-dimensional
+        grid
+    n_hides (int): number of hiding spots in the grid world
+    n_nodes (int): number of fields in the grid world
+    """
+    n_blocks: int = 1
+    n_rounds: int = 10
+    n_trials: int = 12
+    dim: int = 5
+    n_hides: int = 6
+    n_nodes: int = field(init=False)
+
+    def __post_init__(self):
+        self.n_nodes = self.dim ** 2
+
+
+class TaskConfigurator:
+    """A Class to create task configurations given a set of
+    experimental parameters (i.e. no. trials, dimension of the grid, etc.) or
+    load existend task configurations from disk given the label of a task
+    configuration.
+
+    Configuration-specific task state values are stored in the instance
+    attribute "states (dict)".
+    Newly sampled task configuration are written to .npy files are written and
+    save in config directory on disk.
+
+    Args:
+    -----
+        path (Path): Instance of class Paths
+
+    Attributes:
+    ----------
+        params (TaskDesignParameters): Instance of class TaskDesignParams
+        states (dict of str: np.ndarray): Configuration-specific state values
+            "s_1" : (n_blocks)x(n_rounds)-array of values indicating starting
+                node positions of each round
+            "s_3": (n_blocks)x(n_rounds)-array of values indicating treasure
+                locations
+            "hides_loc": (n_blocks)x(n_hides)-array of values indicating hiding
+                spot locations
+    """
+
+    def __init__(self, path: Paths,
+                 params=GridConfigParameters()):
+        self.paths = path
+        self.states = {}
+        self.params = params
+
+    def get_user_input(self):
+        """Method to get user input to create new task configurations"""
+
+        n_blocks = "as in loaded configuration"
+        new_config_needed = get_user_yes_no("Create new task configuration?")
+        if new_config_needed:
+            while True:
+                config_label = input("Enter label for new task "
+                                     "configuration: ")
+                if os.path.exists(os.path.join(
+                        self.paths.task_configs, config_label)):
+                    print("A task configuration with this name already exists."
+                          "\nEnter another name. ")
+                else:
+                    break
+            n_blocks = int(input("Enter number of blocks: "))
+        else:
+            while True:
+                config_label = input("Enter label of existing task config ("
+                                     "'exp_msc'/'sim_100_msc'): ")
+                if not os.path.exists(os.path.join(
+                        self.paths.task_configs, config_label)):
+                    print(f"No configuration named '{config_label}' "
+                          f"found.")
+                else:
+                    break
+        return new_config_needed, config_label, n_blocks
+
+    def add_config_paths(self, config_label: str):
+        """Add path to this task configurations config files dir to path obj
+
+        Args:
+        -----
+            config_label (str): Name of task configuration, e.g. "exp_msc"
+        """
+        self.paths.this_config = os.path.join(
+            self.paths.task_configs, config_label)
+
+    def sample_hiding_spots(self):
+        """Method to sample hiding spots from a discrete uniform distribution
+        over all nodes (without replacement)"""
+        hides_loc = np.empty((self.params.n_blocks,
+                             self.params.n_hides), dtype=int)
+        for block in range(self.params.n_blocks):
+            hides_loc[block] = np.random.choice(
+                np.arange(1, self.params.n_nodes + 1),
+                self.params.n_hides,
+                replace=False)
+        self.states['hides'] = hides_loc
+
+    def sample_start_pos(self):
+        """Method to sample the starting position from a discrete uniform
+        distribution over all nodes"""
+        s_1 = np.empty((self.params.n_blocks,
+                       self.params.n_rounds), dtype=int)
+        for block in range(self.params.n_blocks):
+            for round_ in range(self.params.n_rounds):
+                s_1[block, round_] = int(np.random.choice(
+                    np.arange(1, self.params.n_nodes + 1),
+                    1))
+        self.states['s_1'] = s_1
+
+    def sample_treasure_loc(self):
+        """Method to sample the tr location from a discrete uniform
+        distribution over all hiding spots"""
+        s_3 = np.empty((self.params.n_blocks,
+                       self.params.n_rounds), dtype=int)
+        for block in range(self.params.n_blocks):
+            for round_ in range(self.params.n_rounds):
+                # Set treasure to equal start position
+                s_3[block, round_] = cp.deepcopy(
+                    self.states['s_1'][block, round_])
+                # Sample tr location until it's not the starting position s_0
+                while s_3[block, round_] == self.states['s_1'][block, round_]:
+                    s_3[block, round_] = int(np.random.choice(
+                        self.states['hides'][block], 1))
+        self.states['s_3'] = s_3
+
+    def save_task_config(self):
+        """Method to save newly sampled task states to task config directory"""
+        os.makedirs(self.paths.this_config)
+        for key, value in self.states.items():
+            np.save(os.path.join(self.paths.this_config, f'{key}.npy'), value)
+
+        config_df_fn = os.path.join(self.paths.this_config,
+                                    'config_params.tsv')
+        all_block_df = pd.DataFrame()
+        for block_ in range(self.params.n_blocks):
+            this_block_df = pd.DataFrame(
+                index=range(0, self.params.n_rounds))
+            this_block_df['block'] = block_ + 1
+            this_block_df['round'] = range(1,
+                                           self.params.n_rounds
+                                           + 1)
+            this_block_df['hides'] = np.full(
+                self.params.n_rounds, np.nan)
+            this_block_df['hides'] = this_block_df[
+                'hides'].astype('object')
+            for round_ in range(self.params.n_rounds):
+                this_block_df.at[
+                    round_, 'hides'] = self.states['hides'][block_]
+            this_block_df['s1'] = self.states['s_1'][block_]
+            this_block_df['s3'] = self.states['s_3'][block_]
+
+            all_block_df = pd.concat([all_block_df,
+                                      this_block_df],
+                                     ignore_index=True)
+        with open(config_df_fn, 'w', encoding="utf-8") as tsv_file:
+            tsv_file.write(all_block_df.to_csv(sep='\t', index=False))
+
+    def sample_task_config(self):
+        """Method to sample all task states s1, s3 and s4 for all trials/rounds
+        and return dict with states"""
+        self.sample_hiding_spots()
+        self.sample_start_pos()
+        self.sample_treasure_loc()
+        self.save_task_config()
+
+    def load_task_config(self):
+        """Method to load existing task configuration files from task config
+        directory"""
+        for item in ['s_1', 's_3', 'hides']:
+            self.states[item] = np.load(
+                os.path.join(self.paths.this_config, f'{item}.npy'))
+
+    def get_config(self, config_label: str):
+        """Method to create or load task configuration
+
+        Args:
+        -----
+            config_label (str): Name of task configuration, e.g. "exp_msc"
+            new_config_requested (bool, optional): If True, samples
+                new task configurations and saves it under given label to disk.
+                    Loads existing configuration otherwise. Defaults to False.
+
+        Returns:
+            TODO: TODO
+        """
+        n_blocks = 3
+        self.add_config_paths(config_label)
+        if not os.path.exists(self.paths.this_config):
+            self.params.n_blocks = n_blocks
+            self.sample_task_config()
+        else:
+            self.load_task_config()
+            self.params.n_blocks = list(
+                self.states.values())[0].shape[0]
+
+        return self
