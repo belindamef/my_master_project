@@ -17,7 +17,7 @@ np.set_printoptions(linewidth=500)
 
 class SimulationParameters:
     """Class to store and manage parameters for behavioral data simulation
-    
+
     Attributes:
     -----------
     agent_space_gen (list): Data generating agent model space
@@ -42,8 +42,8 @@ class SimulationParameters:
 
     def get_params_from_args(self, args):
         """Method to fetch simulation parameters from command line or bash
-        script arguments. 
-        
+        script arguments.
+
         Args:
             args (TODO): TODO
 
@@ -113,7 +113,7 @@ class SimulationParameters:
 class Recorder:
     """A class to store and iteratively add trial-wise simulation data that
     will be saved to events.tsv file
-    
+
     Attributes:
     --------
         variable_list (list): Variables that are recorded during simulation
@@ -132,7 +132,7 @@ class Recorder:
 
     Args:
     ----
-        *args: Variable length argument list of additional variables to be 
+        *args: Variable length argument list of additional variables to be
             recorded
     """
 
@@ -220,18 +220,22 @@ class Recorder:
         self.data_one_round["log_p_a_giv_h"][trial] = beh_model.log_likelihood
         self.data_one_round["r_t"][trial] = task.r_t
         self.data_one_round["marg_s3_posterior"][trial] = agent.marg_tr_belief
-        self.data_one_round["marg_s3_prior_t0"][trial] = agent.marg_tr_belief_prior
-        self.data_one_round["marg_s4_posterior"][trial] = agent.marg_hide_belief
-        self.data_one_round["marg_s4_prior_t0"][trial] = agent.marg_hide_belief_prior
+        self.data_one_round["marg_s3_prior_t0"][
+            trial] = agent.marg_tr_belief_prior
+        self.data_one_round["marg_s4_posterior"][
+            trial] = agent.marg_hide_belief
+        self.data_one_round["marg_s4_prior_t0"][
+            trial] = agent.marg_hide_belief_prior
         self.data_one_round["max_s3_belief"][trial] = agent.max_s3_b_value
-        self.data_one_round["argsmax_s3_belief"][trial] = agent.max_tr_b_node_indices
+        self.data_one_round["argsmax_s3_belief"][
+            trial] = agent.max_tr_b_node_indices
         self.data_one_round["min_dist_argsmax_s3_belief"][
             trial] = agent.shortest_dist_to_max_s3_b
         self.data_one_round["closest_argsmax_s3_belief"][
             trial] = agent.closest_max_s3_b_nodes
         self.data_one_round["s3_t"][trial] = task.s3_t
 
-    def append_this_round_to_block_df(self, this_round: int, n_trials:int):
+    def append_this_round_to_block_df(self, this_round: int, n_trials: int):
         """Append this round's dataframe to this block's dataframe
 
         Args:
@@ -300,11 +304,11 @@ class Simulator():
     beh_model: BehavioralModel
 
     def __init__(self, task_configs: TaskConfigurator,
-                 #bayesian_comps: HiddenMarkovModel,
+                 agent_stoch_matrices: StochasticMatrices,
                  task_params: GridConfigParameters = GridConfigParameters()):
         self.task_configs = task_configs
         self.task_params = task_params
-        #self.bayesian_comps = bayesian_comps
+        self.agent_stoch_matrices = agent_stoch_matrices
 
     def create_interacting_objects(self, agent_name: str, this_block: int,
                                    tau_gen: float, lambda_gen: float):
@@ -323,10 +327,11 @@ class Simulator():
         self.task.start_new_block(this_block)
 
         self.agent = Agent(agent_attr=agent_attributes,
+                           stoch_matrices=self.agent_stoch_matrices,
                            task_object=self.task,
                            lambda_=lambda_gen)
         if agent_attributes.is_bayesian:
-            self.agent.attach_hmm_matrices()
+            self.agent.attach_stoch_matrices()
 
         self.beh_model = BehavioralModel(tau_gen=tau_gen,
                                          agent_object=self.agent)
@@ -359,7 +364,7 @@ class Simulator():
         """Method to simulate trial-wise interaction between agent, task and
         behavioral model to evaluate likelihood of given data's action
         values.
-        
+
         More specifically, this method frist let's the agent evaluate action
         valences and the behavioral model evaluate the conditional probability
         distribution of all actions given the history of actions and

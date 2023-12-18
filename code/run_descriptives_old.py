@@ -23,7 +23,7 @@ exp_label = str(input("Enter exp_label ('exp_msc' or 'sim_100_msc' or "
 
 dim = 5
 n_block_this_label = {'exp_msc': 3, 'sim_100_msc': 100, 'test': 3, 'rm': 3,
-                      'test_forreal':3}
+                      'test_forreal': 3}
 n_blocks = n_block_this_label[exp_label]
 
 # Specify directories and create if not existent

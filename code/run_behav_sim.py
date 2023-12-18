@@ -10,7 +10,7 @@ import time
 import numpy as np
 from utilities.config import DataHandler, DirectoryManager, get_arguments
 from utilities.simulation_methods import Simulator, SimulationParameters
-from utilities.task import TaskConfigurator, GridConfigParameters
+from utilities.task import Task, TaskConfigurator, GridConfigParameters
 from utilities.agent import AgentAttributes, StochasticMatrices
 from utilities.validation_methods import ValidationParameters
 
@@ -74,11 +74,14 @@ def main(grid_config: GridConfigParameters):
         path=dir_mgr.paths,
         params=grid_config
         ).get_config(EXP_LABEL)
-    
-    # Load or create Stochastic Matrices for Hidden Markov Model
 
+    # Create model task object
+    task_model = Task(task_configs=task_config, grid_config=grid_config)
+    # Load or create Stochastic Matrices for Hidden Markov Model
     stoch_matrices = StochasticMatrices(
-        task_config.params).compute_or_load_components()
+        task_object=task_model,
+        grid_config_params=grid_config,
+        ).compute_or_load_components()
 
     if IS_QUICK_TEST:
         adjust_total_trial_numbers(task_config)
@@ -86,7 +89,7 @@ def main(grid_config: GridConfigParameters):
     sim_params = define_simulation_parameters()
     val_params = define_validation_parameters()
     simulator = Simulator(task_configs=task_config,
-                          #bayesian_comps=hmm_comps,
+                          agent_stoch_matrices=stoch_matrices,
                           task_params=grid_config)
 
     for repetition in val_params.repetition_numbers:

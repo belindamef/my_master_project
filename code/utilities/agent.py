@@ -13,6 +13,511 @@ from utilities.very_plotter_new import VeryPlotter
 from matplotlib.colors import ListedColormap
 
 
+class StochasticMatrices:
+    """A Class to compute Bayesian model components given a set of
+    task parameters (i.e. no. trials, dimension of the grid, etc.) or
+    load model components from disk if the task-parameter-specific components
+    already exist on disk. For example, the file utilities/liklh_dim-5_h6.npy
+    stores the likelihood array for task configuration with dimensionality 5
+    and 6 hiding spots. If that file exists, the array will not be computed to
+    save computation time.
+
+    Newly computed model components are written to .npy files are written and
+    save in code/utilities/ on disk.
+
+    Attributes:
+    -----------
+        task_design_params (TaskDesignParameters): Instance of data
+            class TaskDesignParameters.
+
+        paths (Paths): Instance of data class Paths.
+
+        s4_perms (list): All permutations of possible values for state s4
+
+        s4_perm_node_indices(dict of int: list): node-specific indices of
+            "self.s4_perms" of all those entries that have the value 1 at
+                self.s4_perms[key], encoding that node i is a hiding spot
+            .key (int): value indicating node in grid
+            .value (list): list of indices for "self.s4_perms".
+
+        n_s4_perms (int): number of state s4 permutations
+
+        prior_c0 (np.ndarray): (n_nodes x n_s4_permutaions)-array of prior,
+            i.e. initial belief state before any observation
+
+        lklh (np.ndarray): (n_action_type x n_nodes x n_node_colors x
+            n_observations x n_nodes x n_s4_permutations)-array of the
+                likelihood, i.e. action- and state-dependent, state-conditional
+                    observation distribution
+
+    Args:
+    -----
+        task_design_params (TaskDesignParameters, optional): Instance of data
+            class TaskDesignParameters.
+    """
+
+    def __init__(self, task_object,
+                 grid_config_params=GridConfigParameters()):
+        self.task: Task = task_object
+        self.grid_config = grid_config_params
+        self.paths: Paths = Paths()
+        self.beta_0: np.ndarray = np.full((self.task.n, 1), np.nan)
+        self.Omega: np.ndarray = np.array(np.nan)
+        self.Phi: np.ndarray = np.array(np.nan)
+
+    def compute_beta_0(self):
+        """Method to evaluate the initial belief state beta in round 1,
+        trial 1 given the first state current position"""
+
+        # Set all states, that are in line with current position to 1
+        self.beta_0[np.where(self.task.S[:, 0] == self.task.s1_t)[0], 0] = 1
+        # Set alle remaining states zero
+        self.beta_0[np.where(self.task.S[:, 0] != self.task.s1_t)[0], 0] = 0
+        # Normalize belief state
+        self.beta_0 = self.beta_0 / sum(self.beta_0)
+
+    def get_comps_old(self):
+        """Create or load Bayesian components, i.e. s4-permutations, prior and
+        likelihood.
+        """
+        # Initialize and evaluate s_4 permutations
+        s4_perms_fn_pkl = os.path.join(
+            self.paths.code, "utilities",
+            f"s4_perms_dim-{self.grid_config.dim}_"
+            f"h{self.grid_config.n_hides}.pkl")
+
+        if os.path.exists(s4_perms_fn_pkl):
+            print("Loading s4_perms ...")
+            start = time.time()
+            with open(s4_perms_fn_pkl, "rb") as file:
+                self.S4 = pickle.load(file)
+            end = time.time()
+            print(
+                " ... finished loading s4_perms, timed needed: "
+                f"{humanreadable_time(end-start)}"
+                )
+        else:
+            print("Computing s4_perms ...")
+            start = time.time()
+            self.S4 = []
+            self.eval_s4_perms()
+            end = time.time()
+            print(f" ... finished computing s4_perms, \n ... time:  "
+                  f"{humanreadable_time(end-start)}"
+                  )
+            print("Saving s4_perms ...")
+            start = time.time()
+            with open(s4_perms_fn_pkl, "wb") as file:
+                pickle.dump(self.S4, file)
+            end = time.time()
+            print(f" ... finisehd saving s4_perms to files, \n ... time:  "
+                  f"{humanreadable_time(end-start)}"
+                  )
+
+        # Load/evaluate agent's initial belief state in 1. trial ---(Prior)---
+        prior_fn = os.path.join(self.paths.code, "utilities",
+                                f"prior_dim-{self.grid_config.dim}_"
+                                f"h{self.grid_config.n_hides}.npy")
+        if os.path.exists(prior_fn):
+            print("Loading prior array from file ...")
+            start = time.time()
+            self.beta_0 = np.load(prior_fn)
+            end = time.time()
+            print(f" ... finished loading prior, \n ... time:  "
+                  f"{humanreadable_time(end-start)}"
+                  )
+            # sum_p_c0 = np.sum(self.prior_c0)
+        else:
+            print("Evaluating prior belief array for given task config ...")
+            start = time.time()
+            self.beta_0 = np.full((self.grid_config.n_nodes,
+                                   self.n_S4), 0.0)
+            self.eval_prior()
+            end = time.time()
+            print(f" ... finished evaluating prior, \n ... time:  "
+                  f"{humanreadable_time(end-start)}"
+                  )
+            print("Saving prior belief array to file ...")
+            start = time.time()
+            np.save(prior_fn, self.beta_0)
+            end = time.time()
+            print(f" ... finished saving prior to file, \n ... time: "
+                  f"{humanreadable_time(end-start)}"
+                  )
+
+        # Load/eval action-dep. state-cond. obs distribution ---(Likelihood)---
+        lklh_fn = os.path.join(
+            self.paths.code,
+            "utilities",
+            f"lklh_dim-{self.grid_config.dim}_"
+            f"h{self.grid_config.n_hides}.npy"
+        )
+        if os.path.exists(lklh_fn):
+            print("Loading likelihood array from file ...")
+            start = time.time()
+            self.Omega = np.load(lklh_fn)
+            end = time.time()
+            print(f" ... finished loading likelihood array, \n ... time:  "
+                  f"{humanreadable_time(end-start)}\n")
+        else:
+            print("Computing likelihood array for given task config ...")
+            self.Omega = np.zeros(
+                (2, self.grid_config.n_nodes, 3, 4,
+                 self.grid_config.n_nodes, self.n_S4),
+                dtype=np.uint16)
+            start = time.time()
+            self.eval_likelihood()
+            end = time.time()
+            print(f" ... finished computing likelihood, \n ... time:  "
+                  f"{humanreadable_time(end-start)}")
+            print("Saving likelihood array to file")
+            start = time.time()
+            np.save(lklh_fn, self.Omega)
+            end = time.time()
+            print(f" ... saved likelihood array to file, \n ... time:  "
+                  f"{humanreadable_time(end-start)}")
+        # start = time.time()
+        return self
+
+    def compute_Omega(self):
+        """Method to compute Omega"""
+
+        self.Omega = np.full((self.task.n, self.task.m, self.task.p), 0)
+        # TODO init in init
+
+        node_colors = {"black": 0,
+                       "grey": 1,
+                       "blue": 2}
+
+        # Encode set A to either drill or step
+        A = [0, 1]  # 0: drill, 1: step
+
+        for i_a, a in enumerate(A):
+            for i_s, s in enumerate(self.task.S):
+                for i_o, o in enumerate(self.task.O_):
+                    # Extract state components
+                    current_pos = int(s[0])  # NOTE: set S[0] := {1, ..., n}
+                    node_index_in_o_t = current_pos  # NOTE: bc o[0] is tr flag
+                    tr_location = int(s[1])
+                    hiding_spots = s[2:]
+
+                    # Extract observation components
+                    tr_flag = o[0]
+
+                    # TODO: alle observations, wo node colors mit hiding spot
+                    #  locations keinen sinn machen
+                    # siehe Handwritten NOTE 24.11.
+
+                    # -------After DRILL actions: -----------------------------
+                    if a == 0:
+
+                        # CONDITION:                    CORRESP MODEL VARIABLE:
+                        # ---------------------------------------------------------
+                        # if new position...                              s[1]
+                        # ...IS NOT treasure location                     s[2]
+                        # ...IS NOT hiding spot,                          s[3:]
+                        # all observation, for which...
+                        # ...tr_flag == 0,                                o[1]
+                        # ...and new node color == grey,                  o[2:]
+                        #  = 1
+                        if (
+                                current_pos != tr_location
+                                and current_pos not in hiding_spots
+                                and tr_flag == 0
+                                and (o[node_index_in_o_t]
+                                     == node_colors["grey"])
+                                     ):
+                            self.Omega[i_s, i_o, i_a] = 1
+
+                        # CONDITION:                    CORRESP MODEL VARIABLE:
+                        # ---------------------------------------------------------
+                        # if new position...                              s[1]
+                        # ...IS NOT treasure location                     s[2]
+                        # ...IS hiding spot,                              s[3:]
+                        # all observation, for which...
+                        # ...tr_flag == 0,                                o[1]
+                        # ...and new node color == blue,                  o[2:]
+                        #  = 1
+                        if (
+                                current_pos != tr_location
+                                and current_pos in hiding_spots
+                                and tr_flag == 0
+                                and o[node_index_in_o_t] == node_colors["blue"]
+                                ):
+                            self.Omega[i_s, i_o, i_a] = 1
+
+                        # All other observaton probabs remain 0 as initiated.
+
+                    # -------After STEP actions: -----------------------------
+                    else:  # if a != 0
+                        # CONDITION:                    CORRESP MODEL VARIABLE:
+                        # ---------------------------------------------------------
+                        # if new position...                              s[1]
+                        # ...IS NOT treasure location                     s[2]
+                        # ...IS NOT hiding spot,                          s[3:]
+                        # all observation, for which...
+                        # ...tr_flag == 0,                                o[1]
+                        # ...and new node color in ["black", "grey"],     o[2:]
+                        #  = 1
+                        if (
+                                current_pos != tr_location
+                                and current_pos not in hiding_spots
+                                and tr_flag == 0
+                                and (o[node_index_in_o_t] in [
+                                    node_colors["black"], node_colors["grey"]])
+                                    ):
+                            self.Omega[i_s, i_o, i_a] = 1
+
+                        # CONDITION:                    CORRESP MODEL VARIABLE:
+                        # ---------------------------------------------------------
+                        # if new position...                              s[1]
+                        # ...IS NOT treasure location                     s[2]
+                        # ...IS hiding spot,                              s[3:]
+                        # all observation, for which...
+                        # ...tr_flag == 0,                                o[1]
+                        # ...and new node color in ["black", "blue"],     o[2:]
+                        #  = 1
+                        if (
+                                current_pos != tr_location
+                                and current_pos in hiding_spots
+                                and tr_flag == 0
+                                and o[node_index_in_o_t] in [
+                                    node_colors["black"], node_colors["blue"]]
+                                    ):
+                            self.Omega[i_s, i_o, i_a] = 1
+
+                        # CONDITION:                    CORRESP MODEL VARIABLE:
+                        # ---------------------------------------------------------
+                        # if new position...                              s[1]
+                        # ...IS treasure location                         s[2]
+                        # ...IS hiding spot,                              s[3:]
+                        # all observation, for which...
+                        # ...tr_flag == 1,                                o[1]
+                        # ...and new node color in ["black", "blue"],     o[2:]
+                        #  = 1
+                        if (
+                                current_pos == tr_location
+                                and current_pos in hiding_spots
+                                and tr_flag == 1
+                                and o[node_index_in_o_t] in [
+                                    node_colors["black"], node_colors["blue"]]
+                                    ):
+                            self.Omega[i_s, i_o, i_a] = 1
+
+    def comput_Phi(self):
+        "Method to compute Phi"
+
+        action_set = [0,
+                      - self.grid_config.dim, + 1,
+                      + self.grid_config.dim, -1]
+
+        self.Phi = np.full((self.task.n, self.task.n, len(action_set)), np.nan)
+
+        # ---------------------------------------
+        # NOTE:
+        # s = (s_1, s_2, s_3, s_4)
+        # p^{a_t = a}(s_{t+1} = s|s_t = s_tilde)
+        # s_1 is the first component of s = s_{t+1}
+        # ---------------------------------------
+
+        for a_i, a in enumerate(action_set):
+
+            # Iterate possible old states s_{t}
+            for s_tilde_i, s_tilde in enumerate(self.task.S):
+
+                # Iterate possible new states s_{t+1}
+                for s_i, s in enumerate(self.task.S):
+
+                    s_1 = s[0]              # current position in t + 1
+                    s_1_tilde = s_tilde[0]  # current position in t
+                    s_1_tilde_plus_a = s_1_tilde + a
+
+                    # Filter out forbidden steps (wald outside border)
+                    if (
+                        (1 <= s_1_tilde_plus_a <= self.grid_config.n_nodes)
+                        and not ((((s_1_tilde - 1)
+                                   % self.grid_config.dim) == 0)
+                                 and a == -1)
+                        and not ((((s_1_tilde)
+                                   % self.grid_config.dim) == 0)
+                                 and a == 1)
+                                   ):
+                        if s_1 == s_1_tilde_plus_a:
+                            self.Phi[s_tilde_i, s_i, a_i] = 1
+
+                        elif s_1 != s_1_tilde_plus_a:
+                            self.Phi[s_tilde_i, s_i, a_i] = 0
+
+                    # tODO: Alle unerlaubten action
+                    # agent glaubt, dass er auf dem Feld stehen bleibt
+                    else:
+                        if s_1 == s_1_tilde:
+                            self.Phi[s_tilde_i, s_i, a_i] = 1
+                        elif s_1 != s_1_tilde:
+                            self.Phi[s_tilde_i, s_i, a_i] = 0
+
+    def plot_color_map(self, n_nodes, n_hides, **arrays):
+
+        dir_mgr = DirectoryManager()
+
+        for key, array in arrays.items():
+            fig_fn = f"{key}-{n_nodes}-nodes_{n_hides}-hides"
+
+            # Preapre figure
+            plotter = VeryPlotter(paths=dir_mgr.paths)
+            plt = pyplot
+
+            rc_params = plotter.define_run_commands()
+            plt = pyplot
+            plt.rcParams.update(rc_params)
+            fig, ax = plt.subplots(figsize=(11, 5))
+
+            # Create a custom discrete colormap
+            cmap = ListedColormap(['darkgrey', 'darkcyan'])
+            image = ax.matshow(array, cmap=cmap)
+
+            # Add colorbar
+            cbar = plt.colorbar(image, ticks=[0, 1], shrink=0.4)
+
+            # Save or display the plot
+            plotter.save_figure(fig=fig, figure_filename=fig_fn)
+
+    def compute_or_load_components(self):
+        """Create or load aHMM components, i.e. matrices of probability
+        distributions.
+        """
+
+        # TODO: load if existing
+        # -----blueprint:-------------------------------------------------
+        # if os.path.exists(s4_perms_fn_pkl):
+        #     print("Loading s4_perms ...")
+        #     start = time.time()
+        #     with open(s4_perms_fn_pkl, "rb") as file:
+        #         self.S4 = pickle.load(file)
+        #     end = time.time()
+        #     print(
+        #         " ... finished loading s4_perms, timed needed: "
+        #         f"{humanreadable_time(end-start)}"
+        #         )
+
+        # # Load/evaluate initial belief state beta_1_0 -----------------------
+        # print("Computing beta_1_0 for given task config ...")
+        # start = time.time()
+        # self.compute_beta_0()
+        # end = time.time()
+        # print(f" ... finished computing beta_1_0, \n ... time:  "
+        #       f"{humanreadable_time(end-start)}"
+        #       )
+        #
+        # start = time.time()
+        # self.save_arrays(beta_0_1=self.beta_0)
+        # end = time.time()
+        # print(f" ... finisehd saving beta_0_1 to files, \n ... time:  "
+        #       f"{humanreadable_time(end-start)}"
+        #       )
+        data_handler = DataHandler(paths=self.paths)
+
+        # Load/evaluate Omega-------------------------
+        print("Computing Omega for given task config ...")
+        start = time.time()
+        self.compute_Omega()
+        end = time.time()
+        print(f" ... finished computing Omega, \n ... time:  "
+              f"{humanreadable_time(end-start)}")
+        start = time.time()
+        data_handler.save_arrays(
+            n_nodes=self.grid_config.n_nodes,
+            n_hides=self.grid_config.n_hides,
+            Omega_dill=self.Omega[:, :, 0]
+            )
+        data_handler.save_arrays(
+            n_nodes=self.grid_config.n_nodes,
+            n_hides=self.grid_config.n_hides,
+            Omega_step=self.Omega[:, :, 1]
+            )
+        end = time.time()
+        print(f" ... finisehd saving Omega to files, \n ... time:  "
+              f"{humanreadable_time(end-start)}"
+              )
+        self.plot_color_map(n_nodes=self.grid_config.n_nodes,
+                            n_hides=self.grid_config.n_hides,
+                            Omega_drill=self.Omega[:, :, 0],
+                            Omega_step=self.Omega[:, :, 1])
+
+        # Load/evaluate Phi-------------------------
+        print("Computing Phi for given task config ...")
+        start = time.time()
+        self.comput_Phi()
+        end = time.time()
+        print(f" ... finished computing Phi, \n ... time:  "
+              f"{humanreadable_time(end-start)}")
+        start = time.time()
+        data_handler.save_arrays(
+            n_nodes=self.grid_config.n_nodes,
+            n_hides=self.grid_config.n_hides,
+            Phi_drill=self.Phi[:, :, 0],
+            Phi_minus_dim=self.Phi[:, :, 1],
+            Phi_plus_one=self.Phi[:, :, 2],
+            Phi_plus_dim=self.Phi[:, :, 3],
+            Phi_minus_one=self.Phi[:, :, 4]
+            )
+        end = time.time()
+        print(f" ... finisehd saving Phi to files, \n ... time:  "
+              f"{humanreadable_time(end-start)}"
+              )
+
+        self.plot_color_map(n_nodes=self.grid_config.n_nodes,
+                            n_hides=self.grid_config.n_hides,
+                            Phi_drill=self.Phi[:, :, 0],
+                            Phi_minus_dim=self.Phi[:, :, 1],
+                            Phi_plus_one=self.Phi[:, :, 2],
+                            Phi_plus_dim=self.Phi[:, :, 3],
+                            Phi_minus_one=self.Phi[:, :, 4])
+
+        return self
+
+
+class AgentAttributes:
+    """
+    A class to store necessary agent-specific attributes. Instance of this
+    class is needed to create an agent class instance
+
+    Attributes:
+    -----------
+        name (str): Agent model name, e.g. "C1" or "A1"
+        is_bayesian (bool): True if agent model is bayesian, i.e. belief state
+            based. False otherwise.
+        is_explorative (bool): True if agent is explorative. False otherwise.
+
+    Args:
+    -----
+        agent_model_name (str): Agent model name, e.g. "C1" or "A1"
+    """
+    is_bayesian: bool
+    is_explorative: bool
+
+    def __init__(self, agent_model_name: str):
+        self.name = agent_model_name
+        self.define_attributes()
+
+    def define_attributes(self):
+        """Define agent specific attributes"""
+        # Control models
+        if self.name in ['C1', 'C2', 'C3']:
+            self.is_bayesian = False
+            self.is_explorative = False
+
+        # Bayesian models
+        elif self.name == 'A1':
+            self.is_bayesian = True
+            self.is_explorative = False
+
+        # Bayesian models using explorative strategy
+        elif self.name in ['A2', 'A3']:
+            self.is_bayesian = True
+            self.is_explorative = True
+
+
 class Agent:
     """A class used to represent an agent model.
     An agent object can interact with a task object within an
@@ -62,14 +567,14 @@ class Agent:
             the current max marginal s3 belief state value
 
         dist_to_max_s3_b_nodes (TODO): Distances to nodes with maximum marginal
-            belief state 
+            belief state
         shortest_dist_to_max_s3_b (TODO): Shortest distance to one of the nodes
             with maximum belief state
         closest_max_s3_b_nodes_i_s (TODO): TODO
         closest_max_s3_b_nodes (TODO): TODO
 
-        p_o_giv_o ((n_a_s1 x n_obs)-np.ndarray): (n_a_s1 x n_obs)-array representing the
-            predictive posterior distribution
+        p_o_giv_o ((n_a_s1 x n_obs)-np.ndarray): (n_a_s1 x n_obs)-array
+            representing the predictive posterior distribution
         kl_giv_a_o (np.ndarray): (n_a_s1 x n_obs)-array representing the KL
             divergences of respective virtual belief states and current
                 posterior
@@ -83,6 +588,7 @@ class Agent:
     """
 
     def __init__(self, agent_attr: AgentAttributes,
+                 stoch_matrices: StochasticMatrices,
                  task_object: Task, lambda_):
 
         # Indivudal agent specific characteristics
@@ -91,7 +597,7 @@ class Agent:
         self.lambda_ = lambda_
 
         # Agent model components
-        self.task: Task = task_object #  Task model  \mathcal{T}
+        self.task: Task = task_object  # Task model  \mathcal{T}
 
         # Initialize dynamic agent attributes
         self.a_s1: np.ndarray = np.array(np.nan)  # state-dependent action-set
@@ -109,7 +615,7 @@ class Agent:
 
         if self.agent_attr.is_bayesian:
             # Unpack bayesian beh_model components
-            self.hmm_matrices: StochasticMatrices = StochasticMatrices(task_object)
+            self.attach_stoch_matrices(stoch_matrices)
 
             # ---(Prior, c != 0)---
             self.p_s_giv_o_prior_new_c: np.ndarray = np.array(np.nan)
@@ -130,7 +636,7 @@ class Agent:
         self.kl_giv_a_o: np.ndarray = np.array(np.nan)
         self.virt_b = {}
 
-    def attach_hmm_matrices(self,):
+    def attach_stoch_matrices(self, stoch_matrices: StochasticMatrices):
         """Method to load or create prior, likelihood and permutation lists etc
 
         Args:
@@ -138,8 +644,7 @@ class Agent:
         bayesian_comps (BayesianModelComps): Object storing bayesian model
             components
         """
-        self.hmm_matrices = StochasticMatrices(self.task, self.task.grid)
-        self.hmm_matrices.compute_or_load_components()
+        self.stoch_matrices = stoch_matrices
 
     def eval_prior_subs_rounds(self):
         """Reset belief states for s3 (treasure) based on marginal s4
@@ -149,7 +654,7 @@ class Agent:
         # TODO: major todo
         # Initialize all as zero
         self.p_s_giv_o_prior_new_c = np.full(
-            (self.hmm_matrices.task.n, 1), 0.)
+            (self.stoch_matrices.task.n, 1), 0.)
 
         # marg_s4_perm_b = np.full(self.n_s4_perms, np.nan)
         # for s4_perm in range(self.n_s4_perms):
@@ -169,7 +674,7 @@ class Agent:
         #             self.hmm_matrices.S4_incl_nodes_indices[s_3]
         #             ] * (1 / self.task.task_params.n_hides)
 
-        # Uncomment for DEBUGGING to track evaluation of posteriors (TODO: old!)
+        # Uncomment for DEBUGGING, track evaluation of posteriors (TODO: old!)
         # ------------------------------------------------------
         # # Evaluate marginal treasure distribution
         # marg_s3_b = np.full(self.task.n_nodes, np.nan)
@@ -220,8 +725,8 @@ class Agent:
         j = int(np.where(np.all(O_ == o_t, axis=1))[0])
 
         # Extract components  # TODO: kopieren kostet working memory
-        Omega_j = self.hmm_matrices.Omega[:, j, a_t_type][:, np.newaxis]
-        Phi_k = self.hmm_matrices.Phi[:, :, a_t]
+        Omega_j = self.stoch_matrices.Omega[:, j, a_t_type][:, np.newaxis]
+        Phi_k = self.stoch_matrices.Phi[:, :, a_t]
 
         # TODO: still necessary?
         if np.sum(beta_prior * Omega_j) == 0:
@@ -239,7 +744,7 @@ class Agent:
 
         return beta_post
 
-    def eval_marg_beliefs(self, belief):
+    def eval_marg_b_s(self, belief):
 
         """Method to compute marginal posterior distributions for each node to
         the treasure location or hiding spot
@@ -330,9 +835,9 @@ class Agent:
             # ...and step action (a=1).
             if self.task.c == 0 and self.task.t == 0:
                 action = 1
-                self.hmm_matrices.compute_beta_0()
-                prior = self.hmm_matrices.beta_0
-            
+                self.stoch_matrices.compute_beta_0()
+                prior = self.stoch_matrices.beta_0
+
             # If first trial in a new round, i.e. before any action,  pior_c
             # ...which is the posterior of preceding round's last trial as
             # ...prior and step action (a=1).
@@ -354,7 +859,8 @@ class Agent:
             # ------ Evaluate marginal distributions-------------
             # TODO: hier weiter!!
             start = time.time()
-            self.marg_tr_belief, self.marg_hide_belief = self.eval_marg_beliefs(self.p_s_giv_o_post)
+            self.marg_tr_belief, self.marg_hide_belief = self.eval_marg_b_s(
+                self.p_s_giv_o_post)
             end = time.time()
             print(
                 f"time needed for marg_b: {humanreadable_time(end-start)}")
@@ -378,7 +884,7 @@ class Agent:
 
     def identify_o_giv_s2_marg_s3(self, node, action):
         """Identify state s2 dependent observation set
-        
+
         Args:
         -----
             node (int): scalar value representing the node of interest
@@ -421,10 +927,12 @@ class Agent:
             self.rounded_marg_s3_b == self.max_s3_b_value)[0]
 
         # Evaluate shortest distances to max_s3_nodes
-        self.dist_to_max_s3_b_nodes = np.full(len(self.max_tr_b_node_indices), np.nan)
+        self.dist_to_max_s3_b_nodes = np.full(len(self.max_tr_b_node_indices),
+                                              np.nan)
         for index, node in np.ndenumerate(self.max_tr_b_node_indices):
-            self.dist_to_max_s3_b_nodes[index] = \
-                self.task.shortest_dist_dic[f'{int(self.task.s1_t)}_to_{node + 1}']
+            self.dist_to_max_s3_b_nodes[
+                index] = self.task.shortest_dist_dic[
+                    f'{int(self.task.s1_t)}_to_{node + 1}']
         self.shortest_dist_to_max_s3_b = np.amin(self.dist_to_max_s3_b_nodes)
         self.closest_max_s3_b_nodes_i_s = np.where(
             self.dist_to_max_s3_b_nodes == self.shortest_dist_to_max_s3_b)[0]
@@ -434,7 +942,7 @@ class Agent:
     def eval_p_o_giv_o(self):
         """Evaluate agent's belief state-dependent posterior predictive
         distribution
-        
+
         Note:
         -----
             Resulting self.p_o_giv_o is a (n_a_s1 x n_obs)-array"""
@@ -456,10 +964,13 @@ class Agent:
 
             for obs in self.o_s2:
                 # product_a_o.shape = (25 x 177100)
-                product_a_o = (self.p_s_giv_o_post
-                               * self.hmm_matrices.Omega[action, new_s1,
-                                                       self.task.node_colors[new_s1],
-                                                       obs, :, :])
+                product_a_o = (
+                    self.p_s_giv_o_post
+                    * self.stoch_matrices.Omega[
+                        action, new_s1,
+                        self.task.node_colors[new_s1],
+                        obs, :, :]
+                        )
 
                 sum_prod = np.sum(product_a_o)
                 # self.p_o_giv_o[i, obs] = (self.p_s_giv_o
@@ -477,12 +988,11 @@ class Agent:
         # # Try tensor dot multiplication
         # test_tensor_dot_array = np.tensordot(
         #     self.p_s_giv_o, self.bayes_comps.lklh, axes=([0, 1], [4, 5]))
-        stop = "here"
 
     @staticmethod
     def evaluate_kl_divergence(p_x, q_x):
         """Evaluate kl divergence between two distributions
-        
+
         Args:
         -----
             p_x (np.ndarray): (n_nodes x n_s4_permutations)-array representing
@@ -578,7 +1088,6 @@ class Agent:
 
         remaining_moves = self.task.grid.n_trials - self.task.t - 1
         # TODO: trial count weird?
-
 
         # 'C1' Valence for random choice agent
         # ---------------------------------------------------------------------
@@ -727,7 +1236,7 @@ class Agent:
             end = time.time()
             print(
                 f"time needed for p_o_giv_o: {humanreadable_time(end-start)}")
-            
+
             start = time.time()
             self.eval_kl()
             end = time.time()
@@ -740,495 +1249,3 @@ class Agent:
         # end = time.time()
         # print(f'Evaluate phi: {end - start}')
         self.evaluate_delta()
-
-
-class StochasticMatrices:
-    """A Class to compute Bayesian model components given a set of
-    task parameters (i.e. no. trials, dimension of the grid, etc.) or
-    load model components from disk if the task-parameter-specific components
-    already exist on disk. For example, the file utilities/liklh_dim-5_h6.npy
-    stores the likelihood array for task configuration with dimensionality 5
-    and 6 hiding spots. If that file exists, the array will not be computed to
-    save computation time.
-
-    Newly computed model components are written to .npy files are written and
-    save in code/utilities/ on disk.
-
-    Attributes:
-    -----------
-        task_design_params (TaskDesignParameters): Instance of data
-            class TaskDesignParameters.
-
-        paths (Paths): Instance of data class Paths.
-
-        s4_perms (list): All permutations of possible values for state s4
-
-        s4_perm_node_indices(dict of int: list): node-specific indices of
-            "self.s4_perms" of all those entries that have the value 1 at
-                self.s4_perms[key], encoding that node i is a hiding spot
-            .key (int): value indicating node in grid
-            .value (list): list of indices for "self.s4_perms".
-
-        n_s4_perms (int): number of state s4 permutations
-
-        prior_c0 (np.ndarray): (n_nodes x n_s4_permutaions)-array of prior,
-            i.e. initial belief state before any observation
-
-        lklh (np.ndarray): (n_action_type x n_nodes x n_node_colors x
-            n_observations x n_nodes x n_s4_permutations)-array of the
-                likelihood, i.e. action- and state-dependent, state-conditional
-                    observation distribution
-
-    Args:
-    -----
-        task_design_params (TaskDesignParameters, optional): Instance of data
-            class TaskDesignParameters.
-    """
-
-    def __init__(self, task_object,
-                 grid_config_params=GridConfigParameters()):
-        self.task: Task = task_object
-        self.grid_config = grid_config_params
-        self.paths: Paths = Paths()
-        self.beta_0: np.ndarray = np.full((self.task.n, 1), np.nan)
-        self.Omega: np.ndarray = np.array(np.nan)
-        self.Phi: np.ndarray = np.array(np.nan)
-
-    def compute_beta_0(self):
-        """Method to evaluate the initial belief state beta in round 1,
-        trial 1 given the first state current position"""
-
-        # Set all states, that are in line with current position to 1
-        self.beta_0[np.where(self.task.S[:, 0] == self.task.s1_t)[0], 0] = 1
-        # Set alle remaining states zero
-        self.beta_0[np.where(self.task.S[:, 0] != self.task.s1_t)[0], 0] = 0
-        # Normalize belief state
-        self.beta_0 = self.beta_0 / sum(self.beta_0)
-
-    def get_comps_old(self):
-        """Create or load Bayesian components, i.e. s4-permutations, prior and
-        likelihood.
-        """
-        # Initialize and evaluate s_4 permutations
-        s4_perms_fn_pkl = os.path.join(
-            self.paths.code, "utilities",
-            f"s4_perms_dim-{self.grid_config.dim}_"
-            f"h{self.grid_config.n_hides}.pkl")
-
-        if os.path.exists(s4_perms_fn_pkl):
-            print("Loading s4_perms ...")
-            start = time.time()
-            with open(s4_perms_fn_pkl, "rb") as file:
-                self.S4 = pickle.load(file)
-            end = time.time()
-            print(
-                " ... finished loading s4_perms, timed needed: "
-                f"{humanreadable_time(end-start)}"
-                )
-        else:
-            print("Computing s4_perms ...")
-            start = time.time()
-            self.S4 = []
-            self.eval_s4_perms()
-            end = time.time()
-            print(f" ... finished computing s4_perms, \n ... time:  "
-                  f"{humanreadable_time(end-start)}"
-                  )
-            print("Saving s4_perms ...")
-            start = time.time()
-            with open(s4_perms_fn_pkl, "wb") as file:
-                pickle.dump(self.S4, file)
-            end = time.time()
-            print(f" ... finisehd saving s4_perms to files, \n ... time:  "
-                  f"{humanreadable_time(end-start)}"
-                  )
-
-        # Load/evaluate agent's initial belief state in 1. trial ---(Prior)---
-        prior_fn = os.path.join(self.paths.code, "utilities",
-                                f"prior_dim-{self.grid_config.dim}_"
-                                f"h{self.grid_config.n_hides}.npy")
-        if os.path.exists(prior_fn):
-            print("Loading prior array from file ...")
-            start = time.time()
-            self.beta_0 = np.load(prior_fn)
-            end = time.time()
-            print(f" ... finished loading prior, \n ... time:  "
-                  f"{humanreadable_time(end-start)}"
-                  )
-            # sum_p_c0 = np.sum(self.prior_c0)
-        else:
-            print("Evaluating prior belief array for given task config ...")
-            start = time.time()
-            self.beta_0 = np.full((self.grid_config.n_nodes,
-                                     self.n_S4), 0.0)
-            self.eval_prior()
-            end = time.time()
-            print(f" ... finished evaluating prior, \n ... time:  "
-                  f"{humanreadable_time(end-start)}"
-                  )
-            print("Saving prior belief array to file ...")
-            start = time.time()
-            np.save(prior_fn, self.beta_0)
-            end = time.time()
-            print(f" ... finished saving prior to file, \n ... time: "
-                  f"{humanreadable_time(end-start)}"
-                  )
-
-        # Load/eval action-dep. state-cond. obs distribution ---(Likelihood)---
-        lklh_fn = os.path.join(
-            self.paths.code,
-            "utilities",
-            f"lklh_dim-{self.grid_config.dim}_"
-            f"h{self.grid_config.n_hides}.npy"
-        )
-        if os.path.exists(lklh_fn):
-            print("Loading likelihood array from file ...")
-            start = time.time()
-            self.Omega = np.load(lklh_fn)
-            end = time.time()
-            print(f" ... finished loading likelihood array, \n ... time:  "
-                  f"{humanreadable_time(end-start)}\n")
-        else:
-            print("Computing likelihood array for given task config ...")
-            self.Omega = np.zeros(
-                (2, self.grid_config.n_nodes, 3, 4,
-                 self.grid_config.n_nodes, self.n_S4),
-                dtype=np.uint16)
-            start = time.time()
-            self.eval_likelihood()
-            end = time.time()
-            print(f" ... finished computing likelihood, \n ... time:  "
-                  f"{humanreadable_time(end-start)}")
-            print("Saving likelihood array to file")
-            start = time.time()
-            np.save(lklh_fn, self.Omega)
-            end = time.time()
-            print(f" ... saved likelihood array to file, \n ... time:  "
-                  f"{humanreadable_time(end-start)}")
-        # start = time.time()
-        return self
-
-    def compute_Omega(self):
-        """Method to compute Omega"""
-
-        self.Omega = np.full((self.task.n, self.task.m, self.task.p), 0)  # TODO init in init
-
-        node_colors = {"black": 0,
-                       "grey": 1,
-                       "blue": 2}
-        
-        # Encode set A to either drill or step
-        A = [0, 1]  # 0: drill, 1: step
-
-        for i_a, a in enumerate(A):
-            for i_s, s in enumerate(self.task.S):
-                for i_o, o in enumerate(self.task.O_):
-                    # Extract state components
-                    current_pos = int(s[0])  # NOTE: set S[0] := {1, ..., n}
-                    node_index_in_o_t = current_pos  # NOTE: bc o[0] is tr flag
-                    tr_location = int(s[1])
-                    hiding_spots = s[2:]
-
-                    # Extract observation components
-                    tr_flag = o[0]
-
-                    # TODO: alle observations, wo node colors mit hiding spot
-                    #  locations keinen sinn machen
-                    # siehe Handwritten NOTE 24.11.
-
-                    # -------After DRILL actions: -----------------------------
-                    if a == 0:
-
-                        # CONDITION:                        CORRESP MODEL VARIABLE:
-                        # ---------------------------------------------------------
-                        # if new position...                                s[1]
-                        # ...IS NOT treasure location                       s[2]
-                        # ...IS NOT hiding spot,                            s[3:]
-                        # all observation, for which...
-                        # ...tr_flag == 0,                                  o[1]
-                        # ...and new node color == grey,                    o[2:]
-                        #  = 1
-                        if (
-                                current_pos != tr_location
-                                and current_pos not in hiding_spots
-                                and tr_flag == 0
-                                and o[node_index_in_o_t] == node_colors["grey"]):
-                            self.Omega[i_s, i_o, i_a] = 1
-
-                        # CONDITION:                        CORRESP MODEL VARIABLE:
-                        # ---------------------------------------------------------
-                        # if new position...                                s[1]
-                        # ...IS NOT treasure location                       s[2]
-                        # ...IS hiding spot,                                s[3:]
-                        # all observation, for which...
-                        # ...tr_flag == 0,                                  o[1]
-                        # ...and new node color == blue,                    o[2:]
-                        #  = 1
-                        if (
-                                current_pos != tr_location
-                                and current_pos in hiding_spots
-                                and tr_flag == 0
-                                and o[node_index_in_o_t] == node_colors["blue"]):
-                            self.Omega[i_s, i_o, i_a] = 1
-
-                        # All other observaton probabilites remain 0 as initiated.
-
-                    # -------After STEP actions: -----------------------------
-                    else:  # if a != 0
-                        # CONDITION:                        CORRESP MODEL VARIABLE:
-                        # ---------------------------------------------------------
-                        # if new position...                                s[1]
-                        # ...IS NOT treasure location                       s[2]
-                        # ...IS NOT hiding spot,                            s[3:]
-                        # all observation, for which...
-                        # ...tr_flag == 0,                                  o[1]
-                        # ...and new node color in ["black", "grey"],       o[2:]
-                        #  = 1
-                        if (
-                                current_pos != tr_location
-                                and current_pos not in hiding_spots
-                                and tr_flag == 0
-                                and o[node_index_in_o_t] in [node_colors["black"],
-                                                    node_colors["grey"]]):
-                            self.Omega[i_s, i_o, i_a] = 1
-
-                        # CONDITION:                        CORRESP MODEL VARIABLE:
-                        # ---------------------------------------------------------
-                        # if new position...                                s[1]
-                        # ...IS NOT treasure location                       s[2]
-                        # ...IS hiding spot,                                s[3:]
-                        # all observation, for which...
-                        # ...tr_flag == 0,                                  o[1]
-                        # ...and new node color in ["black", "blue"],       o[2:]
-                        #  = 1
-                        if (
-                                current_pos != tr_location
-                                and current_pos in hiding_spots
-                                and tr_flag == 0
-                                and o[node_index_in_o_t] in [node_colors["black"],
-                                                    node_colors["blue"]]):
-                            self.Omega[i_s, i_o, i_a] = 1
-
-                        # CONDITION:                        CORRESP MODEL VARIABLE:
-                        # ---------------------------------------------------------
-                        # if new position...                                s[1]
-                        # ...IS treasure location                           s[2]
-                        # ...IS hiding spot,                                s[3:]
-                        # all observation, for which...
-                        # ...tr_flag == 1,                                  o[1]
-                        # ...and new node color in ["black", "blue"],       o[2:]
-                        #  = 1
-                        if (
-                                current_pos == tr_location
-                                and current_pos in hiding_spots
-                                and tr_flag == 1
-                                and o[node_index_in_o_t] in [node_colors["black"],
-                                                    node_colors["blue"]]):
-                            self.Omega[i_s, i_o, i_a] = 1
-
-    def comput_Phi(self):
-        "Method to compute Phi"
-
-        action_set = [0,
-                      - self.grid_config.dim, + 1,
-                      + self.grid_config.dim, -1]
-
-        self.Phi = np.full((self.task.n, self.task.n, len(action_set)), np.nan)
-
-        # ---------------------------------------
-        # NOTE:
-        # s = (s_1, s_2, s_3, s_4)
-        # p^{a_t = a}(s_{t+1} = s|s_t = s_tilde)
-        # s_1 is the first component of s = s_{t+1}
-        # ---------------------------------------
-
-        for a_i, a in enumerate(action_set):
-
-            # Iterate possible old states s_{t}
-            for s_tilde_i, s_tilde in enumerate(self.task.S):
-
-                # Iterate possible new states s_{t+1}
-                for s_i, s in enumerate(self.task.S):
-
-                    s_1 = s[0]              # current position in t + 1
-                    s_1_tilde = s_tilde[0]  # current position in t
-                    s_1_tilde_plus_a = s_1_tilde + a
-
-                    # Filter out forbidden steps (wald outside border)
-                    if (1 <= s_1_tilde_plus_a <= self.grid_config.n_nodes
-                            and not ((((s_1_tilde - 1)
-                                       % self.grid_config.dim) == 0)
-                                     and a == -1)
-                            and not ((((s_1_tilde)
-                                       % self.grid_config.dim) == 0)
-                                     and a == 1)
-                            ):
-                        if s_1 == s_1_tilde_plus_a:
-                            self.Phi[s_tilde_i, s_i, a_i] = 1
-                        
-                        elif s_1 != s_1_tilde_plus_a:
-                            self.Phi[s_tilde_i, s_i, a_i] = 0
-
-                    # tODO: Alle unerlaubten action
-                    # agent glaubt, dass er auf dem Feld stehen bleibt
-                    else:
-                        if s_1 == s_1_tilde:
-                            self.Phi[s_tilde_i, s_i, a_i] = 1
-                        elif s_1 != s_1_tilde:
-                            self.Phi[s_tilde_i, s_i, a_i] = 0
-
-    def plot_color_map(self, n_nodes, n_hides, **arrays):
-
-        dir_mgr = DirectoryManager()
-
-        for key, array in arrays.items():
-            fig_fn = f"{key}-{n_nodes}-nodes_{n_hides}-hides"
-
-            # Preapre figure
-            plotter = VeryPlotter(paths=dir_mgr.paths)
-            plt = pyplot
-
-            rc_params = plotter.define_run_commands()
-            plt = pyplot
-            plt.rcParams.update(rc_params)
-            fig, ax = plt.subplots(figsize=(11, 5))
-
-            # Create a custom discrete colormap
-            cmap = ListedColormap(['darkgrey', 'darkcyan'])
-            image = ax.matshow(array, cmap=cmap)
-
-            # Add colorbar
-            cbar = plt.colorbar(image, ticks=[0, 1], shrink=0.4)
-
-            # Save or display the plot
-            plotter.save_figure(fig=fig, figure_filename=fig_fn)
-
-    def compute_or_load_components(self):
-        """Create or load aHMM components, i.e. matrices of probability distributions.
-        """
-
-        # TODO: load if existing
-        # -----blueprint:-------------------------------------------------
-        # if os.path.exists(s4_perms_fn_pkl):
-        #     print("Loading s4_perms ...")
-        #     start = time.time()
-        #     with open(s4_perms_fn_pkl, "rb") as file:
-        #         self.S4 = pickle.load(file)
-        #     end = time.time()
-        #     print(
-        #         " ... finished loading s4_perms, timed needed: "
-        #         f"{humanreadable_time(end-start)}"
-        #         )
-
-
-        # # Load/evaluate initial belief state beta_1_0 -------------------------
-        # print("Computing beta_1_0 for given task config ...")
-        # start = time.time()
-        # self.compute_beta_0()
-        # end = time.time()
-        # print(f" ... finished computing beta_1_0, \n ... time:  "
-        #       f"{humanreadable_time(end-start)}"
-        #       )
-        # 
-        # start = time.time()
-        # self.save_arrays(beta_0_1=self.beta_0)
-        # end = time.time()
-        # print(f" ... finisehd saving beta_0_1 to files, \n ... time:  "
-        #       f"{humanreadable_time(end-start)}"
-        #       )
-        data_handler = DataHandler(paths=self.paths)
-
-        # Load/evaluate Omega-------------------------
-        print("Computing Omega for given task config ...")
-        start = time.time()
-        self.compute_Omega()
-        end = time.time()
-        print(f" ... finished computing Omega, \n ... time:  "
-              f"{humanreadable_time(end-start)}")
-        start = time.time()
-        data_handler.save_arrays(n_nodes=self.grid_config.n_nodes,
-                    n_hides=self.grid_config.n_hides,
-                    Omega_dill=self.Omega[:, :, 0])
-        data_handler.save_arrays(n_nodes=self.grid_config.n_nodes,
-                    n_hides=self.grid_config.n_hides,
-                    Omega_step=self.Omega[:, :, 1])
-        end = time.time()
-        print(f" ... finisehd saving Omega to files, \n ... time:  "
-              f"{humanreadable_time(end-start)}"
-              )
-        self.plot_color_map(n_nodes=self.grid_config.n_nodes,
-                            n_hides=self.grid_config.n_hides,
-                            Omega_drill=self.Omega[:, :, 0],
-                            Omega_step=self.Omega[:, :, 1])
-
-        # Load/evaluate Phi-------------------------
-        print("Computing Phi for given task config ...")
-        start = time.time()
-        self.comput_Phi()
-        end = time.time()
-        print(f" ... finished computing Phi, \n ... time:  "
-              f"{humanreadable_time(end-start)}")
-        start = time.time()
-        data_handler.save_arrays(n_nodes=self.grid_config.n_nodes,
-                    n_hides=self.grid_config.n_hides,
-                    Phi_drill=self.Phi[:, :, 0],
-                    Phi_minus_dim=self.Phi[:, :, 1],
-                    Phi_plus_one=self.Phi[:, :, 2],
-                    Phi_plus_dim=self.Phi[:, :, 3],
-                    Phi_minus_one=self.Phi[:, :, 4])
-        end = time.time()
-        print(f" ... finisehd saving Phi to files, \n ... time:  "
-              f"{humanreadable_time(end-start)}"
-              )
-
-        self.plot_color_map(n_nodes=self.grid_config.n_nodes,
-                            n_hides=self.grid_config.n_hides,
-                            Phi_drill=self.Phi[:, :, 0],
-                            Phi_minus_dim=self.Phi[:, :, 1],
-                            Phi_plus_one=self.Phi[:, :, 2],
-                            Phi_plus_dim=self.Phi[:, :, 3],
-                            Phi_minus_one=self.Phi[:, :, 4])
-
-        return self
-
-
-class AgentAttributes:
-    """
-    A class to store necessary agent-specific attributes. Instance of this
-    class is needed to create an agent class instance
-
-    Attributes:
-    -----------
-        name (str): Agent model name, e.g. "C1" or "A1"
-        is_bayesian (bool): True if agent model is bayesian, i.e. belief state
-            based. False otherwise.
-        is_explorative (bool): True if agent is explorative. False otherwise.
-    
-    Args:
-    -----
-        agent_model_name (str): Agent model name, e.g. "C1" or "A1"
-    """
-    is_bayesian: bool
-    is_explorative: bool
-
-    def __init__(self, agent_model_name: str):
-        self.name = agent_model_name
-        self.define_attributes()
-
-    def define_attributes(self):
-        """Define agent specific attributes"""
-        # Control models
-        if self.name in ['C1', 'C2', 'C3']:
-            self.is_bayesian = False
-            self.is_explorative = False
-
-        # Bayesian models
-        elif self.name == 'A1':
-            self.is_bayesian = True
-            self.is_explorative = False
-
-        # Bayesian models using explorative strategy
-        elif self.name in ['A2', 'A3']:
-            self.is_bayesian = True
-            self.is_explorative = True
-

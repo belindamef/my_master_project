@@ -109,7 +109,7 @@ class Validator:
         self.bayesian_comps = bayesian_comps
 
         self.simulator: Simulator = Simulator(task_configs=task_configs,
-                                              bayesian_comps=bayesian_comps)
+                                              agent_stoch_matrices=bayesian_comps)
                                               # tODO: add task_design_paramsa s argument
         self.estimator: Estimator = Estimator(estim_params=est_params)
 

@@ -143,7 +143,7 @@ class Estimator:
         """
         self.sim_object = Simulator(
             task_configs=task_configs,
-            bayesian_comps=bayesian_comps,
+            agent_stoch_matrices=bayesian_comps,
             task_params=task_params)
             # TODO: add task design_params as argument
 
