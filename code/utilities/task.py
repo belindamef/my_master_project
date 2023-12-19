@@ -97,7 +97,7 @@ class TaskStatesConfigurator:
         """Method to sample hiding spots from a discrete uniform distribution
         over all nodes (without replacement)"""
         s3 = np.empty((self.params.n_blocks,
-                             self.params.n_hides), dtype=int)
+                       self.params.n_hides), dtype=int)
         for block in range(self.params.n_blocks):
             s3[block] = np.random.choice(
                 np.arange(1, self.params.n_nodes + 1),
@@ -113,13 +113,14 @@ class TaskStatesConfigurator:
 
         for block in range(self.params.n_blocks):
             for round_ in range(self.params.n_rounds):
-    
+
                 # Set treasure to equal start position
                 s2[block, round_] = cp.deepcopy(
                     self.state_values['s1'][block, round_])
 
                 # Sample tr location until it's not the starting position s_0
-                while s2[block, round_] == self.state_values['s1'][block, round_]:
+                while s2[block, round_] == self.state_values['s1'][
+                        block, round_]:
                     s2[block, round_] = int(np.random.choice(
                         self.state_values['s3'][block], 1))
         self.state_values['s2'] = s2
@@ -128,7 +129,8 @@ class TaskStatesConfigurator:
         """Method to save newly sampled task states to task config directory"""
         os.makedirs(self.paths.this_state_sample)
         for key, value in self.state_values.items():
-            np.save(os.path.join(self.paths.this_state_sample, f'{key}.npy'), value)
+            np.save(os.path.join(self.paths.this_state_sample, f'{key}.npy'),
+                    value)
 
         config_df_fn = os.path.join(self.paths.this_state_sample,
                                     'state_values.tsv')
@@ -393,7 +395,7 @@ class Task:
             end = time.time()
             print(f" ... finished loading. \n ... time:  "
                   f"{humanreadable_time(end-start)}\n")
-            
+
         else:
             # Compute for this task grid configuration and save to hd
             print("Computing set S for given task config ("
