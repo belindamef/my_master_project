@@ -388,19 +388,19 @@ class StimulusCreation:
         # ---------------------------------------------------------------------
         C = self.rounds  # Number of rounds
         T = self.trials  # Number of trials
-        s_1_t = self.s1_t
+        s1_t = self.s1_t
         s_7_c = self.s7_tr_loc
         starttrial_c = hround * T + block * C * T  # First this_trial of
         # current hunting round
         end_index_c = int(pd.DataFrame(
-           s_1_t[starttrial_c:starttrial_c + T]).apply(
+           s1_t[starttrial_c:starttrial_c + T]).apply(
             pd.Series.last_valid_index).values)
         endtrial_c = (starttrial_c + end_index_c)
 
         # Get starting end ending position of current round
-        startpos_c = np.array(s_1_t[starttrial_c])  # start
+        startpos_c = np.array(s1_t[starttrial_c])  # start
         startpos_c_rowcol = node_to_rowcol(startpos_c, self.dim)
-        endpos_c = s_1_t[endtrial_c]  # end
+        endpos_c = s1_t[endtrial_c]  # end
         endpos_c_rowcol = node_to_rowcol(endpos_c, self.dim)
 
         # Get treasure position of current round

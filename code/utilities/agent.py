@@ -5,7 +5,7 @@ import os
 import time
 import pickle
 import numpy as np
-from utilities.task import Task, GridConfigParameters
+from utilities.task import Task, TaskNGridParameters
 from utilities.config import Paths
 from utilities.config import DataHandler, humanreadable_time, DirectoryManager
 from matplotlib import pyplot
@@ -56,23 +56,23 @@ class StochasticMatrices:
             class TaskDesignParameters.
     """
 
-    def __init__(self, task_object,
-                 grid_config_params=GridConfigParameters()):
-        self.task: Task = task_object
-        self.grid_config = grid_config_params
+    def __init__(self, task_model,
+                 task_params=TaskNGridParameters()):
+        self.task_model: Task = task_model
+        self.task_params = task_params
         self.paths: Paths = Paths()
-        self.beta_0: np.ndarray = np.full((self.task.n, 1), np.nan)
+        self.beta_0: np.ndarray = np.full((self.task_model.n, 1), np.nan)
         self.Omega: np.ndarray = np.array(np.nan)
         self.Phi: np.ndarray = np.array(np.nan)
 
-    def compute_beta_0(self):
+    def compute_beta_0(self, s1_t: int):
         """Method to evaluate the initial belief state beta in round 1,
-        trial 1 given the first state current position"""
+        trial 1 given the state current position s1_t"""
 
         # Set all states, that are in line with current position to 1
-        self.beta_0[np.where(self.task.S[:, 0] == self.task.s1_t)[0], 0] = 1
+        self.beta_0[np.where(self.task_model.S[:, 0] == s1_t)[0], 0] = 1
         # Set alle remaining states zero
-        self.beta_0[np.where(self.task.S[:, 0] != self.task.s1_t)[0], 0] = 0
+        self.beta_0[np.where(self.task_model.S[:, 0] != s1_t)[0], 0] = 0
         # Normalize belief state
         self.beta_0 = self.beta_0 / sum(self.beta_0)
 
@@ -83,8 +83,8 @@ class StochasticMatrices:
         # Initialize and evaluate s_4 permutations
         s4_perms_fn_pkl = os.path.join(
             self.paths.code, "utilities",
-            f"s4_perms_dim-{self.grid_config.dim}_"
-            f"h{self.grid_config.n_hides}.pkl")
+            f"s4_perms_dim-{self.task_params.dim}_"
+            f"h{self.task_params.n_hides}.pkl")
 
         if os.path.exists(s4_perms_fn_pkl):
             print("Loading s4_perms ...")
@@ -116,8 +116,8 @@ class StochasticMatrices:
 
         # Load/evaluate agent's initial belief state in 1. trial ---(Prior)---
         prior_fn = os.path.join(self.paths.code, "utilities",
-                                f"prior_dim-{self.grid_config.dim}_"
-                                f"h{self.grid_config.n_hides}.npy")
+                                f"prior_dim-{self.task_params.dim}_"
+                                f"h{self.task_params.n_hides}.npy")
         if os.path.exists(prior_fn):
             print("Loading prior array from file ...")
             start = time.time()
@@ -130,7 +130,7 @@ class StochasticMatrices:
         else:
             print("Evaluating prior belief array for given task config ...")
             start = time.time()
-            self.beta_0 = np.full((self.grid_config.n_nodes,
+            self.beta_0 = np.full((self.task_params.n_nodes,
                                    self.n_S4), 0.0)
             self.eval_prior()
             end = time.time()
@@ -149,8 +149,8 @@ class StochasticMatrices:
         lklh_fn = os.path.join(
             self.paths.code,
             "utilities",
-            f"lklh_dim-{self.grid_config.dim}_"
-            f"h{self.grid_config.n_hides}.npy"
+            f"lklh_dim-{self.task_params.dim}_"
+            f"h{self.task_params.n_hides}.npy"
         )
         if os.path.exists(lklh_fn):
             print("Loading likelihood array from file ...")
@@ -162,8 +162,8 @@ class StochasticMatrices:
         else:
             print("Computing likelihood array for given task config ...")
             self.Omega = np.zeros(
-                (2, self.grid_config.n_nodes, 3, 4,
-                 self.grid_config.n_nodes, self.n_S4),
+                (2, self.task_params.n_nodes, 3, 4,
+                 self.task_params.n_nodes, self.n_S4),
                 dtype=np.uint16)
             start = time.time()
             self.eval_likelihood()
@@ -182,7 +182,7 @@ class StochasticMatrices:
     def compute_Omega(self):
         """Method to compute Omega"""
 
-        self.Omega = np.full((self.task.n, self.task.m, self.task.p), 0)
+        self.Omega = np.full((self.task_model.n, self.task_model.m, self.task_model.p), 0)
         # TODO init in init
 
         node_colors = {"black": 0,
@@ -193,8 +193,8 @@ class StochasticMatrices:
         A = [0, 1]  # 0: drill, 1: step
 
         for i_a, a in enumerate(A):
-            for i_s, s in enumerate(self.task.S):
-                for i_o, o in enumerate(self.task.O_):
+            for i_s, s in enumerate(self.task_model.S):
+                for i_o, o in enumerate(self.task_model.O_):
                     # Extract state components
                     current_pos = int(s[0])  # NOTE: set S[0] := {1, ..., n}
                     node_index_in_o_t = current_pos  # NOTE: bc o[0] is tr flag
@@ -308,10 +308,12 @@ class StochasticMatrices:
         "Method to compute Phi"
 
         action_set = [0,
-                      - self.grid_config.dim, + 1,
-                      + self.grid_config.dim, -1]
+                      - self.task_params.dim, + 1,
+                      + self.task_params.dim, -1]
 
-        self.Phi = np.full((self.task.n, self.task.n, len(action_set)), np.nan)
+        self.Phi = np.full(
+            (self.task_model.n, self.task_model.n, len(action_set)),
+            np.nan)
 
         # ---------------------------------------
         # NOTE:
@@ -323,37 +325,37 @@ class StochasticMatrices:
         for a_i, a in enumerate(action_set):
 
             # Iterate possible old states s_{t}
-            for s_tilde_i, s_tilde in enumerate(self.task.S):
+            for s_tilde_i, s_tilde in enumerate(self.task_model.S):
 
                 # Iterate possible new states s_{t+1}
-                for s_i, s in enumerate(self.task.S):
+                for s_i, s in enumerate(self.task_model.S):
 
-                    s_1 = s[0]              # current position in t + 1
-                    s_1_tilde = s_tilde[0]  # current position in t
-                    s_1_tilde_plus_a = s_1_tilde + a
+                    s1 = s[0]              # current position in t + 1
+                    s1_tilde = s_tilde[0]  # current position in t
+                    s1_tilde_plus_a = s1_tilde + a
 
                     # Filter out forbidden steps (wald outside border)
                     if (
-                        (1 <= s_1_tilde_plus_a <= self.grid_config.n_nodes)
-                        and not ((((s_1_tilde - 1)
-                                   % self.grid_config.dim) == 0)
+                        (1 <= s1_tilde_plus_a <= self.task_params.n_nodes)
+                        and not ((((s1_tilde - 1)
+                                   % self.task_params.dim) == 0)
                                  and a == -1)
-                        and not ((((s_1_tilde)
-                                   % self.grid_config.dim) == 0)
+                        and not (((s1_tilde
+                                   % self.task_params.dim) == 0)
                                  and a == 1)
                                    ):
-                        if s_1 == s_1_tilde_plus_a:
+                        if s1 == s1_tilde_plus_a:
                             self.Phi[s_tilde_i, s_i, a_i] = 1
 
-                        elif s_1 != s_1_tilde_plus_a:
+                        elif s1 != s1_tilde_plus_a:
                             self.Phi[s_tilde_i, s_i, a_i] = 0
 
                     # tODO: Alle unerlaubten action
                     # agent glaubt, dass er auf dem Feld stehen bleibt
                     else:
-                        if s_1 == s_1_tilde:
+                        if s1 == s1_tilde:
                             self.Phi[s_tilde_i, s_i, a_i] = 1
-                        elif s_1 != s_1_tilde:
+                        elif s1 != s1_tilde:
                             self.Phi[s_tilde_i, s_i, a_i] = 0
 
     def plot_color_map(self, n_nodes, n_hides, **arrays):
@@ -426,21 +428,21 @@ class StochasticMatrices:
               f"{humanreadable_time(end-start)}")
         start = time.time()
         data_handler.save_arrays(
-            n_nodes=self.grid_config.n_nodes,
-            n_hides=self.grid_config.n_hides,
+            n_nodes=self.task_params.n_nodes,
+            n_hides=self.task_params.n_hides,
             Omega_dill=self.Omega[:, :, 0]
             )
         data_handler.save_arrays(
-            n_nodes=self.grid_config.n_nodes,
-            n_hides=self.grid_config.n_hides,
+            n_nodes=self.task_params.n_nodes,
+            n_hides=self.task_params.n_hides,
             Omega_step=self.Omega[:, :, 1]
             )
         end = time.time()
         print(f" ... finisehd saving Omega to files, \n ... time:  "
               f"{humanreadable_time(end-start)}"
               )
-        self.plot_color_map(n_nodes=self.grid_config.n_nodes,
-                            n_hides=self.grid_config.n_hides,
+        self.plot_color_map(n_nodes=self.task_params.n_nodes,
+                            n_hides=self.task_params.n_hides,
                             Omega_drill=self.Omega[:, :, 0],
                             Omega_step=self.Omega[:, :, 1])
 
@@ -453,8 +455,8 @@ class StochasticMatrices:
               f"{humanreadable_time(end-start)}")
         start = time.time()
         data_handler.save_arrays(
-            n_nodes=self.grid_config.n_nodes,
-            n_hides=self.grid_config.n_hides,
+            n_nodes=self.task_params.n_nodes,
+            n_hides=self.task_params.n_hides,
             Phi_drill=self.Phi[:, :, 0],
             Phi_minus_dim=self.Phi[:, :, 1],
             Phi_plus_one=self.Phi[:, :, 2],
@@ -466,8 +468,8 @@ class StochasticMatrices:
               f"{humanreadable_time(end-start)}"
               )
 
-        self.plot_color_map(n_nodes=self.grid_config.n_nodes,
-                            n_hides=self.grid_config.n_hides,
+        self.plot_color_map(n_nodes=self.task_params.n_nodes,
+                            n_hides=self.task_params.n_hides,
                             Phi_drill=self.Phi[:, :, 0],
                             Phi_minus_dim=self.Phi[:, :, 1],
                             Phi_plus_one=self.Phi[:, :, 2],
@@ -588,7 +590,6 @@ class Agent:
     """
 
     def __init__(self, agent_attr: AgentAttributes,
-                 stoch_matrices: StochasticMatrices,
                  task_object: Task, lambda_):
 
         # Indivudal agent specific characteristics
@@ -608,14 +609,12 @@ class Agent:
         self.decision_t = np.full(1, np.nan)  # decision
 
         # Initialize belief state objects
-        self.marg_tr_belief = np.full(self.task.grid.n_nodes, np.nan)
-        self.marg_hide_belief = np.full(self.task.grid.n_nodes, np.nan)
-        self.marg_tr_belief_prior = np.full(self.task.grid.n_nodes, np.nan)
-        self.marg_hide_belief_prior = np.full(self.task.grid.n_nodes, np.nan)
+        self.marg_tr_belief = np.full(self.task.params.n_nodes, np.nan)
+        self.marg_hide_belief = np.full(self.task.params.n_nodes, np.nan)
+        self.marg_tr_belief_prior = np.full(self.task.params.n_nodes, np.nan)
+        self.marg_hide_belief_prior = np.full(self.task.params.n_nodes, np.nan)
 
         if self.agent_attr.is_bayesian:
-            # Unpack bayesian beh_model components
-            self.attach_stoch_matrices(stoch_matrices)
 
             # ---(Prior, c != 0)---
             self.p_s_giv_o_prior_new_c: np.ndarray = np.array(np.nan)
@@ -624,7 +623,7 @@ class Agent:
 
         # Initialize closest max s3 node variables for computations
         self.max_s3_b_value = np.nan
-        self.rounded_marg_s3_b = np.full(self.task.grid.n_nodes, np.nan)
+        self.rounded_marg_s3_b = np.full(self.task.params.n_nodes, np.nan)
         self.max_tr_b_node_indices = np.nan
         self.dist_to_max_s3_b_nodes = np.nan
         self.shortest_dist_to_max_s3_b = np.nan
@@ -654,7 +653,7 @@ class Agent:
         # TODO: major todo
         # Initialize all as zero
         self.p_s_giv_o_prior_new_c = np.full(
-            (self.stoch_matrices.task.n, 1), 0.)
+            (self.stoch_matrices.task_model.n, 1), 0.)
 
         # marg_s4_perm_b = np.full(self.n_s4_perms, np.nan)
         # for s4_perm in range(self.n_s4_perms):
@@ -702,7 +701,7 @@ class Agent:
             prior_belief_state (np.ndarray): (n_nodes x n_s4_perms)-array of
                 the prior belief state.
             action (int): Current action
-            s_1 (int): Current state s1 value
+            s1 (int): Current state s1 value
             s2_giv_s1 (int): Current state s2[s1] value, i.e. node color
                 on current position s1
             obs (int): Current observation
@@ -761,8 +760,8 @@ class Agent:
             TODO: marg_s4 not actually margianl distribution.
         """
         # Evaluate marginal treasure distribution
-        marg_treasure_belief = np.full(self.task.grid.n_nodes, np.nan)
-        for node in range(self.task.grid.n_nodes):
+        marg_treasure_belief = np.full(self.task.params.n_nodes, np.nan)
+        for node in range(self.task.params.n_nodes):
             possible_tr_loc = node + 1
             tr_index_in_state_vector = 1
 
@@ -775,12 +774,12 @@ class Agent:
             marg_treasure_belief[node] = belief[tr_spec_indices, :].sum()
 
         # Evaluate marginal hiding spot distribution
-        marg_hides_belief = np.full(self.task.grid.n_nodes, np.nan)
-        for node in range(self.task.grid.n_nodes):
+        marg_hides_belief = np.full(self.task.params.n_nodes, np.nan)
+        for node in range(self.task.params.n_nodes):
 
             possible_hide_loc = node + 1
             hide_indices_in_state_vector = range(
-                2,  2 + self.task.grid.n_hides)
+                2,  2 + self.task.params.n_hides)
 
             hide_spec_indices = np.where(
                 np.any(
@@ -835,7 +834,7 @@ class Agent:
             # ...and step action (a=1).
             if self.task.c == 0 and self.task.t == 0:
                 action = 1
-                self.stoch_matrices.compute_beta_0()
+                self.stoch_matrices.compute_beta_0(s1_t=self.task.s1_t)
                 prior = self.stoch_matrices.beta_0
 
             # If first trial in a new round, i.e. before any action,  pior_c
@@ -857,7 +856,6 @@ class Agent:
                 o_t=self.task.o_t)
 
             # ------ Evaluate marginal distributions-------------
-            # TODO: hier weiter!!
             start = time.time()
             self.marg_tr_belief, self.marg_hide_belief = self.eval_marg_b_s(
                 self.p_s_giv_o_post)
@@ -872,12 +870,12 @@ class Agent:
         for action in self.task.A:
             new_s1 = action + self.task.s1_t
             # Remove forbidden steps (walk outside border)
-            if (not (1 <= new_s1 <= self.task.grid.n_nodes)
+            if (not (1 <= new_s1 <= self.task.params.n_nodes)
                     or (((self.task.s1_t - 1)
-                         % self.task.task_configs.params.dim == 0)
+                         % self.task.params.dim == 0)
                         and action == -1)
                     or (((self.task.s1_t)
-                         % self.task.task_configs.params.dim == 0)
+                         % self.task.params.dim == 0)
                         and action == 1)):
 
                 self.a_s1 = self.a_s1[self.a_s1 != action]
@@ -1086,7 +1084,7 @@ class Agent:
     def evaluate_action_valences(self):
         """Evaluate action valences"""
 
-        remaining_moves = self.task.grid.n_trials - self.task.t - 1
+        remaining_moves = self.task.params.n_trials - self.task.t - 1
         # TODO: trial count weird?
 
         # 'C1' Valence for random choice agent
@@ -1142,8 +1140,8 @@ class Agent:
             # otherwise A1 will drill in last trials
             # Let agent stop drilling, if node is not black or if last round
             if self.task.c == (
-                    self.task.task_configs.params.n_rounds - 1):
-                # or self.task.s_2_node_color[self.task.s_1] != 0:
+                    self.task.params.n_rounds - 1):
+                # or self.task.s_2_node_color[self.task.s1] != 0:
                 self.valence_t[np.where(self.a_s1 == 0)] = -1
 
         # 'A2' pure explorer agent
@@ -1154,8 +1152,8 @@ class Agent:
 
             # Let agent stop drilling, if node is not black or if last round
             if self.task.c == (
-                    self.task.task_configs.params.n_rounds - 1):
-                # or self.task.s_2_node_color[self.task.s_1] != 0:
+                    self.task.state_values.params.n_rounds - 1):
+                # or self.task.s_2_node_color[self.task.s1] != 0:
                 self.valence_t[np.where(self.a_s1 == 0)] = -1
 
         # 'A3' belief state based explorer-exploit agent (LOOK-AHEAD)
@@ -1198,8 +1196,8 @@ class Agent:
 
             # Let agent stop drilling, if node is not black or if last round
             if self.task.c == (
-                    self.task.task_configs.params.n_rounds - 1):
-                # or self.task.s_2_node_color[self.task.s_1] != 0:
+                    self.task.state_values.params.n_rounds - 1):
+                # or self.task.s_2_node_color[self.task.s1] != 0:
                 self.valence_t[np.where(self.a_s1 == 0)] = -1
 
     def evaluate_delta(self):

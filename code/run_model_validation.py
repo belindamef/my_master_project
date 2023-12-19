@@ -19,19 +19,19 @@ import time
 import os
 import numpy as np
 from utilities.config import DataHandler, DirectoryManager, get_arguments
-from utilities.simulation_methods import SimulationParameters
-from utilities.task import TaskConfigurator, GridConfigParameters
+from utilities.simulation_methods import GenModelNParameterSpaces
+from utilities.task import TaskStatesConfigurator, TaskNGridParameters
 from utilities.agent import AgentAttributes, StochasticMatrices
 from utilities.validation_methods import Validator, ValidationParameters
 from utilities.estimation_methods import EstimationParameters
 
 
-def define_simulation_parameters() -> SimulationParameters:
+def define_simulation_parameters() -> GenModelNParameterSpaces:
     """Function to confifgure simulation parameters, either (a) from arugments
     passed from sellscript or command line, or defined under if name == main
     idiom
     """
-    sim_parameters = SimulationParameters()
+    sim_parameters = GenModelNParameterSpaces()
 
     if arguments.parallel_computing:
         sim_parameters.get_params_from_args(arguments)
@@ -43,15 +43,15 @@ def define_simulation_parameters() -> SimulationParameters:
     return sim_parameters
 
 
-def adjust_total_trial_numbers(task_configuration_object: TaskConfigurator):
+def adjust_total_trial_numbers(task_config_object: TaskStatesConfigurator):
     """Function to adjust total number of trials as hard coded under
     if_name==main idiom; for quick tests."""
-    task_configuration_object.params.n_blocks = TEST_N_BLOCKS
-    task_configuration_object.params.n_rounds = TEST_N_ROUNDS
-    task_configuration_object.params.n_trials = TEST_N_TRIALS
+    task_config_object.params.n_blocks = TEST_N_BLOCKS
+    task_config_object.params.n_rounds = TEST_N_ROUNDS
+    task_config_object.params.n_trials = TEST_N_TRIALS
 
 
-def adjust_tau_gen_space(sim_params: SimulationParameters):
+def adjust_tau_gen_space(sim_params: GenModelNParameterSpaces):
     """Function to adjust the data generating tau parameter space depending on
     the data generating behavioral model. [nan] for control agents. """
     if "A" in sim_params.current_agent_gen:
@@ -61,7 +61,7 @@ def adjust_tau_gen_space(sim_params: SimulationParameters):
         sim_params.tau_space_gen = [np.nan]
 
 
-def adjust_lambda_gen_space(sim_params: SimulationParameters):
+def adjust_lambda_gen_space(sim_params: GenModelNParameterSpaces):
     """Function to adjust the data generating lambda parameter space depending
     on the data generating agent model. i.e. [nan] for all agents beside "A3".
     """
@@ -135,7 +135,7 @@ def check_output_existence(out_filename: str) -> bool:
     return outfile_exists
 
 
-def run_model_recovery_routine(sim_params: SimulationParameters,
+def run_model_recovery_routine(sim_params: GenModelNParameterSpaces,
                                val_params: ValidationParameters,
                                validator: Validator,
                                dir_mgr: DirectoryManager,
@@ -342,14 +342,17 @@ def main():
     data_handler = DataHandler(paths=dir_mgr.paths, exp_label=EXP_LABEL)
 
     # Load task configurations and bayesian model components from disk
-    task_config = TaskConfigurator(path=dir_mgr.paths).get_config(
+    task_config = TaskStatesConfigurator(
+        path=dir_mgr.paths,
+        task_params=TaskNGridParameters()).get_task_state_values(
         config_label=EXP_LABEL)
+
     bayesian_comps = StochasticMatrices(
-        grid_config_params=task_config.params).get_comps_old()
+        task_params=task_config.params).get_comps_old()
 
     # For debigging, adjust total number of trials
     if IS_TEST:
-        adjust_total_trial_numbers(task_configuration_object=task_config)
+        adjust_total_trial_numbers(task_config_object=task_config)
 
     # Prepare paramter spaces and validation object
     sim_params = define_simulation_parameters()
@@ -359,7 +362,7 @@ def main():
     validator = Validator(sim_params=sim_params,
                           val_params=val_params,
                           task_configs=task_config,
-                          task_params=GridConfigParameters(),
+                          task_params=TaskNGridParameters(),
                           bayesian_comps=bayesian_comps,
                           est_params=est_params)
 

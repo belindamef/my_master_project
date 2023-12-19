@@ -3,10 +3,10 @@
 import time
 import pandas as pd
 import numpy as np
-from utilities.simulation_methods import Simulator, SimulationParameters
+from utilities.simulation_methods import Simulator, GenModelNParameterSpaces
 from utilities.estimation_methods import Estimator, EstimationParameters
 from utilities.config import humanreadable_time
-from utilities.task import TaskConfigurator, GridConfigParameters
+from utilities.task import TaskStatesConfigurator, TaskNGridParameters
 from utilities.agent import StochasticMatrices
 
 
@@ -95,20 +95,20 @@ class Validator:
     """
     data_dic: dict
 
-    def __init__(self, sim_params: SimulationParameters,
+    def __init__(self, sim_params: GenModelNParameterSpaces,
                  val_params: ValidationParameters,
-                 task_configs: TaskConfigurator,
-                 task_params: GridConfigParameters,
+                 task_configs: TaskStatesConfigurator,
+                 task_params: TaskNGridParameters,
                  bayesian_comps: StochasticMatrices,
                  est_params: EstimationParameters):
 
         self.val_params = val_params
-        self.sim_params: SimulationParameters = sim_params
+        self.sim_params: GenModelNParameterSpaces = sim_params
         self.task_config = task_configs
         self.task_params = task_params
         self.bayesian_comps = bayesian_comps
 
-        self.simulator: Simulator = Simulator(task_configs=task_configs,
+        self.simulator: Simulator = Simulator(state_values=task_configs,
                                               agent_stoch_matrices=bayesian_comps)
                                               # tODO: add task_design_paramsa s argument
         self.estimator: Estimator = Estimator(estim_params=est_params)
@@ -217,7 +217,7 @@ class Validator:
             data=data,
             method="brute_force",
             candidate_agent=self.sim_params.current_agent_gen,
-            task_configs=self.simulator.task_configs,
+            task_configs=self.simulator.state_values,
             bayesian_comps=self.simulator.bayesian_comps)
 
         # TODO: simplefy mle recording...
@@ -322,7 +322,7 @@ class Validator:
 
         # Instantiate simulation-obj within estimator-obj for mll estimations
         self.estimator.instantiate_sim_obj(
-            task_configs=self.simulator.task_configs,
+            task_configs=self.simulator.state_values,
             bayesian_comps=self.simulator.bayesian_comps,
             task_params=self.simulator.task_params
             )

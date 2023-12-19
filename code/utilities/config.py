@@ -84,7 +84,7 @@ class Paths:
     utils = os.path.dirname(os.path.abspath(__file__))
     code = os.path.dirname(utils)
     project = os.path.dirname(code)
-    task_configs = os.path.join(code, "task_config")  # all configurations
+    state_samples = os.path.join(code, "state_samples")  # all state samples
     stoch_mats = os.path.join(code, "stoch_matrices")  # HMM stoch. matrices
     data = os.path.join(project, "data")
     figures = os.path.join(project, "figures")
@@ -94,7 +94,7 @@ class Paths:
     descr_stats = os.path.join(results, 'descr_stats')
     model_recov_results = os.path.join(results, "model_recovery")
     model_est_results = os.path.join(results, "model_estimation")
-    this_config: str = ""  # particular config currently used
+    this_state_sample: str = ""  # particular state value sample currently used
 
     # Raw behavioral data or validation results directories
     this_exp_rawdata: str = ""
@@ -106,7 +106,7 @@ class Paths:
 
     # Subject-specific directories and filenames (fn)
     this_sub: str = ""
-    this_sub_beh_out_filename: str = ""
+    this_sub_beh_out_fn: str = ""
     this_sub_model_recov_result_fn: str = ""
     this_sub_model_est_results_fn: str = ""
 
@@ -367,7 +367,7 @@ class DirectoryManager:
         -----
             sub_id (str): subject ID
         """
-        self.paths.this_sub_beh_out_filename = os.path.join(
+        self.paths.this_sub_beh_out_fn = os.path.join(
             self.paths.this_sub,
             f"sub-{sub_id}_task-th_beh")
 

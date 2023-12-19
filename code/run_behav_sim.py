@@ -9,96 +9,50 @@ Author: Belinda Fleischmann
 import time
 import numpy as np
 from utilities.config import DataHandler, DirectoryManager, get_arguments
-from utilities.simulation_methods import Simulator, SimulationParameters
-from utilities.task import Task, TaskConfigurator, GridConfigParameters
+from utilities.simulation_methods import Simulator, GenModelNParameterSpaces
+from utilities.task import Task, TaskStatesConfigurator, TaskNGridParameters
 from utilities.agent import AgentAttributes, StochasticMatrices
-from utilities.validation_methods import ValidationParameters
 
 
-def define_simulation_parameters() -> SimulationParameters:
-    """_summary_
-
-    Returns:
-        SimulationParameters: _description_
-    """
-    sim_parameters = SimulationParameters()
-
-    if arguments.parallel_computing:
-        sim_parameters.get_params_from_args(arguments)
-    else:
-        sim_parameters.define_params_manually(
-            agent_gen_space=AGENT_GEN_SPACE,
-            tau_gen_space=TAU_GEN_SPACE,
-            lambda_gen_space=LAMBDA_GEN_SPACE
-        )
-
-    return sim_parameters
-
-
-def define_validation_parameters() -> ValidationParameters:
-    """_summary_
-
-    Returns:
-        ValidationParameters: _description_
-    """
-    val_params = ValidationParameters()
-    if arguments.parallel_computing:
-        val_params.get_params_from_args(arguments)
-    else:
-        val_params.define_numbers(
-            n_rep=N_REPS, n_part=N_PARTS
-        )
-    return val_params
-
-
-def adjust_total_trial_numbers(task_configuration_object: TaskConfigurator):
-    """_summary_
-
-    Args:
-        task_configuration_object (TaskConfigurator): _description_
-    """
-    task_configuration_object.params.n_blocks = TEST_N_BLOCKS
-    task_configuration_object.params.n_rounds = TEST_N_ROUNDS
-    task_configuration_object.params.n_trials = TEST_N_TRIALS
-
-
-def main(grid_config: GridConfigParameters):
+def main(task_params: TaskNGridParameters,
+         sim_params: GenModelNParameterSpaces):
     """Main function"""
+
     dir_mgr = DirectoryManager()
-    dir_mgr.define_raw_beh_data_out_path(data_type="sim",
-                                         exp_label=OUT_DIR_LABEL,
-                                         make_dir=True)
+    dir_mgr.define_raw_beh_data_out_path(
+        data_type="sim",
+        exp_label=EXP_LABEL,
+        make_dir=True
+        )
 
-    # Load or create Task configuration
-    task_config = TaskConfigurator(
+    # Load or create task configuration-specific state spaces
+    task_state_values = TaskStatesConfigurator(
         path=dir_mgr.paths,
-        params=grid_config
-        ).get_config(EXP_LABEL)
+        task_params=task_params
+        ).get_task_state_values(EXP_LABEL)
 
-    # Create model task object
-    task_model = Task(task_configs=task_config, grid_config=grid_config)
+    # Create model task object to store and transfer state spaces
+    task_model = Task(
+        state_values=task_state_values,
+        task_params=task_params)
+
     # Load or create Stochastic Matrices for Hidden Markov Model
     stoch_matrices = StochasticMatrices(
-        task_object=task_model,
-        grid_config_params=grid_config,
+        task_model=task_model,
+        task_params=task_params,
         ).compute_or_load_components()
 
-    if IS_QUICK_TEST:
-        adjust_total_trial_numbers(task_config)
-
-    sim_params = define_simulation_parameters()
-    val_params = define_validation_parameters()
-    simulator = Simulator(task_configs=task_config,
+    simulator = Simulator(state_values=task_state_values,
                           agent_stoch_matrices=stoch_matrices,
-                          task_params=grid_config)
+                          task_params=task_params)
 
-    for repetition in val_params.repetition_numbers:
-        val_params.current_rep = repetition
+    for repetition in sim_params.repetition_numbers:
+        sim_params.current_rep = repetition
 
-        for agent_model in sim_params.agent_space_gen:
+        for agent_name in sim_params.agent_space_gen:
             sim_params.current_agent_gen_init_obj = AgentAttributes(
-                agent_model)
-            sim_params.current_agent_gen = agent_model
+                agent_model_name=agent_name)
+            sim_params.current_agent_gen = agent_name
 
             for tau_gen in sim_params.tau_space_gen:
                 sim_params.current_tau_gen = tau_gen
@@ -106,49 +60,63 @@ def main(grid_config: GridConfigParameters):
                 for lambda_gen in sim_params.lambda_gen_space:
                     sim_params.current_lambda_gen = lambda_gen
 
-                    for participant in val_params.participant_numbers:
-                        val_params.current_part = participant
+                    for participant in sim_params.participant_numbers:
+                        sim_params.current_part = participant
 
-                        sub_id = sim_params.create_agent_sub_id(participant,
-                                                                repetition)
-                        dir_mgr.define_sim_beh_output_paths(sub_id)
+                        sub_id = sim_params.create_agent_sub_id(
+                            current_part=participant,
+                            current_rep=repetition
+                            )
+                        dir_mgr.define_sim_beh_output_paths(sub_id=sub_id)
 
                         simulated_data = simulator.simulate_beh_data(
-                            sim_params)
+                            sim_params=sim_params)
 
-                        DataHandler(dir_mgr.paths, EXP_LABEL).save_data_to_tsv(
-                            simulated_data,
-                            dir_mgr.paths.this_sub_beh_out_filename)
+                        DataHandler(
+                            paths=dir_mgr.paths,
+                            exp_label=EXP_LABEL
+                            ).save_data_to_tsv(
+                                data=simulated_data,
+                                filename=dir_mgr.paths.this_sub_beh_out_fn
+                            )
 
 
 if __name__ == "__main__":
     start = time.time()
     arguments = get_arguments()
 
-    EXP_LABEL = "test_ahmm"
-    OUT_DIR_LABEL = "test_ahmm_12_14"
+    EXP_LABEL = "test_ahmm_12_19"
 
     # Define task configuration parameters
-    task_params = GridConfigParameters(
+    task_params = TaskNGridParameters(
         dim=2,
-        n_hides=2
-    )
+        n_hides=2,
+        n_blocks=1,
+        n_rounds=1,
+        n_trials=12
+        )
 
-    # Define simulation parameters
-    AGENT_GEN_SPACE = ["A1"]
-    TAU_GEN_SPACE = [0.01]
-    LAMBDA_GEN_SPACE = [np.nan]
+    # Define data generating model and parameter spaces
+    sim_params = GenModelNParameterSpaces()
 
-    # Define repetition_parameters
-    N_REPS = 1
-    N_PARTS = 1
+    if arguments.parallel_computing:
+        sim_params.get_params_from_args(arguments)
+    else:
+        sim_params.define_params_manually(
+            agent_gen_space=["A1"],
+            tau_gen_space=[0.01],
+            lambda_gen_space=[np.nan]
+            )
+        sim_params.define_numbers(
+            n_rep=1,
+            n_part=1
+            )
 
-    IS_QUICK_TEST = True
-    TEST_N_BLOCKS = 1
-    TEST_N_ROUNDS = 1  # NOTE: only 1 round possible because prior_c (!?)
-    TEST_N_TRIALS = 12
-
-    main(grid_config=task_params)
+    # Start simulation
+    main(
+        task_params=task_params,
+        sim_params=sim_params
+        )
 
     end = time.time()
     print(f"Total time for simulation: {round((end-start), ndigits=2)} sec.")

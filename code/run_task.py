@@ -25,7 +25,7 @@ import pandas as pd
 import json
 
 from utilities.config import Paths
-from utilities.task import TaskConfigurator
+from utilities.task import TaskStatesConfigurator
 from utilities.create_stimuli import StimulusCreation
 from utilities.create_stimuli import rowcol_to_xy, node_to_rowcol
 
@@ -430,7 +430,7 @@ if os.path.exists(config_files_dir):
 
 # Create task config (object will load config if existing for
 # params and sim_name)
-task_configurator = TaskConfigurator(task_config_dir=config_files_dir,
+task_configurator = TaskStatesConfigurator(task_config_dir=config_files_dir,
                                      n_blocks=exp_blocks, n_rounds=exp_rounds,
                                      dim=dim, n_hides=n_hides)
 task_configs = task_configurator.return_task_configuration()
@@ -440,7 +440,7 @@ config_pr_file_dir = os.path.join(
     f'b-{pract_blocks}_r-{pract_rounds}_t-{pract_trials}',
     f'{exp_label}')
 
-pr_task_configurator = TaskConfigurator(
+pr_task_configurator = TaskStatesConfigurator(
     task_config_dir=config_pr_file_dir, n_blocks=exp_blocks,
     n_rounds=exp_rounds, dim=dim, n_hides=n_hides)
 pr_task_configs = pr_task_configurator.return_task_configuration()

@@ -8,15 +8,16 @@ Author: Belinda Fleischmann
 import time
 import pandas as pd
 import numpy as np
-from .task import Task, TaskConfigurator, GridConfigParameters
+from .task import Task, TaskStatesConfigurator, TaskNGridParameters
 from .agent import AgentAttributes, Agent, StochasticMatrices
 from .modelling import BehavioralModel
 from .config import humanreadable_time
 np.set_printoptions(linewidth=500)
 
 
-class SimulationParameters:
-    """Class to store and manage parameters for behavioral data simulation
+class GenModelNParameterSpaces:
+    """Class to store and manage data generating agent model and parameter
+    spaces
 
     Attributes:
     -----------
@@ -40,6 +41,13 @@ class SimulationParameters:
     current_tau_gen: float
     current_lambda_gen: float
 
+    n_reps: int
+    repetition_numbers: range
+    n_participants: int
+    participant_numbers: range
+    current_rep: int
+    current_part: int
+
     def get_params_from_args(self, args):
         """Method to fetch simulation parameters from command line or bash
         script arguments.
@@ -53,6 +61,12 @@ class SimulationParameters:
         self.agent_space_gen = args.agent_model
         self.tau_space_gen = args.tau_gen
         self.lambda_gen_space = args.lambda_gen
+
+        self.repetition_numbers = args.repetition
+        self.participant_numbers = args.participant
+        self.n_participants = len(self.participant_numbers)
+        self.n_reps = len(self.repetition_numbers)
+
         return self
 
     def define_params_manually(self, agent_gen_space=None,
@@ -81,6 +95,22 @@ class SimulationParameters:
             self.lambda_gen_space = np.linspace(0, 1, 20).tolist()
         else:
             self.lambda_gen_space = lambda_gen_space
+
+    def define_numbers(self, n_rep: int = 1, n_part: int = 1,):
+        """Method to define number of repetitions and participants to
+        class instance.
+
+        Parameters
+        ----------
+        n_rep : int
+            Number of repetitions. Default value is 1
+        n_part : int
+            Number of participants. Default value is 1
+            """
+        self.n_reps = n_rep
+        self.repetition_numbers = range(self.n_reps)
+        self.n_participants = n_part
+        self.participant_numbers = range(self.n_participants)
 
     def create_agent_sub_id(self, current_part: int, current_rep: int) -> str:
         """Create id for this subject. More than one subject id per agent
@@ -303,10 +333,11 @@ class Simulator():
     task: Task
     beh_model: BehavioralModel
 
-    def __init__(self, task_configs: TaskConfigurator,
+    def __init__(self, state_values: TaskStatesConfigurator,
                  agent_stoch_matrices: StochasticMatrices,
-                 task_params: GridConfigParameters = GridConfigParameters()):
-        self.task_configs = task_configs
+                 task_params: TaskNGridParameters = TaskNGridParameters()):
+
+        self.state_values = state_values
         self.task_params = task_params
         self.agent_stoch_matrices = agent_stoch_matrices
 
@@ -321,17 +352,19 @@ class Simulator():
             tau_gen (float): Generating tau value
             lambda_gen (float): Generating lambda value
         """
-        agent_attributes = AgentAttributes(agent_name)
-        self.task = Task(task_configs=self.task_configs,
-                         grid_config=self.task_params)
+
+        self.task = Task(state_values=self.state_values,
+                         task_params=self.task_params)
         self.task.start_new_block(this_block)
 
+        agent_attributes = AgentAttributes(agent_name)
         self.agent = Agent(agent_attr=agent_attributes,
-                           stoch_matrices=self.agent_stoch_matrices,
                            task_object=self.task,
                            lambda_=lambda_gen)
+
         if agent_attributes.is_bayesian:
-            self.agent.attach_stoch_matrices()
+            self.agent.attach_stoch_matrices(
+                stoch_matrices=self.agent_stoch_matrices)
 
         self.beh_model = BehavioralModel(tau_gen=tau_gen,
                                          agent_object=self.agent)
@@ -396,20 +429,20 @@ class Simulator():
         """
         recorder = Recorder()  # Initialize data recorder
 
-        for this_block in range(self.task_configs.params.n_blocks):
+        for this_block in range(self.task_params.n_blocks):
             recorder.create_rec_df_one_block()
             self.create_interacting_objects(sim_params.current_agent_gen,
                                             this_block,
                                             sim_params.current_tau_gen,
                                             sim_params.current_lambda_gen)
 
-            for this_round in range(self.task_configs.params.n_rounds):
+            for this_round in range(self.task_params.n_rounds):
                 recorder.create_rec_arrays_thisround(
-                    n_trials=self.task_configs.params.n_trials)
+                    n_trials=self.task_params.n_trials)
                 self.task.start_new_round(this_block, this_round)
                 self.agent.start_new_round(this_round)
 
-                for this_trial in range(self.task_configs.params.n_trials):
+                for this_trial in range(self.task_params.n_trials):
                     self.simulate_trial_start(this_trial)
                     recorder.record_trial_start(this_trial, self.task)
                     self.simulate_trial_interaction()
@@ -425,7 +458,7 @@ class Simulator():
                         break
 
                 recorder.append_this_round_to_block_df(
-                    this_round, self.task_configs.params.n_trials)
+                    this_round, self.task.params.n_trials)
             recorder.append_this_block_to_simdata_df(this_block)
         recorder.wrap_up_data(sim_params.current_tau_gen,
                               sim_params.current_lambda_gen,

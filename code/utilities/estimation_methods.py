@@ -7,7 +7,7 @@ import xarray as xr
 # import utilities.abm_bmc as abm_bmc  # TODO uncomment back (python 3.8...)
 from utilities.simulation_methods import Simulator
 from utilities.agent import StochasticMatrices
-from utilities.task import TaskConfigurator, GridConfigParameters
+from utilities.task import TaskStatesConfigurator, TaskNGridParameters
 from utilities.config import custom_sort_key
 
 
@@ -131,9 +131,9 @@ class Estimator:
                                     len(estim_params.agent_candidate_space)),
                                    np.nan)
 
-    def instantiate_sim_obj(self, task_configs: TaskConfigurator,
+    def instantiate_sim_obj(self, task_configs: TaskStatesConfigurator,
                             bayesian_comps: StochasticMatrices,
-                            task_params: GridConfigParameters):
+                            task_params: TaskNGridParameters):
         """
         Method to instantiate simulation object
 
@@ -142,7 +142,7 @@ class Estimator:
         sim_object (Simulator): Object to simulate agent-task-interaction
         """
         self.sim_object = Simulator(
-            task_configs=task_configs,
+            state_values=task_configs,
             agent_stoch_matrices=bayesian_comps,
             task_params=task_params)
             # TODO: add task design_params as argument
@@ -316,9 +316,9 @@ class Estimator:
 
     def estimate_parameters(self, data: pd.DataFrame,
                             method: str, candidate_agent: str,
-                            task_configs: TaskConfigurator,
+                            task_configs: TaskStatesConfigurator,
                             bayesian_comps: StochasticMatrices,
-                            task_params: GridConfigParameters):
+                            task_params: TaskNGridParameters):
         """_summary_
 
         Args:
