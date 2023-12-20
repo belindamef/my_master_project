@@ -38,7 +38,7 @@ class BehavioralModel:
 
     def return_action(self):
         """let behavioral model return action value given agent's decision."""
-        # probability action given decision of 1
+        # probability of action given decision of 1
         if (np.isnan(self.tau) or self.tau == 0):
             self.action_t = cp.deepcopy(self.agent.decision_t)
 

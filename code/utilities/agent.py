@@ -27,43 +27,55 @@ class StochasticMatrices:
 
     Attributes:
     -----------
-        task_design_params (TaskDesignParameters): Instance of data
-            class TaskDesignParameters.
+        task_model (Task): General task model for given task and grid
+            parameters. This object stores the set of states and observation.
+            To be distinguished from task objects that are created to store
+            interact with an agent in simulations.
+
+        task_design_params (TaskNGridParameters): Instance of data
+            class TaskDesignParameters, storing all task and grid parameters.
 
         paths (Paths): Instance of data class Paths.
 
-        s4_perms (list): All permutations of possible values for state s4
+        beta_0 (np.ndarray): (n x 1)-array of prior belief state in trial 0,
+            i.e. initial belief state before any observation.
 
-        s4_perm_node_indices(dict of int: list): node-specific indices of
-            "self.s4_perms" of all those entries that have the value 1 at
-                self.s4_perms[key], encoding that node i is a hiding spot
-            .key (int): value indicating node in grid
-            .value (list): list of indices for "self.s4_perms".
+        Phi (np.ndarray): (n x n)-array of the action-dependent state
+            state transition probability distrinution.
 
-        n_s4_perms (int): number of state s4 permutations
-
-        prior_c0 (np.ndarray): (n_nodes x n_s4_permutaions)-array of prior,
-            i.e. initial belief state before any observation
-
-        lklh (np.ndarray): (n_action_type x n_nodes x n_node_colors x
-            n_observations x n_nodes x n_s4_permutations)-array of the
-                likelihood, i.e. action- and state-dependent, state-conditional
-                    observation distribution
+        Omega (np.ndarray): (n x m)-array of the i.e. action-dependent,
+            state-conditional observation distribution.
 
     Args:
     -----
-        task_design_params (TaskDesignParameters, optional): Instance of data
-            class TaskDesignParameters.
+        task_model (Task): General task model for given task and grid
+            parameters. This object stores the set of states and observation.
+            To be distinguished from task objects that are created to store
+            interact with an agent in simulations.
+
+        task_design_params (TaskNGridParameters): Instance of data
+            class TaskDesignParameters, storing all task and grid parameters.
     """
 
-    def __init__(self, task_model,
-                 task_params=TaskNGridParameters()):
-        self.task_model: Task = task_model
+    def __init__(self, task_model: Task, task_params: TaskNGridParameters):
+
+        self.task_model = task_model  # A general task model
         self.task_params = task_params
         self.paths: Paths = Paths()
-        self.beta_0: np.ndarray = np.full((self.task_model.n, 1), np.nan)
-        self.Omega: np.ndarray = np.array(np.nan)
-        self.Phi: np.ndarray = np.array(np.nan)
+
+        self.beta_0: np.ndarray = np.full(
+            (self.task_model.n, 1),
+            np.nan
+            )
+        self.Phi = np.full(
+            (self.task_model.n, self.task_model.n, self.task_model.p),
+            np.nan
+            )
+        self.Omega = np.full(
+            (self.task_model.n, self.task_model.m,
+             2),  # Note: only 2 levels for action dimensions to save memory
+            0
+            )
 
     def compute_beta_0(self, s1_t: int):
         """Method to evaluate the initial belief state beta in round 1,
@@ -76,114 +88,8 @@ class StochasticMatrices:
         # Normalize belief state
         self.beta_0 = self.beta_0 / sum(self.beta_0)
 
-    def get_comps_old(self):
-        """Create or load Bayesian components, i.e. s4-permutations, prior and
-        likelihood.
-        """
-        # Initialize and evaluate s_4 permutations
-        s4_perms_fn_pkl = os.path.join(
-            self.paths.code, "utilities",
-            f"s4_perms_dim-{self.task_params.dim}_"
-            f"h{self.task_params.n_hides}.pkl")
-
-        if os.path.exists(s4_perms_fn_pkl):
-            print("Loading s4_perms ...")
-            start = time.time()
-            with open(s4_perms_fn_pkl, "rb") as file:
-                self.S4 = pickle.load(file)
-            end = time.time()
-            print(
-                " ... finished loading s4_perms, timed needed: "
-                f"{humanreadable_time(end-start)}"
-                )
-        else:
-            print("Computing s4_perms ...")
-            start = time.time()
-            self.S4 = []
-            self.eval_s4_perms()
-            end = time.time()
-            print(f" ... finished computing s4_perms, \n ... time:  "
-                  f"{humanreadable_time(end-start)}"
-                  )
-            print("Saving s4_perms ...")
-            start = time.time()
-            with open(s4_perms_fn_pkl, "wb") as file:
-                pickle.dump(self.S4, file)
-            end = time.time()
-            print(f" ... finisehd saving s4_perms to files, \n ... time:  "
-                  f"{humanreadable_time(end-start)}"
-                  )
-
-        # Load/evaluate agent's initial belief state in 1. trial ---(Prior)---
-        prior_fn = os.path.join(self.paths.code, "utilities",
-                                f"prior_dim-{self.task_params.dim}_"
-                                f"h{self.task_params.n_hides}.npy")
-        if os.path.exists(prior_fn):
-            print("Loading prior array from file ...")
-            start = time.time()
-            self.beta_0 = np.load(prior_fn)
-            end = time.time()
-            print(f" ... finished loading prior, \n ... time:  "
-                  f"{humanreadable_time(end-start)}"
-                  )
-            # sum_p_c0 = np.sum(self.prior_c0)
-        else:
-            print("Evaluating prior belief array for given task config ...")
-            start = time.time()
-            self.beta_0 = np.full((self.task_params.n_nodes,
-                                   self.n_S4), 0.0)
-            self.eval_prior()
-            end = time.time()
-            print(f" ... finished evaluating prior, \n ... time:  "
-                  f"{humanreadable_time(end-start)}"
-                  )
-            print("Saving prior belief array to file ...")
-            start = time.time()
-            np.save(prior_fn, self.beta_0)
-            end = time.time()
-            print(f" ... finished saving prior to file, \n ... time: "
-                  f"{humanreadable_time(end-start)}"
-                  )
-
-        # Load/eval action-dep. state-cond. obs distribution ---(Likelihood)---
-        lklh_fn = os.path.join(
-            self.paths.code,
-            "utilities",
-            f"lklh_dim-{self.task_params.dim}_"
-            f"h{self.task_params.n_hides}.npy"
-        )
-        if os.path.exists(lklh_fn):
-            print("Loading likelihood array from file ...")
-            start = time.time()
-            self.Omega = np.load(lklh_fn)
-            end = time.time()
-            print(f" ... finished loading likelihood array, \n ... time:  "
-                  f"{humanreadable_time(end-start)}\n")
-        else:
-            print("Computing likelihood array for given task config ...")
-            self.Omega = np.zeros(
-                (2, self.task_params.n_nodes, 3, 4,
-                 self.task_params.n_nodes, self.n_S4),
-                dtype=np.uint16)
-            start = time.time()
-            self.eval_likelihood()
-            end = time.time()
-            print(f" ... finished computing likelihood, \n ... time:  "
-                  f"{humanreadable_time(end-start)}")
-            print("Saving likelihood array to file")
-            start = time.time()
-            np.save(lklh_fn, self.Omega)
-            end = time.time()
-            print(f" ... saved likelihood array to file, \n ... time:  "
-                  f"{humanreadable_time(end-start)}")
-        # start = time.time()
-        return self
-
     def compute_Omega(self):
         """Method to compute Omega"""
-
-        self.Omega = np.full((self.task_model.n, self.task_model.m, self.task_model.p), 0)
-        # TODO init in init
 
         node_colors = {"black": 0,
                        "grey": 1,
@@ -363,7 +269,7 @@ class StochasticMatrices:
         dir_mgr = DirectoryManager()
 
         for key, array in arrays.items():
-            fig_fn = f"{key}-{n_nodes}-nodes_{n_hides}-hides"
+            fig_fn = f"{key}_{n_nodes}-nodes_{n_hides}-hides"
 
             # Preapre figure
             plotter = VeryPlotter(paths=dir_mgr.paths)
@@ -389,84 +295,123 @@ class StochasticMatrices:
         distributions.
         """
 
-        # TODO: load if existing
-        # -----blueprint:-------------------------------------------------
-        # if os.path.exists(s4_perms_fn_pkl):
-        #     print("Loading s4_perms ...")
-        #     start = time.time()
-        #     with open(s4_perms_fn_pkl, "rb") as file:
-        #         self.S4 = pickle.load(file)
-        #     end = time.time()
-        #     print(
-        #         " ... finished loading s4_perms, timed needed: "
-        #         f"{humanreadable_time(end-start)}"
-        #         )
-
-        # # Load/evaluate initial belief state beta_1_0 -----------------------
-        # print("Computing beta_1_0 for given task config ...")
-        # start = time.time()
-        # self.compute_beta_0()
-        # end = time.time()
-        # print(f" ... finished computing beta_1_0, \n ... time:  "
-        #       f"{humanreadable_time(end-start)}"
-        #       )
-        #
-        # start = time.time()
-        # self.save_arrays(beta_0_1=self.beta_0)
-        # end = time.time()
-        # print(f" ... finisehd saving beta_0_1 to files, \n ... time:  "
-        #       f"{humanreadable_time(end-start)}"
-        #       )
         data_handler = DataHandler(paths=self.paths)
 
-        # Load/evaluate Omega-------------------------
-        print("Computing Omega for given task config ...")
-        start = time.time()
-        self.compute_Omega()
-        end = time.time()
-        print(f" ... finished computing Omega, \n ... time:  "
-              f"{humanreadable_time(end-start)}")
-        start = time.time()
-        data_handler.save_arrays(
+        # ------ Omega---------------------------------------------------------
+        Omega_drill_path = data_handler.create_matrix_fn(
+            matrix_name="Omega_drill",
             n_nodes=self.task_params.n_nodes,
-            n_hides=self.task_params.n_hides,
-            Omega_dill=self.Omega[:, :, 0]
+            n_hides=self.task_params.n_hides
             )
-        data_handler.save_arrays(
-            n_nodes=self.task_params.n_nodes,
-            n_hides=self.task_params.n_hides,
-            Omega_step=self.Omega[:, :, 1]
-            )
-        end = time.time()
-        print(f" ... finisehd saving Omega to files, \n ... time:  "
-              f"{humanreadable_time(end-start)}"
-              )
-        self.plot_color_map(n_nodes=self.task_params.n_nodes,
-                            n_hides=self.task_params.n_hides,
-                            Omega_drill=self.Omega[:, :, 0],
-                            Omega_step=self.Omega[:, :, 1])
 
-        # Load/evaluate Phi-------------------------
-        print("Computing Phi for given task config ...")
-        start = time.time()
-        self.comput_Phi()
-        end = time.time()
-        print(f" ... finished computing Phi, \n ... time:  "
-              f"{humanreadable_time(end-start)}")
-        start = time.time()
-        data_handler.save_arrays(
+        Omega_step_path = data_handler.create_matrix_fn(
+            matrix_name="Omega_step",
             n_nodes=self.task_params.n_nodes,
-            n_hides=self.task_params.n_hides,
-            Phi_drill=self.Phi[:, :, 0],
-            Phi_minus_dim=self.Phi[:, :, 1],
-            Phi_plus_one=self.Phi[:, :, 2],
-            Phi_plus_dim=self.Phi[:, :, 3],
-            Phi_minus_one=self.Phi[:, :, 4]
+            n_hides=self.task_params.n_hides
             )
-        end = time.time()
-        print(f" ... finisehd saving Phi to files, \n ... time:  "
-              f"{humanreadable_time(end-start)}"
-              )
+
+        if (
+                os.path.exists(f"{Omega_drill_path}.pkl")
+                and os.path.exists(f"{Omega_step_path}.pkl")
+                ):
+            # Load matrices from hd for this task grid configuration
+            print("Loading Omega matrices from disk for given task config ("
+                  f"{self.task_params.n_nodes} nodes and "
+                  f"{self.task_params.n_hides} hiding spots) ...")
+            start = time.time()
+            with open(f"{Omega_drill_path}.pkl", "rb") as file:
+                self.Omega[:, :, 0] = pickle.load(file)
+            with open(f"{Omega_step_path}.pkl", "rb") as file:
+                self.Omega[:, :, 1] = pickle.load(file)
+            end = time.time()
+            print(f" ... finished loading. \n ... time:  "
+                  f"{humanreadable_time(end-start)}\n")
+
+        else:
+            # Compute for this task grid configuration and save to hd
+            print("Computing Omega for given task config ...")
+            start = time.time()
+            self.compute_Omega()
+            end = time.time()
+            print(f" ... finished computing Omega, \n ... time:  "
+                  f"{humanreadable_time(end-start)}")
+            start = time.time()
+            data_handler.save_arrays(
+                n_nodes=self.task_params.n_nodes,
+                n_hides=self.task_params.n_hides,
+                Omega_drill=self.Omega[:, :, 0]
+                )
+            data_handler.save_arrays(
+                n_nodes=self.task_params.n_nodes,
+                n_hides=self.task_params.n_hides,
+                Omega_step=self.Omega[:, :, 1]
+                )
+            end = time.time()
+            print(f" ... finisehd saving Omega to files, \n ... time:  "
+                  f"{humanreadable_time(end-start)}")
+
+            self.plot_color_map(n_nodes=self.task_params.n_nodes,
+                                n_hides=self.task_params.n_hides,
+                                Omega_drill=self.Omega[:, :, 0],
+                                Omega_step=self.Omega[:, :, 1]
+                                )
+
+        # ------ Phi-----------------------------------------------------------
+        matrix_dict = {name: "" for name in [
+            "Phi_drill",
+            "Phi_minus_dim",
+            "Phi_plus_one",
+            "Phi_plus_dim",
+            "Phi_minus_one"]
+            }
+
+        for matrix_name in matrix_dict.keys():
+            matrix_dict[matrix_name] = data_handler.create_matrix_fn(
+                    matrix_name=matrix_name,
+                    n_nodes=self.task_params.n_nodes,
+                    n_hides=self.task_params.n_hides
+                    )
+
+        if (  # TODO: only checking for one file, better check for all?
+                os.path.exists(f"{matrix_dict['Phi_drill']}.pkl")
+                ):
+            # Load matrices from hd for this task grid configuration
+            print("Loading Phi matrices from disk for given task config ("
+                  f"{self.task_params.n_nodes} nodes and "
+                  f"{self.task_params.n_hides} hiding spots) ...")
+            start = time.time()
+
+            i = 0
+            for matrix_name in matrix_dict.keys():
+
+                with open(f"{matrix_dict[matrix_name]}.pkl", "rb") as file:
+                    self.Phi[:, :, i] = pickle.load(file)
+                i += 1
+
+            end = time.time()
+            print(f" ... finished loading. \n ... time:  "
+                  f"{humanreadable_time(end-start)}\n")
+
+        else:
+            print("Computing Phi for given task config ...")
+            start = time.time()
+            self.comput_Phi()
+            end = time.time()
+            print(f" ... finished computing Phi, \n ... time:  "
+                  f"{humanreadable_time(end-start)}")
+            start = time.time()
+            data_handler.save_arrays(
+                n_nodes=self.task_params.n_nodes,
+                n_hides=self.task_params.n_hides,
+                Phi_drill=self.Phi[:, :, 0],
+                Phi_minus_dim=self.Phi[:, :, 1],
+                Phi_plus_one=self.Phi[:, :, 2],
+                Phi_plus_dim=self.Phi[:, :, 3],
+                Phi_minus_one=self.Phi[:, :, 4]
+                )
+            end = time.time()
+            print(f" ... finisehd saving Phi to files, \n ... time:  "
+                  f"{humanreadable_time(end-start)}")
 
         self.plot_color_map(n_nodes=self.task_params.n_nodes,
                             n_hides=self.task_params.n_hides,
