@@ -187,16 +187,14 @@ class TaskStatesConfigurator:
         Returns:
             TODO: TODO
         """
-        n_blocks = 3
         self.add_config_paths(config_label)
         if not os.path.exists(self.paths.this_state_sample):
-            self.params.n_blocks = n_blocks
             self.sample_task_states()
         else:
             self.load_task_states()
             self.params.n_blocks = list(
                 self.state_values.values())[0].shape[0]
-
+            self.params.n_rounds = len(self.state_values["s1"][0])
         return self.state_values
 
 
@@ -462,25 +460,37 @@ class Task:
         possible treasure locations X the ratio of hides to nodes."""
         n_pos = self.params.n_nodes  # No. possible currents positions
         n_tr = self.params.n_nodes  # No. possible treasure locations
-        hide_to_node_ratio = (  # No. of hiding spots to No. nodes ratio
-            self.params.n_hides / self.params.n_nodes)
+        tr_disc_probability = (  # No. of hiding spots to No. nodes ratio
+            1 / self.params.n_hides)
         # TODO: Does this reflect the "treasure possibility given all hiding
         # spot combinations?"
 
-        # Compute number of distinct comibinations for hiding spots according
-        # to the binomial coefficient formula,
-        # also known as "n choose r" or "combinations."
-        n_it = self.params.n_nodes       # length of input iterable
-        r = self.params.n_hides          # number of items taken from the
-        # iterable to form combinations
+        # TODO: geht nicht auf...
+        # # Compute number of distinct comibinations for hiding spots according
+        # # to the binomial coefficient formula,
+        # # also known as "n choose r" or "combinations."
+        # n_it = self.params.n_nodes       # length of input iterable
+        # r = self.params.n_hides          # number of items taken from the
+        # # iterable to form combinations
 
-        n_h_combos = (                        # number of distinct combinations
-            fac(n_it) / fac(r) * fac(n_it - r)  # of hiding spots
-                 )
+        # n_h_combos = (                        # number of distinct combinations
+        #     fac(n_it) / fac(r) * fac(n_it - r)  # of hiding spots
+        #          )
+        # QUICKFIX:
+        n_nodes = self.params.n_nodes
+        n_hides = self.params.n_hides
+
+        hide_combos = sorted(
+            more_itertools.distinct_combinations(
+                iterable=range(1, n_nodes + 1),
+                r=n_hides
+                )
+            )
+        n_h_combos = len(hide_combos)
 
         # Compute the cardinality n of set S
-        n = (n_pos * n_tr * n_h_combos * hide_to_node_ratio)
-        n = 48
+        n = (n_pos * n_h_combos * tr_disc_probability * n_tr)
+        n = 48  # TODO: QUICKFIX
 
         return int(n)  # TODO: hier weiter: geht alles nicht auf. ...
 

@@ -6,11 +6,12 @@ Author: Belinda Fleischmann
 
 # from dataclasses import dataclass
 import time
+import copy as cp
 import pandas as pd
 import numpy as np
 from .task import Task, TaskStatesConfigurator, TaskNGridParameters
 from .agent import AgentAttributes, Agent, StochasticMatrices
-from .modelling import BehavioralModel
+from .model import BehavioralModel
 from .config import humanreadable_time
 np.set_printoptions(linewidth=500)
 
@@ -167,7 +168,7 @@ class Recorder:
     """
 
     variable_list = []
-    data_one_round = {}
+    data_one_round: pd.DataFrame
     sim_data_this_block: pd.DataFrame
     sim_data: pd.DataFrame = pd.DataFrame()
 
@@ -188,9 +189,8 @@ class Recorder:
         self.variable_list = [
             "s1_t", "s2_t", "s3_t",
             "o_t", "a_giv_s1", "o_giv_s2", "p_o_giv_o", "kl_giv_a_o",
-            "v", "d", "a", "log_p_a_giv_h", "r_t",
-            "marg_s3_posterior", "marg_s3_prior_t0",
-            "marg_s4_posterior", "marg_s4_prior_t0",
+            "v_t", "d_t", "a_t", "log_p_a_giv_h", "r_t",
+            "marg_s1_b_t", "marg_s2_b_t", "marg_s3_b_t",
             "max_s3_belief", "argsmax_s3_belief",
             "min_dist_argsmax_s3_belief", "closest_argsmax_s3_belief",
             "node_colors"]
@@ -207,11 +207,14 @@ class Recorder:
         -----
         n_trials (int): Number of trials per round
         """
+        round_dict = {}
         for var in self.variable_list:
-            self.data_one_round[var] = np.full(
+            round_dict[var] = np.full(
                 n_trials + 1, np.nan, dtype=object)
 
-    def record_trial_start(self, trial: int, task: Task):
+        self.data_one_round = pd.DataFrame(round_dict)
+
+    def record_trial_start(self, trial: int, task: Task, agent: Agent):
         """Record all states and observations before agent makes decision,
         beh_model returns action and task evaluates state transition
 
@@ -220,11 +223,14 @@ class Recorder:
         trial (int): Current trial number
         task (Task): Instance of class Task
         """
-        self.data_one_round["s1_t"][trial] = task.s1_t
-        self.data_one_round["s2_t"][trial] = task.s2_t
-        self.data_one_round["s3_t"][trial] = task.s3_t
+        self.data_one_round["s1_t"][trial] = cp.copy(task.s1_t)
+        self.data_one_round["s2_t"][trial] = cp.copy(task.s2_t)
+        self.data_one_round["s3_t"][trial] = cp.copy(task.s3_t)
         self.data_one_round["node_colors"][trial] = task.node_colors
-        self.data_one_round["o_t"][trial] = task.o_t
+        self.data_one_round["o_t"][trial] = cp.copy(task.o_t)
+        self.data_one_round["marg_s1_b_t"][trial] = cp.copy(agent.marg_s1_b_t)
+        self.data_one_round["marg_s2_b_t"][trial] = cp.copy(agent.marg_s2_b_t)
+        self.data_one_round["marg_s3_b_t"][trial] = cp.copy(agent.marg_s3_b_t)
 
     def record_trial_ending(self, trial: int, task: Task, agent: Agent,
                             beh_model: BehavioralModel):
@@ -239,31 +245,25 @@ class Recorder:
             agent (Agent): Agent object
             beh_model (BehavioralModel): Behavioral model object
         """
-
-        self.data_one_round["a_giv_s1"][trial] = agent.a_s1
-        self.data_one_round["o_giv_s2"][trial] = agent.o_s2
-        self.data_one_round["p_o_giv_o"][trial] = agent.p_o_giv_o
-        self.data_one_round["kl_giv_a_o"][trial] = agent.kl_giv_a_o
-        self.data_one_round["v"][trial] = agent.valence_t
-        self.data_one_round["d"][trial] = agent.decision_t
-        self.data_one_round["a"][trial] = beh_model.action_t
-        self.data_one_round["log_p_a_giv_h"][trial] = beh_model.log_likelihood
-        self.data_one_round["r_t"][trial] = task.r_t
-        self.data_one_round["marg_s3_posterior"][trial] = agent.marg_tr_belief
-        self.data_one_round["marg_s3_prior_t0"][
-            trial] = agent.marg_tr_belief_prior
-        self.data_one_round["marg_s4_posterior"][
-            trial] = agent.marg_hide_belief
-        self.data_one_round["marg_s4_prior_t0"][
-            trial] = agent.marg_hide_belief_prior
-        self.data_one_round["max_s3_belief"][trial] = agent.max_s3_b_value
+        self.data_one_round["max_s3_belief"][
+            trial] = cp.copy(agent.max_s3_b_value)
         self.data_one_round["argsmax_s3_belief"][
-            trial] = agent.max_tr_b_node_indices
+            trial] = cp.copy(agent.max_tr_b_node_indices)
         self.data_one_round["min_dist_argsmax_s3_belief"][
-            trial] = agent.shortest_dist_to_max_s3_b
+            trial] = cp.copy(agent.shortest_dist_to_max_s3_b)
         self.data_one_round["closest_argsmax_s3_belief"][
-            trial] = agent.closest_max_s3_b_nodes
-        self.data_one_round["s3_t"][trial] = task.s3_t
+            trial] = cp.copy(agent.closest_max_s3_b_nodes)
+        self.data_one_round["a_giv_s1"][trial] = cp.copy(agent.a_s1)
+        self.data_one_round["o_giv_s2"][trial] = cp.copy(agent.o_s2)
+        self.data_one_round["p_o_giv_o"][trial] = cp.copy(agent.p_o_giv_o)
+        self.data_one_round["kl_giv_a_o"][trial] = cp.copy(agent.kl_giv_a_o)
+        self.data_one_round["v_t"][trial] = cp.copy(agent.valence_t)
+        self.data_one_round["d_t"][trial] = cp.copy(agent.decision_t)
+        self.data_one_round["a_t"][trial] = cp.copy(beh_model.action_t)
+        self.data_one_round["log_p_a_giv_h"][
+            trial] = cp.copy(beh_model.log_likelihood)
+        self.data_one_round["r_t"][trial] = cp.copy(task.r_t)
+        self.data_one_round["s3_t"][trial] = cp.copy(task.s3_t)
 
     def append_this_round_to_block_df(self, this_round: int, n_trials: int):
         """Append this round's dataframe to this block's dataframe
@@ -380,7 +380,7 @@ class Simulator():
         self.agent.start_new_trial()
         self.task.eval_obs_func_g()
         start = time.time()
-        self.agent.update_belief_state(current_action=self.beh_model.action_t)
+        self.agent.update_belief_state(given_action=self.beh_model.action_t)
         end = time.time()
         print(f"trial {this_trial} agent belief state update took "
               f":  {humanreadable_time(end-start)}\n")
@@ -444,7 +444,9 @@ class Simulator():
 
                 for this_trial in range(self.task_params.n_trials):
                     self.simulate_trial_start(this_trial)
-                    recorder.record_trial_start(this_trial, self.task)
+                    recorder.record_trial_start(trial=this_trial,
+                                                task=self.task,
+                                                agent=self.agent)
                     self.simulate_trial_interaction()
                     recorder.record_trial_ending(
                         this_trial, self.task, self.agent, self.beh_model)
@@ -452,9 +454,12 @@ class Simulator():
                     # End round, if treasure discovered
                     if self.task.r_t == 1:
                         # Evaluate observation and belief update for t + 1
+                        self.task.t += 1
                         self.task.eval_obs_func_g()
                         self.agent.update_belief_state(self.beh_model.action_t)
-                        recorder.record_trial_start(this_trial + 1, self.task)
+                        recorder.record_trial_start(trial=this_trial + 1,
+                                                    task=self.task,
+                                                    agent=self.agent)
                         break
 
                 recorder.append_this_round_to_block_df(
@@ -463,6 +468,7 @@ class Simulator():
         recorder.wrap_up_data(sim_params.current_tau_gen,
                               sim_params.current_lambda_gen,
                               sim_params.current_agent_gen)
+        
         return recorder.sim_data
 
     def sim_to_eval_llh(self, candidate_tau: float, candidate_lambda: float,

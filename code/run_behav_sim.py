@@ -12,6 +12,7 @@ from utilities.config import DataHandler, DirectoryManager, get_arguments
 from utilities.simulation_methods import Simulator, GenModelNParameterSpaces
 from utilities.task import Task, TaskStatesConfigurator, TaskNGridParameters
 from utilities.agent import AgentAttributes, StochasticMatrices
+from utilities.very_plotter_new import VeryPlotter
 
 
 def main(task_params: TaskNGridParameters,
@@ -29,22 +30,25 @@ def main(task_params: TaskNGridParameters,
     task_state_values = TaskStatesConfigurator(
         path=dir_mgr.paths,
         task_params=task_params
-        ).get_task_state_values(EXP_LABEL)
+    ).get_task_state_values(EXP_LABEL)
 
     # Create model task object to store and transfer state spaces
     task_model = Task(
         state_values=task_state_values,
-        task_params=task_params)
+        task_params=task_params
+        )
 
     # Load or create Stochastic Matrices for Hidden Markov Model
     stoch_matrices = StochasticMatrices(
         task_model=task_model,
         task_params=task_params,
-        ).compute_or_load_components()
+    ).compute_or_load_components()
 
-    simulator = Simulator(state_values=task_state_values,
-                          agent_stoch_matrices=stoch_matrices,
-                          task_params=task_params)
+    simulator = Simulator(
+        state_values=task_state_values,
+        agent_stoch_matrices=stoch_matrices,
+        task_params=task_params
+        )
 
     for repetition in sim_params.repetition_numbers:
         sim_params.current_rep = repetition
@@ -70,14 +74,22 @@ def main(task_params: TaskNGridParameters,
                         dir_mgr.define_sim_beh_output_paths(sub_id=sub_id)
 
                         simulated_data = simulator.simulate_beh_data(
-                            sim_params=sim_params)
+                            sim_params=sim_params
+                            )
 
                         DataHandler(
                             paths=dir_mgr.paths,
                             exp_label=EXP_LABEL
-                            ).save_data_to_tsv(
-                                data=simulated_data,
-                                filename=dir_mgr.paths.this_sub_beh_out_fn
+                        ).save_data_to_tsv(
+                            data=simulated_data,
+                            filename=dir_mgr.paths.this_sub_beh_out_fn
+                                )
+
+                        VeryPlotter(
+                            paths=dir_mgr.paths
+                        ).plot_heat_maps_of_belief_states(
+                            task_params=task_params,
+                            beh_data=simulated_data
                             )
 
 
@@ -85,7 +97,7 @@ if __name__ == "__main__":
     start = time.time()
     arguments = get_arguments()
 
-    EXP_LABEL = "test_ahmm_12_19"
+    EXP_LABEL = "test_ahmm_12_25"
 
     # Define task configuration parameters
     task_params = TaskNGridParameters(

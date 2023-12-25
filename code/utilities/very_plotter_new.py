@@ -1,11 +1,16 @@
+from email.base64mime import header_length
+from turtle import width
 import numpy as np
+import pandas as pd
 import wesanderson
 import string
 import palettable
 from utilities.config import Paths
+from utilities.task import TaskNGridParameters
 from dataclasses import dataclass
 import os
-
+from matplotlib import pyplot, colors, cm
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 @dataclass
 class PlotCustomParams:
@@ -51,6 +56,7 @@ class VeryPlotter:
         self.paths = paths
         self.rcParams = None
         self.color_dict = {}
+        self.plt = pyplot
 
     def define_run_commands(self) -> dict:
         """This function sets some plt defaults and returns blue and red color
@@ -206,3 +212,219 @@ class VeryPlotter:
 
         if png:
             fig.savefig(f"{fn}.png", dpi=200, format='png')
+
+    def plot_heat_maps_of_belief_states(self, task_params: TaskNGridParameters,
+                                        beh_data: pd.DataFrame):
+        """Function to plot model variables over trials
+
+        Args:
+            task_params (TaskNGridParameters): _description_
+            beh_data (pd.DataFrame): _description_
+        """
+
+        # ---- Prepare data ----------------------------------------
+        dim = task_params.dim
+        n_nodes = task_params.n_nodes
+        n_plotable_trials = beh_data["s1_t"].count()
+        model_components = ["s1_t", "s2_t", "o_t",
+                            "marg_s1_b_t", "marg_s2_b_t",
+                            "a_t"]
+        n_rows = len(model_components)
+
+        data = {}
+        for component in model_components:
+            data[component] = np.full((n_nodes,
+                                       n_plotable_trials + 1), np.nan)
+
+            for trial_col in range(n_plotable_trials):
+                if component in ["s1_t", "s2_t"]:
+                    data[component][:, trial_col] = np.array(
+                        [1 if node == beh_data[component][trial_col] - 1 else 0
+                            for node in range(n_nodes)]
+                        )
+
+                elif component == "o_t":
+                    data[component][:, trial_col] = beh_data["o_t"][trial_col][1:5]
+                    if beh_data["o_t"][trial_col][0] == 1:
+                        data[component][:, trial_col][
+                            (beh_data["s2_t"][trial_col] - 1)] = 3
+
+                elif component in ["marg_s1_b_t", "marg_s2_b_t"]:
+                    data[component][:, trial_col] = beh_data[component][trial_col]
+
+                elif component == "a_t":
+
+                    # plot curren position along in a grid
+                    data[component][:, trial_col] = np.array(
+                        [1 if node == beh_data["s1_t"][trial_col] - 1 else 0
+                            for node in range(n_nodes)]
+                        )
+
+
+        # ------Preapre figure-----------------------------------------------
+        # Get viridis colormap
+        viridis_cmap = cm.get_cmap("viridis")
+        rc_params = self.define_run_commands()
+        self.plt.rcParams.update(rc_params)
+
+        fig, axs = self.plt.subplots(
+            n_rows,
+            n_plotable_trials,
+            sharex=True, sharey=True,
+            layout="constrained"
+            #figsize=(16, 9)
+            )
+
+        fig.suptitle('Belief State Update')
+
+        y_labels = {
+            "s1_t": r"$s^1_t$",
+            "s2_t": r"$s^2_t$",
+            "o_t": r"$o_t$",
+            "marg_s1_b_t": r"$p(s^1_t\vert o_t)$",
+            "marg_s2_b_t": r"$p(s^2_t\vert o_t)$",
+            "a_t": r"$a_t$"
+            }
+
+        cmaps = {
+            "s1_t": colors.ListedColormap(["black", "grey"]),
+            "s2_t": colors.ListedColormap(["black", "green"]),
+            "o_t": colors.ListedColormap(["black", "grey", "lightblue", "green"]),
+            "marg_s1_b_t": colors.ListedColormap([viridis_cmap(0),
+                                                  viridis_cmap(256)]),
+            "marg_s2_b_t": "viridis",
+            "a_t": colors.ListedColormap(["black", "grey"])
+            }
+
+        v_range = {
+            "s1_t": [0, 1],
+            "s2_t": [0, 1],
+            "o_t": [0, 3],
+            "marg_s1_b_t": [0, 1],
+            "marg_s2_b_t": [0, 1],
+            "a_t": [0, 1]
+        }
+
+        # Set up the colorbar for "o_t"
+        cmap_ticks = {
+            "s1_t": np.linspace(0, 1, 2),
+            "s2_t": np.linspace(0, 1, 2),
+            "o_t": np.linspace(0, 3, 4),  # np.linspace(0, 3, 4),
+            "marg_s1_b_t": np.linspace(0, 1, 2),
+            "marg_s2_b_t": np.linspace(0, 1, 2),
+            "a_t": np.linspace(0, 1, 2)
+        }
+
+        # ------ Create images -----------------------------
+        images = []
+
+        for row, component in enumerate(model_components):
+            for trial_col in range(n_plotable_trials):
+
+                images.append(
+                    axs[row, trial_col].imshow(
+                        data[component][:, trial_col].reshape(dim, dim),
+                        cmap=cmaps[component],
+                        vmin=v_range[component][0],
+                        vmax=v_range[component][1]
+                        )
+                    )
+
+                axs[row, trial_col].set_yticklabels([])  # Remove y-axis ticks
+                axs[row, trial_col].set_xticklabels([])  # Remove y-axis ticks
+
+                axs[row, trial_col].set_ylabel(y_labels[component],
+                                               loc="center",
+                                               rotation="horizontal",
+                                               labelpad=20)
+                axs[row, trial_col].label_outer()
+                axs[row, trial_col].set_xticks(np.arange(-0.5, dim, 1), minor=True)
+                axs[row, trial_col].set_yticks(np.arange(-0.5, dim, 1), minor=True)
+                axs[row, trial_col].set_xticks([], major=True)
+                axs[row, trial_col].set_yticks([], major=True)
+                axs[row, trial_col].grid(
+                    which="minor",
+                    color='grey',
+                    linestyle='-',
+                    linewidth=0.1)
+
+                if component == "a_t":
+                    a_t = beh_data["a_t"][trial_col]
+
+                    if not np.isnan(a_t):
+
+                        s1_t_field = np.where(data["s1_t"][:, trial_col].reshape(dim, dim) == 1)
+                        s1_t_x = int(s1_t_field[1])  # column --> x axis
+                        s1_t_y = int(s1_t_field[0])  # row --> y axis
+
+                        # Get the extent (x0, x1, y0, y1) in data coordinates
+                        extent = images[row].get_extent()  # returns the image extent as tuple (left, right, bottom, top).
+
+
+                        # TODO: translate to other dimensions
+
+                        # Extract x and y coordinates
+                        x_coords = np.linspace(extent[0] + 1,  # left
+                                               extent[1],  # right
+                                               dim)
+                        y_coords = np.linspace(extent[3] + 1,  # top
+                                               extent[2],  # bottom,
+                                               dim)
+
+                        # define arrow direction
+                        s1_new = beh_data["s1_t"][trial_col] + a_t
+                        s1_new_one_hot = np.array(
+                            [1 if node == s1_new - 1 else 0
+                                for node in range(n_nodes)]
+                            )
+                        
+                        s1_new_field = np.where(s1_new_one_hot.reshape(dim, dim) == 1)
+                        s1_new_x = int(s1_new_field[1])  # column --> x axis
+                        s1_new_y = int(s1_new_field[0])  # row --> y axis
+
+                        # calculate arrow "direction" as difference between s_{t + 1} and s_t
+                        dx = (x_coords[s1_new_x] - 0.5) - (x_coords[s1_t_x] - 0.5)
+                        dy = (y_coords[s1_new_y] - 0.5) - (y_coords[s1_t_y] - 0.5)
+
+                        # Draw arrow
+                        axs[row, trial_col].arrow(
+                            x_coords[s1_t_x] - 0.5,
+                            y_coords[s1_t_y] - 0.5,
+                            dx,
+                            dy,
+                            color="lightgreen",
+                            width=0.002,
+                            length_includes_head=True,
+                            head_width=0.3,
+                            head_length=0.25)
+
+
+        # ------ Add colorbar -------------------
+
+        for row, model_components in enumerate(model_components):
+            divider = make_axes_locatable(axs[row, -1])
+            cax = divider.append_axes("right", size="13%", pad=0.3)
+
+            ticks = cmap_ticks[model_components]
+
+            fig.colorbar(
+                images[(row + 1) * n_plotable_trials - 1],
+                cax,
+                # location='bottom',
+                orientation='vertical',
+                ticks=ticks
+                # norm=norm
+                )
+
+            # if model_components == "o_t":
+            # #     norm = colors.BoundaryNorm(np.arange(len(ticks) + 1) - 0.5, cmaps["o_t"].N)
+            #     colorbar.set_ticks(np.array([0.5, 1.5, 2.5, 3.5]))
+            #     colorbar.set_ticklabels(ticks)
+            # # else:
+            # #     norm = None
+
+        # Adjust layout for colorbar
+        #fig.subplots_adjust(right=0.85)  # Increase the right margin as needed
+
+        fig_fn = f"belief_update_{task_params.n_nodes}-nodes_{task_params.n_hides}-hides"
+        self.save_figure(fig=fig, figure_filename=fig_fn)

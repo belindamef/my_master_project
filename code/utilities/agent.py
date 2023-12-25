@@ -76,6 +76,13 @@ class StochasticMatrices:
              2),  # Note: only 2 levels for action dimensions to save memory
             0
             )
+        self.a_indices_in_Phi = {
+            0: 0,
+            - self.task_params.dim: 1,
+            + 1: 2,
+            + self.task_params.dim: 3,
+            - 1: 4
+            }
 
     def compute_beta_0(self, s1_t: int):
         """Method to evaluate the initial belief state beta in round 1,
@@ -256,7 +263,7 @@ class StochasticMatrices:
                         elif s1 != s1_tilde_plus_a:
                             self.Phi[s_tilde_i, s_i, a_i] = 0
 
-                    # tODO: Alle unerlaubten action
+                    # TODO: Alle unerlaubten action
                     # agent glaubt, dass er auf dem Feld stehen bleibt
                     else:
                         if s1 == s1_tilde:
@@ -285,7 +292,7 @@ class StochasticMatrices:
             image = ax.matshow(array, cmap=cmap)
 
             # Add colorbar
-            cbar = plt.colorbar(image, ticks=[0, 1], shrink=0.4)
+            plt.colorbar(image, ticks=[0, 1], shrink=0.4)
 
             # Save or display the plot
             plotter.save_figure(fig=fig, figure_filename=fig_fn)
@@ -413,13 +420,13 @@ class StochasticMatrices:
             print(f" ... finisehd saving Phi to files, \n ... time:  "
                   f"{humanreadable_time(end-start)}")
 
-        self.plot_color_map(n_nodes=self.task_params.n_nodes,
-                            n_hides=self.task_params.n_hides,
-                            Phi_drill=self.Phi[:, :, 0],
-                            Phi_minus_dim=self.Phi[:, :, 1],
-                            Phi_plus_one=self.Phi[:, :, 2],
-                            Phi_plus_dim=self.Phi[:, :, 3],
-                            Phi_minus_one=self.Phi[:, :, 4])
+            self.plot_color_map(n_nodes=self.task_params.n_nodes,
+                                n_hides=self.task_params.n_hides,
+                                Phi_drill=self.Phi[:, :, 0],
+                                Phi_minus_dim=self.Phi[:, :, 1],
+                                Phi_plus_one=self.Phi[:, :, 2],
+                                Phi_plus_dim=self.Phi[:, :, 3],
+                                Phi_minus_one=self.Phi[:, :, 4])
 
         return self
 
@@ -554,13 +561,13 @@ class Agent:
         self.decision_t = np.full(1, np.nan)  # decision
 
         # Initialize belief state objects
-        self.marg_tr_belief = np.full(self.task.params.n_nodes, np.nan)
-        self.marg_hide_belief = np.full(self.task.params.n_nodes, np.nan)
-        self.marg_tr_belief_prior = np.full(self.task.params.n_nodes, np.nan)
-        self.marg_hide_belief_prior = np.full(self.task.params.n_nodes, np.nan)
+        self.marg_s1_b_t = np.full(self.task.params.n_nodes, np.nan)
+        self.marg_s2_b_t = np.full(self.task.params.n_nodes, np.nan)
+        self.marg_s3_b_t = np.full(self.task.params.n_nodes, np.nan)
+        self.marg_s1_b_prior = np.full(self.task.params.n_nodes, np.nan)
+        self.marg_s3_b_prior = np.full(self.task.params.n_nodes, np.nan)
 
         if self.agent_attr.is_bayesian:
-
             # ---(Prior, c != 0)---
             self.p_s_giv_o_prior_new_c: np.ndarray = np.array(np.nan)
             # ---(Posterior)---
@@ -664,82 +671,88 @@ class Agent:
             a_t_type = 0
         a_t_type = int(a_t_type)
 
+        # TODO: Quickfix: Use drill, if first trial
+        if self.task.t == 0:
+            a_t = 0
+
         # Determine observation dependent omega index j
         O_ = self.task.O_
         j = int(np.where(np.all(O_ == o_t, axis=1))[0])
 
+        # Get action index in Phi
+        a_i_in_phi = self.stoch_matrices.a_indices_in_Phi[a_t]
+
         # Extract components  # TODO: kopieren kostet working memory
         Omega_j = self.stoch_matrices.Omega[:, j, a_t_type][:, np.newaxis]
-        Phi_k = self.stoch_matrices.Phi[:, :, a_t]
+        Phi_k = self.stoch_matrices.Phi[:, :, a_i_in_phi]
 
-        # TODO: still necessary?
-        if np.sum(beta_prior * Omega_j) == 0:
+        # # TODO: still necessary?
+        # if np.sum(beta_prior * Omega_j) == 0:
 
-            beta_post = (
-                beta_prior * Omega_j)
-            print('sum of prior * lklh = 0, leaving out normalization')
-            # debug = 'here'
+        #     beta_post = Omega_j * np.matmul(
+        #         Phi_k.T, beta_prior)
+        #     print('sum of prior * lklh = 0, leaving out normalization')
+        #     # debug = 'here'
 
-        else:
+        # else:
             # TODO: add state transition!
 
-            beta_post = Omega_j * np.matmul(Phi_k.T, beta_prior)
-            beta_post = beta_post / sum(beta_post)
+        beta_post = Omega_j * np.matmul(Phi_k.T, beta_prior)
+        beta_post = beta_post / sum(beta_post)
 
         return beta_post
 
     def eval_marg_b_s(self, belief):
 
-        """Method to compute marginal posterior distributions for each node to
-        the treasure location or hiding spot
+        """Method to compute marginal posterior distributions for each node for
+        the current position (s1) treasure location (s2) or hiding spots (s3)
 
         Args:
         -----
-            belief (np.ndarray): (n_nodes x n_s4_permutations)-array
+            belief (np.ndarray): (n_nodes x 1)-array
                 representing a belief state distribution
 
-        Returns:
-        -------
-            (np.ndarray, np.ndarray): marginal belief states
-
-            TODO: marg_s4 not actually margianl distribution.
         """
-        # Evaluate marginal treasure distribution
-        marg_treasure_belief = np.full(self.task.params.n_nodes, np.nan)
+        # Evaluate margianl belief over s1_tilde
         for node in range(self.task.params.n_nodes):
-            possible_tr_loc = node + 1
-            tr_index_in_state_vector = 1
+            s1_tilde = node + 1
+            s1_index_in_s = 0
 
-            tr_spec_indices = np.where(
+            s1_tilde_indices = np.where(
                 self.task.S[
-                    :, tr_index_in_state_vector
-                    ] == possible_tr_loc
+                    :, s1_index_in_s
+                    ] == s1_tilde
                 )[0]
 
-            marg_treasure_belief[node] = belief[tr_spec_indices, :].sum()
+            self.marg_s1_b_t[node] = belief[s1_tilde_indices, :].sum()
 
-        # Evaluate marginal hiding spot distribution
-        marg_hides_belief = np.full(self.task.params.n_nodes, np.nan)
+        # Evaluate marginal belief over s2_tilde
         for node in range(self.task.params.n_nodes):
+            s2_tilde = node + 1
+            s2_index_in_s = 1
 
-            possible_hide_loc = node + 1
-            hide_indices_in_state_vector = range(
+            s2_tilde_indices = np.where(
+                self.task.S[
+                    :, s2_index_in_s
+                    ] == s2_tilde
+                )[0]
+
+            self.marg_s2_b_t[node] = belief[s2_tilde_indices, :].sum()
+
+        # Evaluate marginal belief over s3_tilde
+        for node in range(self.task.params.n_nodes):
+            s3_tilde = node + 1
+            s3_tilde_in_s = range(
                 2,  2 + self.task.params.n_hides)
 
-            hide_spec_indices = np.where(
+            s3_tilde_indices = np.where(
                 np.any(
                     self.task.S[
-                        :, hide_indices_in_state_vector
-                        ] == possible_hide_loc, axis=1
+                        :, s3_tilde_in_s
+                        ] == s3_tilde, axis=1
                     )
                 )[0]
-            marg_hides_belief[node] = belief[hide_spec_indices, :].sum()
-
-        # Uncomment for debugging
-        # sum_prob_hides = marg_s4_b[:].sum()  # should evaluate to ~ n_hides
-        # sum_prob_treasure = marg_s3_b[:].sum()  # should evaluate to ~ 1
-
-        return marg_treasure_belief, marg_hides_belief
+            self.marg_s3_b_t[node] = belief[s3_tilde_indices, :].sum()
 
     def start_new_trial(self):
         """Reset dynamic states to initial values for a new trial"""
@@ -762,7 +775,7 @@ class Agent:
         #         self.marg_s3_prior, self.marg_s4_prior = \
         #             self.eval_marg_b(self.prior_c)
 
-    def update_belief_state(self, current_action):
+    def update_belief_state(self, given_action):
         """Evaluate posterior belief state
 
         Args:
@@ -782,7 +795,7 @@ class Agent:
                 self.stoch_matrices.compute_beta_0(s1_t=self.task.s1_t)
                 prior = self.stoch_matrices.beta_0
 
-            # If first trial in a new round, i.e. before any action,  pior_c
+            # If first trial in a new round, i.e. before any action, pior_c
             # ...which is the posterior of preceding round's last trial as
             # ...prior and step action (a=1).
             elif self.task.t == 0:
@@ -791,7 +804,7 @@ class Agent:
 
             # For all remaining trial use current action and posterior of
             else:
-                action = current_action
+                action = given_action
                 prior = self.p_s_giv_o_post
 
             # ------Evaluate posterior----------------------------
@@ -802,8 +815,7 @@ class Agent:
 
             # ------ Evaluate marginal distributions-------------
             start = time.time()
-            self.marg_tr_belief, self.marg_hide_belief = self.eval_marg_b_s(
-                self.p_s_giv_o_post)
+            self.eval_marg_b_s(belief=self.p_s_giv_o_post)
             end = time.time()
             print(
                 f"time needed for marg_b: {humanreadable_time(end-start)}")
@@ -835,9 +847,9 @@ class Agent:
         """
         if action == 0:
             if self.task.node_colors[node] == 0:
-                if np.around(self.marg_hide_belief[node], 10) == 0:
+                if np.around(self.marg_s3_b_t[node], 10) == 0:
                     self.o_s2 = [1]
-                elif np.around(self.marg_hide_belief[node], 10) == 1:
+                elif np.around(self.marg_s3_b_t[node], 10) == 1:
                     self.o_s2 = [2]
                 else:
                     self.o_s2 = [1, 2]
@@ -847,14 +859,14 @@ class Agent:
                 self.o_s2 = [2]
         elif action == 1:
             if self.task.node_colors[node] == 0:
-                if np.around(self.marg_tr_belief[node], 10) == 0:
+                if np.around(self.marg_s1_b_t[node], 10) == 0:
                     self.o_s2 = [0]
                 else:
                     self.o_s2 = [0, 3]
             elif self.task.node_colors[node] == 1:
                 self.o_s2 = [1]
             elif self.task.node_colors[node] == 2:
-                if np.around(self.marg_tr_belief[node], 10) == 0:
+                if np.around(self.marg_s1_b_t[node], 10) == 0:
                     self.o_s2 = [2]
                 else:
                     self.o_s2 = [2, 3]
@@ -862,10 +874,10 @@ class Agent:
     def eval_closest_max_s3_b_nodes(self):
         """Identify nodes with maximum s3 belief state values"""
         # Identify maximum s3 belief state value
-        self.max_s3_b_value = np.around(np.amax(self.marg_tr_belief), 10)
+        self.max_s3_b_value = np.around(np.amax(self.marg_s1_b_t), 10)
 
         # Find all nodes with maximum belief state value
-        self.rounded_marg_s3_b = np.around(self.marg_tr_belief, 10)
+        self.rounded_marg_s3_b = np.around(self.marg_s1_b_t, 10)
         self.max_tr_b_node_indices = np.where(
             self.rounded_marg_s3_b == self.max_s3_b_value)[0]
 
@@ -1076,7 +1088,7 @@ class Agent:
                             f'{int(new_s1)}_to_{close_max_s3_node + 1}']
                     if remaining_moves >= new_dist_to_closest_max_beliefs \
                             < current_dist_to_max_belief:
-                        self.valence_t[index] += self.marg_tr_belief[
+                        self.valence_t[index] += self.marg_s1_b_t[
                             close_max_s3_node]
 
             # Set drill action to minus value
@@ -1122,7 +1134,7 @@ class Agent:
                             < current_dist_to_max_belief:
                         self.valence_t[i] += (
                             1 - self.lambda_
-                            ) * self.marg_tr_belief[close_max_s3_node]
+                            ) * self.marg_s1_b_t[close_max_s3_node]
 
             # Add information value
 
