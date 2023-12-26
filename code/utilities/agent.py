@@ -220,14 +220,6 @@ class StochasticMatrices:
     def comput_Phi(self):
         "Method to compute Phi"
 
-        action_set = [0,
-                      - self.task_params.dim, + 1,
-                      + self.task_params.dim, -1]
-
-        self.Phi = np.full(
-            (self.task_model.n, self.task_model.n, len(action_set)),
-            np.nan)
-
         # ---------------------------------------
         # NOTE:
         # s = (s_1, s_2, s_3, s_4)
@@ -235,7 +227,7 @@ class StochasticMatrices:
         # s_1 is the first component of s = s_{t+1}
         # ---------------------------------------
 
-        for a_i, a in enumerate(action_set):
+        for a_i, a in enumerate(self.task_model.A):
 
             # Iterate possible old states s_{t}
             for s_tilde_i, s_tilde in enumerate(self.task_model.S):
@@ -247,29 +239,42 @@ class StochasticMatrices:
                     s1_tilde = s_tilde[0]  # current position in t
                     s1_tilde_plus_a = s1_tilde + a
 
-                    # Filter out forbidden steps (wald outside border)
+                    # ------ For all allowed actions --------------------------
                     if (
+                        # new position is a valid node number
+                        # => no move over top or bottom boarder
                         (1 <= s1_tilde_plus_a <= self.task_params.n_nodes)
+                        # Not standing on left boarder line and choosing west
+                        # => no move left, when standing on left boarder
                         and not ((((s1_tilde - 1)
                                    % self.task_params.dim) == 0)
                                  and a == -1)
+                        # Not standing on right boarder line and choosing east
+                        # => no move right, when standing on right boarder
                         and not (((s1_tilde
                                    % self.task_params.dim) == 0)
                                  and a == 1)
-                                   ):
-                        if s1 == s1_tilde_plus_a:
+                            ):
+
+                        # Set phi entries 1, for action specific correct state transitions
+                        if (s1 == s1_tilde_plus_a  # if s_{t+1} = s_{t} + a_t
+                                and np.all(s[1:] == s_tilde[1:])  # remaining state components remain unachanged
+                            ):
                             self.Phi[s_tilde_i, s_i, a_i] = 1
 
-                        elif s1 != s1_tilde_plus_a:
+                        else:  # if s1 != s1_tilde_plus_a
                             self.Phi[s_tilde_i, s_i, a_i] = 0
 
-                    # TODO: Alle unerlaubten action
-                    # agent glaubt, dass er auf dem Feld stehen bleibt
+                    # ------ For all un-allowed actions -----------------------
                     else:
-                        if s1 == s1_tilde:
+                        # Agent believes to stay on its current position
+                        # and that all other state components remain the same
+                        if np.all(s[1:] == s_tilde[1:]):
                             self.Phi[s_tilde_i, s_i, a_i] = 1
-                        elif s1 != s1_tilde:
+                        else:  # if s1 != s1_tilde:
                             self.Phi[s_tilde_i, s_i, a_i] = 0
+
+                    
 
     def plot_color_map(self, n_nodes, n_hides, **arrays):
 
@@ -845,6 +850,7 @@ class Agent:
             node (int): scalar value representing the node of interest
             action (int): scalar value representing action
         """
+        node = node - 1
         if action == 0:
             if self.task.node_colors[node] == 0:
                 if np.around(self.marg_s3_b_t[node], 10) == 0:
@@ -917,6 +923,7 @@ class Agent:
             # Identify possible observations on new_s1
             self.identify_o_giv_s2_marg_s3(new_s1, action)
 
+            new_s1 -= 1  # TODO: Quickfix
             for obs in self.o_s2:
                 # product_a_o.shape = (25 x 177100)
                 product_a_o = (
