@@ -97,7 +97,7 @@ if __name__ == "__main__":
     start = time.time()
     arguments = get_arguments()
 
-    EXP_LABEL = "test_ahmm_12_25"
+    EXP_LABEL = "test_ahmm_01_09"
 
     # Define task configuration parameters
     task_params = TaskNGridParameters(

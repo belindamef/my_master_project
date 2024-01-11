@@ -227,13 +227,13 @@ class StochasticMatrices:
         # s_1 is the first component of s = s_{t+1}
         # ---------------------------------------
 
-        for a_i, a in enumerate(self.task_model.A):
+        for i_a, a in enumerate(self.task_model.A):
 
             # Iterate possible old states s_{t}
-            for s_tilde_i, s_tilde in enumerate(self.task_model.S):
+            for i_s_tilde, s_tilde in enumerate(self.task_model.S):
 
                 # Iterate possible new states s_{t+1}
-                for s_i, s in enumerate(self.task_model.S):
+                for i_s, s in enumerate(self.task_model.S):
 
                     s1 = s[0]              # current position in t + 1
                     s1_tilde = s_tilde[0]  # current position in t
@@ -256,23 +256,23 @@ class StochasticMatrices:
                                  and a == 1)
                             ):
 
-                        # Set phi entries 1, for action specific correct state transitions
-                        if (s1 == s1_tilde_plus_a  # if s_{t+1} = s_{t} + a_t
-                                and np.all(s[1:] == s_tilde[1:])  # remaining state components remain unachanged
-                            ):
-                            self.Phi[s_tilde_i, s_i, a_i] = 1
+                        # Set phi entries 1, for a-spec. correct state trans.
+                        if (s1 == s1_tilde_plus_a  # s[1]_{t+1} == s[1]_{t} + a
+                                and np.all(  # s[2:]_{t+1} == s[2:]_{t}
+                                    s[1:] == s_tilde[1:])):
+                            self.Phi[i_s_tilde, i_s, i_a] = 1
 
                         else:  # if s1 != s1_tilde_plus_a
-                            self.Phi[s_tilde_i, s_i, a_i] = 0
+                            self.Phi[i_s_tilde, i_s, i_a] = 0
 
                     # ------ For all un-allowed actions -----------------------
                     else:
                         # Agent believes to stay on its current position
                         # and that all other state components remain the same
-                        if np.all(s[1:] == s_tilde[1:]):
-                            self.Phi[s_tilde_i, s_i, a_i] = 1
+                        if np.all(s == s_tilde):
+                            self.Phi[i_s_tilde, i_s, i_a] = 1
                         else:  # if s1 != s1_tilde:
-                            self.Phi[s_tilde_i, s_i, a_i] = 0
+                            self.Phi[i_s_tilde, i_s, i_a] = 0
 
                     
 

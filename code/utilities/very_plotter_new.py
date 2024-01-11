@@ -498,7 +498,8 @@ class VeryPlotter:
 
                                 arrow_coords = specify_arrow_coordinates(
                                     pos_1=beh_data["s1_t"][trial_col],
-                                    pos_2=beh_data["s1_t"][trial_col] + possible_a
+                                    pos_2=beh_data["s1_t"][trial_col]
+                                    + possible_a
                                 )
 
                                 draw_arrow(
