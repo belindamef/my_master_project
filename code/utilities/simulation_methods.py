@@ -245,14 +245,6 @@ class Recorder:
             agent (Agent): Agent object
             beh_model (BehavioralModel): Behavioral model object
         """
-        self.data_one_round["max_s3_belief"][
-            trial] = cp.copy(agent.max_s3_b_value)
-        self.data_one_round["argsmax_s3_belief"][
-            trial] = cp.copy(agent.max_tr_b_node_indices)
-        self.data_one_round["min_dist_argsmax_s3_belief"][
-            trial] = cp.copy(agent.shortest_dist_to_max_s3_b)
-        self.data_one_round["closest_argsmax_s3_belief"][
-            trial] = cp.copy(agent.closest_max_s3_b_nodes)
         self.data_one_round["a_giv_s1"][trial] = cp.copy(agent.a_s1)
         self.data_one_round["o_giv_s2"][trial] = cp.copy(agent.o_s2)
         self.data_one_round["p_o_giv_o"][trial] = cp.copy(agent.p_o_giv_o)

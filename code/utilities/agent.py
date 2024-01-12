@@ -569,8 +569,6 @@ class Agent:
         self.marg_s1_b_t = np.full(self.task.params.n_nodes, np.nan)
         self.marg_s2_b_t = np.full(self.task.params.n_nodes, np.nan)
         self.marg_s3_b_t = np.full(self.task.params.n_nodes, np.nan)
-        self.marg_s1_b_prior = np.full(self.task.params.n_nodes, np.nan)
-        self.marg_s3_b_prior = np.full(self.task.params.n_nodes, np.nan)
 
         if self.agent_attr.is_bayesian:
             # ---(Prior, c != 0)---
@@ -578,14 +576,10 @@ class Agent:
             # ---(Posterior)---
             self.p_s_giv_o_post: np.ndarray = np.array(np.nan)
 
-        # Initialize closest max s3 node variables for computations
-        self.max_s3_b_value = np.nan
-        self.rounded_marg_s3_b = np.full(self.task.params.n_nodes, np.nan)
-        self.max_tr_b_node_indices = np.nan
-        self.dist_to_max_s3_b_nodes = np.nan
-        self.shortest_dist_to_max_s3_b = np.nan
-        self.closest_max_s3_b_nodes_i_s: np.ndarray = np.array(np.nan)
-        self.closest_max_s3_b_nodes: np.ndarray = np.array(np.nan)
+        # Initialize closest max s2 (treasure) node variables for computations
+
+        self.closest_max_s2_b_nodes_i_s: np.ndarray = np.array(np.nan)
+        self.closest_max_s2_b_nodes: np.ndarray = np.array(np.nan)
 
         # Initialize p_o_giv_o and kl objects
         self.p_o_giv_o: np.ndarray = np.array(np.nan)
@@ -877,28 +871,32 @@ class Agent:
                 else:
                     self.o_s2 = [2, 3]
 
-    def eval_closest_max_s3_b_nodes(self):
+    def eval_closest_max_s2_b_nodes(self):
+
         """Identify nodes with maximum s3 belief state values"""
         # Identify maximum s3 belief state value
-        self.max_s3_b_value = np.around(np.amax(self.marg_s1_b_t), 10)
+        max_s2_b_value = np.around(np.amax(self.marg_s2_b_t), 10)
 
         # Find all nodes with maximum belief state value
-        self.rounded_marg_s3_b = np.around(self.marg_s1_b_t, 10)
-        self.max_tr_b_node_indices = np.where(
-            self.rounded_marg_s3_b == self.max_s3_b_value)[0]
+        rounded_marg_s2_b = np.around(self.marg_s2_b_t, 10)
+
+        max_tr_b_node_indices = np.where(
+            rounded_marg_s2_b == max_s2_b_value)[0]
+
+        max_s2_b_nodes = max_tr_b_node_indices + 1
 
         # Evaluate shortest distances to max_s3_nodes
-        self.dist_to_max_s3_b_nodes = np.full(len(self.max_tr_b_node_indices),
-                                              np.nan)
-        for index, node in np.ndenumerate(self.max_tr_b_node_indices):
-            self.dist_to_max_s3_b_nodes[
+        dist_to_max_s2_b_nodes = np.full(len(max_s2_b_nodes),
+                                         np.nan)
+        for index, node in np.ndenumerate(max_s2_b_nodes):
+            dist_to_max_s2_b_nodes[
                 index] = self.task.shortest_dist_dic[
-                    f'{int(self.task.s1_t)}_to_{node + 1}']
-        self.shortest_dist_to_max_s3_b = np.amin(self.dist_to_max_s3_b_nodes)
-        self.closest_max_s3_b_nodes_i_s = np.where(
-            self.dist_to_max_s3_b_nodes == self.shortest_dist_to_max_s3_b)[0]
-        self.closest_max_s3_b_nodes = self.max_tr_b_node_indices[
-            self.closest_max_s3_b_nodes_i_s]
+                    f'{int(self.task.s1_t)}_to_{node}']
+        shortest_dist_to_max_s2_b = np.amin(dist_to_max_s2_b_nodes)
+        self.closest_max_s2_b_nodes_i_s = np.where(
+            dist_to_max_s2_b_nodes == shortest_dist_to_max_s2_b)[0]
+        self.closest_max_s2_b_nodes = max_s2_b_nodes[
+            self.closest_max_s2_b_nodes_i_s]
 
     def eval_p_o_giv_o(self):
         """Evaluate agent's belief state-dependent posterior predictive
@@ -1087,16 +1085,16 @@ class Agent:
                 # Anticipate new possible new position
                 new_s1 = self.task.s1_t + action_i
 
-                for close_max_s3_node in self.closest_max_s3_b_nodes:
+                for close_max_s3_node in self.closest_max_s2_b_nodes:
                     current_dist_to_max_belief = self.task.shortest_dist_dic[
-                        f'{int(self.task.s1_t)}_to_{close_max_s3_node + 1}']
+                        f'{int(self.task.s1_t)}_to_{close_max_s3_node}']
                     new_dist_to_closest_max_beliefs = \
                         self.task.shortest_dist_dic[
-                            f'{int(new_s1)}_to_{close_max_s3_node + 1}']
+                            f'{int(new_s1)}_to_{close_max_s3_node}']
                     if remaining_moves >= new_dist_to_closest_max_beliefs \
                             < current_dist_to_max_belief:
-                        self.valence_t[index] += self.marg_s1_b_t[
-                            close_max_s3_node]
+                        self.valence_t[index] += self.marg_s2_b_t[
+                            close_max_s3_node - 1]
 
             # Set drill action to minus value
             # ( --> to always have lower value than zero)
@@ -1131,7 +1129,7 @@ class Agent:
                 # Anticipate new possible new position
                 new_s1 = self.task.s1_t + action_i
 
-                for close_max_s3_node in self.closest_max_s3_b_nodes:
+                for close_max_s3_node in self.closest_max_s2_b_nodes:
                     current_dist_to_max_belief = self.task.shortest_dist_dic[
                         f'{int(self.task.s1_t)}_to_{close_max_s3_node + 1}']
                     new_dist_to_closest_max_beliefs = \
@@ -1190,7 +1188,7 @@ class Agent:
 
         # -------Identify closest nodes with maximum s3 belief values----------
         if self.agent_attr.is_bayesian:
-            self.eval_closest_max_s3_b_nodes()
+            self.eval_closest_max_s2_b_nodes()
 
         if self.agent_attr.is_explorative:
             start = time.time()
