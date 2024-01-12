@@ -115,7 +115,7 @@ class StochasticMatrices:
                     hiding_spots = s[2:]
 
                     # Extract observation components
-                    tr_flag = o[0]
+                    o_1 = o[0]  # treasure flag
 
                     # TODO: alle observations, wo node colors mit hiding spot
                     #  locations keinen sinn machen
@@ -136,7 +136,7 @@ class StochasticMatrices:
                         if (
                                 current_pos != tr_location
                                 and current_pos not in hiding_spots
-                                and tr_flag == 0
+                                and o_1 == 0  # treasure flag
                                 and (o[node_index_in_o_t]
                                      == node_colors["grey"])
                                      ):
@@ -154,7 +154,7 @@ class StochasticMatrices:
                         if (
                                 current_pos != tr_location
                                 and current_pos in hiding_spots
-                                and tr_flag == 0
+                                and o_1 == 0
                                 and o[node_index_in_o_t] == node_colors["blue"]
                                 ):
                             self.Omega[i_s, i_o, i_a] = 1
@@ -175,7 +175,7 @@ class StochasticMatrices:
                         if (
                                 current_pos != tr_location
                                 and current_pos not in hiding_spots
-                                and tr_flag == 0
+                                and o_1 == 0
                                 and (o[node_index_in_o_t] in [
                                     node_colors["black"], node_colors["grey"]])
                                     ):
@@ -193,7 +193,7 @@ class StochasticMatrices:
                         if (
                                 current_pos != tr_location
                                 and current_pos in hiding_spots
-                                and tr_flag == 0
+                                and o_1 == 0
                                 and o[node_index_in_o_t] in [
                                     node_colors["black"], node_colors["blue"]]
                                     ):
@@ -211,7 +211,7 @@ class StochasticMatrices:
                         if (
                                 current_pos == tr_location
                                 and current_pos in hiding_spots
-                                and tr_flag == 1
+                                and o_1 == 1
                                 and o[node_index_in_o_t] in [
                                     node_colors["black"], node_colors["blue"]]
                                     ):
