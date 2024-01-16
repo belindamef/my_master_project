@@ -217,7 +217,7 @@ class StochasticMatrices:
                                     ):
                             self.Omega[i_s, i_o, i_a] = 1
 
-    def comput_Phi(self):
+    def compute_Phi(self):
         "Method to compute Phi"
 
         # ---------------------------------------
@@ -273,8 +273,6 @@ class StochasticMatrices:
                             self.Phi[i_s_tilde, i_s, i_a] = 1
                         else:  # if s1 != s1_tilde:
                             self.Phi[i_s_tilde, i_s, i_a] = 0
-
-                    
 
     def plot_color_map(self, n_nodes, n_hides, **arrays):
 
@@ -407,7 +405,7 @@ class StochasticMatrices:
         else:
             print("Computing Phi for given task config ...")
             start = time.time()
-            self.comput_Phi()
+            self.compute_Phi()
             end = time.time()
             print(f" ... finished computing Phi, \n ... time:  "
                   f"{humanreadable_time(end-start)}")
