@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 import copy as cp
 import numpy as np
 import pandas as pd
-from math import factorial as fac
+from math import factorial
 import more_itertools
 from .config import Paths, DataHandler, humanreadable_time
 
@@ -253,6 +253,9 @@ class Task:
         self.compute_or_load_sets()
         self.compute_or_load_shortest_distances()
 
+        # Sets for computations
+        self.O2 = np.nan  # TODO: quickfix
+
     def compute_or_load_shortest_distances(self):
         """Get the shortest distances between two nodes from json or evaluate
         save to json if not existent"""
@@ -423,7 +426,7 @@ class Task:
 
         if os.path.exists(f"{set_O_path}.pkl"):
             # Load matrices from hd for this task grid configuration
-            print("Loading set S of states from disk for given task config ("
+            print("Loading set O of observations from disk for given task config ("
                   f"{self.params.n_nodes} nodes and "
                   f"{self.params.n_hides} hiding spots) ...")
             start = time.time()
@@ -458,39 +461,26 @@ class Task:
         """Function to compute n = cardinality of set S, which is
         the number of possible current position times (the number of
         possible treasure locations X the ratio of hides to nodes."""
-        n_pos = self.params.n_nodes  # No. possible currents positions
-        n_tr = self.params.n_nodes  # No. possible treasure locations
-        tr_disc_probability = (  # No. of hiding spots to No. nodes ratio
-            1 / self.params.n_hides)
-        # TODO: Does this reflect the "treasure possibility given all hiding
-        # spot combinations?"
+        n_S1 = self.params.n_nodes  # No. possible currents positions
 
-        # TODO: geht nicht auf...
-        # # Compute number of distinct comibinations for hiding spots according
-        # # to the binomial coefficient formula,
-        # # also known as "n choose r" or "combinations."
-        # n_it = self.params.n_nodes       # length of input iterable
-        # r = self.params.n_hides          # number of items taken from the
-        # # iterable to form combinations
+        n_I = self.params.n_nodes
+        n_H = self.params.n_hides
 
-        # n_h_combos = (                        # number of distinct combinations
-        #     fac(n_it) / fac(r) * fac(n_it - r)  # of hiding spots
-        #          )
-        # QUICKFIX:
-        n_nodes = self.params.n_nodes
-        n_hides = self.params.n_hides
+        # hide_combos = sorted(
+        #     more_itertools.distinct_combinations(
+        #         iterable=range(1, n_I + 1),
+        #         r=n_H
+        #         )
+        #     )
+        # n_h_combos_count = len(hide_combos)
 
-        hide_combos = sorted(
-            more_itertools.distinct_combinations(
-                iterable=range(1, n_nodes + 1),
-                r=n_hides
+        n_S3 = (factorial(n_I)
+                / (factorial(n_I - n_H) * factorial(n_H))
                 )
-            )
-        n_h_combos = len(hide_combos)
 
         # Compute the cardinality n of set S
-        n = (n_pos * n_h_combos * tr_disc_probability * n_tr)
-        n = 48  # TODO: QUICKFIX
+        n = (n_S1 * n_H * n_S3)
+        # n = 48  # TODO: QUICKFIX
 
         return int(n)  # TODO: hier weiter: geht alles nicht auf. ...
 
@@ -526,13 +516,6 @@ class Task:
 
                         i += 1
 
-    def compute_O_cardinality_m(self):
-        """"Function to compute m = cardinality of set O, which 2 x the number
-        of node color combinations."""
-        n_node_color_combinations = 63  # TODO: formula dafür?!?
-        m = 2 * n_node_color_combinations  # TP
-        return m
-
     def compute_O2(self) -> list:
         """Method to compute the set O2, that is the second component of the
         observation vector, which represents the the node colors of the grid.
@@ -541,28 +524,36 @@ class Task:
         n_hides = self.params.n_hides
 
         # Create list of values for the urn model
-        urn_values = [0] * n_nodes
+        urn_values = [0] * n_nodes  # TODO: hier weiter, Permutationen berechnen
         urn_values.extend([1] * (n_nodes - n_hides))
         urn_values.extend([2] * n_hides)
 
-        O2 = sorted(
+        self.O2 = sorted(
             more_itertools.distinct_permutations(
                 iterable=urn_values,  # All values in the Urn model
                 r=n_nodes             # Number of items to be sampled
                 )
             )
 
-        return O2
+        #return O2
+
+    def compute_O_cardinality_m(self):
+        """"Function to compute m = cardinality of set O, which 2 x the number
+        of node color combinations."""
+        self.compute_O2()  # TODO: doppelt!
+        n_node_color_combinations = len(self.O2)  # TODO: formula dafür?!?
+        m = 2 * n_node_color_combinations  # TP
+        return m
 
     def compute_set_O(self):
         """Method to compute complete set of Observations"""
-        O2 = self.compute_O2()  # Node color combinations
+        # O2 = self.compute_O2()  # Node color combinations # TODO: doppelt!
         O1 = [0, 1]
         i = 0
 
         for o1 in O1:  # Iterate treasure flags
 
-            for o2 in O2:  # Iterate node color combinations
+            for o2 in self.O2:  # Iterate node color combinations
 
                 self.O_[i, 0] = o1
                 self.O_[i, 1:] = o2
