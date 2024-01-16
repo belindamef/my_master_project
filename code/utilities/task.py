@@ -71,7 +71,8 @@ class TaskStatesConfigurator:
         self.params = task_params
         self.state_values = {}
 
-    def add_config_paths(self, config_label: str):
+    def add_config_paths(self, config_label: str,
+                         n_I: str, n_H: str):
         """Add path to this task configurations config files dir to path obj
 
         Args:
@@ -79,7 +80,8 @@ class TaskStatesConfigurator:
             config_label (str): Name of task configuration, e.g. "exp_msc"
         """
         self.paths.this_state_sample = os.path.join(
-            self.paths.state_samples, config_label)
+            self.paths.state_samples,
+            f"{config_label}_{n_I}-nodes_{n_H}_hides")
 
     def sample_s1(self):
         """Method to sample the starting position from a discrete uniform
@@ -187,7 +189,8 @@ class TaskStatesConfigurator:
         Returns:
             TODO: TODO
         """
-        self.add_config_paths(config_label)
+        self.add_config_paths(config_label, self.params.n_nodes,
+                              self.params.n_hides)
         if not os.path.exists(self.paths.this_state_sample):
             self.sample_task_states()
         else:
