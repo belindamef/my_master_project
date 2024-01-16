@@ -241,7 +241,7 @@ class VeryPlotter:
                             )
 
                     elif component == "o_t":
-                        data[component][:, trial_col] = beh_data["o_t"][trial_col][1:5]
+                        data[component][:, trial_col] = beh_data["o_t"][trial_col][1:]
                         if beh_data["o_t"][trial_col][0] == 1:
                             data[component][:, trial_col][
                                 (beh_data["s2_t"][trial_col] - 1)] = 3
