@@ -206,7 +206,7 @@ class VeryPlotter:
 
     def save_figure(self, fig, figure_filename: str,
                     pdf: bool = True, png: bool = False):
-        fig.tight_layout()
+        # fig.tight_layout()
         fn = os.path.join(self.paths.figures, figure_filename)
 
         if pdf:
@@ -335,8 +335,8 @@ class VeryPlotter:
                 this_ax.label_outer()
                 this_ax.set_xticks(np.arange(-0.5, dim, 1), minor=True)
                 this_ax.set_yticks(np.arange(-0.5, dim, 1), minor=True)
-                this_ax.set_xticks([], major=True)
-                this_ax.set_yticks([], major=True)
+                this_ax.set_xticks([])
+                this_ax.set_yticks([])
                 this_ax.grid(
                     which="minor",
                     color='grey',
@@ -431,6 +431,12 @@ class VeryPlotter:
                     orientation='vertical',
                     ticks=ticks
                     )
+                
+
+                # Explicitly update colorbar layout engine
+                cax.get_yaxis().set_label_coords(-0.5, 0.5)
+                cax.xaxis.set_label_position('top')
+                cax.xaxis.set_ticks_position('top')
 
             # ------ Start Plotting Rountine ----------------------------------
             images = []
@@ -522,7 +528,7 @@ class VeryPlotter:
 
         data = prepare_data()
 
-        # ------Preapre figure-----------------------------------------------
+        # ------Prepare figure-----------------------------------------------
 
         rc_params = self.define_run_commands()
         self.plt.rcParams.update(rc_params)
@@ -549,8 +555,6 @@ class VeryPlotter:
         cmap_ticks = define_cmap_ticks()
 
         images = create_images()
-
-        
 
         fig_fn = (f"belief_update_{task_params.n_nodes}-nodes"
                   f"_{task_params.n_hides}-hides"
