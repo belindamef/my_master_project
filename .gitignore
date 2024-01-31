@@ -9,10 +9,11 @@
 *doc*
 *archive*
 
-# files
+# Large files
 code/utilities/lklh_dim-5_h6.npy
 code/utilities/lklh_dim-5_h6_bu.npy
 **.pptx
+code/stoch_matrices
 
 # IDEs and OSX
 *.vscode
