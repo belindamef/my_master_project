@@ -72,7 +72,7 @@ class TaskStatesConfigurator:
         self.state_values = {}
 
     def add_config_paths(self, config_label: str,
-                         n_I: str, n_H: str):
+                         n_I: int, n_H: int):
         """Add path to this task configurations config files dir to path obj
 
         Args:
@@ -232,10 +232,11 @@ class Task:
         self.p = 5                                   # Cardinality of A       p
         self.S = np.full(                            # Set of states          S
             (self.n, 2 + self.params.n_hides),
-            np.nan)
+            99)
         self.O_ = np.full(                         # Set of observations      O
             (self.m, 1 + self.params.n_nodes),
-            np.nan)
+            99,
+            dtype=np.int8)
         self.A = np.array(                         # Set of actions           A
             [0, -self.params.dim, 1,
              self.params.dim, -1])
