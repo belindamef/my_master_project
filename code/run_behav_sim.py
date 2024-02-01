@@ -7,6 +7,7 @@ Author: Belinda Fleischmann
 """
 
 import time
+import sys
 import numpy as np
 from utilities.config import DataHandler, DirectoryManager, get_arguments
 from utilities.simulation_methods import Simulator, GenModelNParameterSpaces
@@ -97,12 +98,12 @@ if __name__ == "__main__":
     start = time.time()
     arguments = get_arguments()
 
-    EXP_LABEL = "test_ahmm_01_16"
+    EXP_LABEL = "test_ahmm_02_01"
 
     # Define task configuration parameters
     task_params = TaskNGridParameters(
-        dim=3,
-        n_hides=2,
+        dim=5,
+        n_hides=6,
         n_blocks=1,
         n_rounds=1,
         n_trials=12
@@ -124,7 +125,6 @@ if __name__ == "__main__":
             n_part=1
             )
 
-    # Start simulation
     main(
         task_params=task_params,
         sim_params=sim_params
