@@ -3,7 +3,6 @@ hunt task.
 """
 import os
 import time
-import pickle
 import numpy as np
 import scipy.sparse as sp
 from utilities.task import Task, TaskNGridParameters
@@ -68,11 +67,17 @@ class StochasticMatrices:
             (self.task_model.n, 1),
             np.nan
             )
-        self.Phi = np.full(
-            (self.task_model.n, self.task_model.n, self.task_model.p),
-            0,
-            dtype=np.int8
-            )
+        self.Phi = {}
+        for action in self.task_model.A:
+            self.Phi[action] = sp.csc_matrix(
+                (self.task_model.n, self.task_model.n),  # shape
+                dtype=np.int8,
+                )
+        # self.Phi = np.full(
+        #     (self.task_model.n, self.task_model.n, self.task_model.p),
+        #     0,
+        #     dtype=np.int8
+        #     )
         self.Omega = {
             "drill": sp.csc_matrix(
                 (self.task_model.n, self.task_model.m),  # shape
@@ -89,6 +94,13 @@ class StochasticMatrices:
             + 1: 2,
             + self.task_params.dim: 3,
             - 1: 4
+            }
+        self.a_word_to_indices_in_Phi = {
+            "Phi_drill": 0,
+            "Phi_minus_dim": - self.task_params.dim,
+            "Phi_plus_one": +1,
+            "Phi_plus_dim": self.task_params.dim,
+            "Phi_minus_one": -1
             }
 
     def compute_beta_0(self, s1_t: int):
@@ -111,6 +123,7 @@ class StochasticMatrices:
 
         for a in ["step", "drill"]:
 
+            # Initiate row and columns index lists to construct sparse matrices
             rows = []
             cols = []
 
@@ -248,6 +261,11 @@ class StochasticMatrices:
         # s_1 is the first component of s = s_{t+1}
         # ---------------------------------------
 
+        # Initiate row and columns index lists to construct sparse matrices
+        rows = []
+        cols = []
+
+
         for i_a, a in enumerate(self.task_model.A):
 
             # Iterate possible old states s_{t}
@@ -281,19 +299,30 @@ class StochasticMatrices:
                         if (s1 == s1_tilde_plus_a  # s[1]_{t+1} == s[1]_{t} + a
                                 and np.all(  # s[2:]_{t+1} == s[2:]_{t}
                                     s[1:] == s_tilde[1:])):
-                            self.Phi[i_s_tilde, i_s, i_a] = 1
+                            rows.append(i_s_tilde)
+                            cols.append(i_s)
+                            # self.Phi[a][i_s_tilde, i_s] = 1
 
-                        else:  # if s1 != s1_tilde_plus_a
-                            self.Phi[i_s_tilde, i_s, i_a] = 0
+                        # else:  # if s1 != s1_tilde_plus_a
+                        #     self.Phi[a][i_s_tilde, i_s] = 0
 
                     # ------ For all un-allowed actions -----------------------
                     else:
                         # Agent believes to stay on its current position
                         # and that all other state components remain the same
                         if np.all(s == s_tilde):
-                            self.Phi[i_s_tilde, i_s, i_a] = 1
-                        else:  # if s1 != s1_tilde:
-                            self.Phi[i_s_tilde, i_s, i_a] = 0
+                            rows.append(i_s_tilde)
+                            cols.append(i_s)
+
+                        #     self.Phi[a][i_s_tilde, i_s] = 1
+                        # else:  # if s1 != s1_tilde:
+                        #     self.Phi[a][i_s_tilde, i_s] = 0
+            self.Phi[a] = sp.csc_matrix(
+                ([1]*len(rows),  # data
+                 (rows, cols)),  # indices
+                shape=(self.task_model.n, self.task_model.n),  # shape
+                dtype=np.int8
+                )
 
     def plot_color_map(self, n_nodes, n_hides, **arrays):
 
@@ -406,7 +435,7 @@ class StochasticMatrices:
                     )
 
         if (  # TODO: only checking for one file, better check for all?
-                os.path.exists(f"{matrix_dict['Phi_drill']}.pkl")
+                os.path.exists(f"{matrix_dict['Phi_drill']}.npz")
                 ):
             # Load matrices from hd for this task grid configuration
             print("Loading Phi matrices from disk for given task config ("
@@ -415,10 +444,12 @@ class StochasticMatrices:
             start = time.time()
 
             i = 0
-            for matrix_name in matrix_dict.keys():
+            for matrix_name in matrix_dict.keys():  # TODO: fix naming
 
-                with open(f"{matrix_dict[matrix_name]}.pkl", "rb") as file:
-                    self.Phi[:, :, i] = pickle.load(file)
+                with open(f"{matrix_dict[matrix_name]}.npz", "rb") as file:
+                    self.Phi[
+                        self.a_word_to_indices_in_Phi[matrix_name]
+                        ] = sp.load_npz(file)
                 i += 1
 
             end = time.time()
@@ -436,23 +467,24 @@ class StochasticMatrices:
             data_handler.save_arrays(
                 n_nodes=self.task_params.n_nodes,
                 n_hides=self.task_params.n_hides,
-                Phi_drill=self.Phi[:, :, 0],
-                Phi_minus_dim=self.Phi[:, :, 1],
-                Phi_plus_one=self.Phi[:, :, 2],
-                Phi_plus_dim=self.Phi[:, :, 3],
-                Phi_minus_one=self.Phi[:, :, 4]
+                Phi_drill=self.Phi[0],
+                Phi_minus_dim=self.Phi[-self.task_params.dim],
+                Phi_plus_one=self.Phi[+1],
+                Phi_plus_dim=self.Phi[self.task_params.dim],
+                Phi_minus_one=self.Phi[-1],
+                sparse=True
                 )
             end = time.time()
             print(f" ... finisehd saving Phi to files, \n ... time:  "
                   f"{humanreadable_time(end-start)}")
 
-            self.plot_color_map(n_nodes=self.task_params.n_nodes,
-                                n_hides=self.task_params.n_hides,
-                                Phi_drill=self.Phi[:, :, 0],
-                                Phi_minus_dim=self.Phi[:, :, 1],
-                                Phi_plus_one=self.Phi[:, :, 2],
-                                Phi_plus_dim=self.Phi[:, :, 3],
-                                Phi_minus_one=self.Phi[:, :, 4])
+            # self.plot_color_map(n_nodes=self.task_params.n_nodes,
+            #                     n_hides=self.task_params.n_hides,
+            #                     Phi_drill=self.Phi[:, :, 0],
+            #                     Phi_minus_dim=self.Phi[:, :, 1],
+            #                     Phi_plus_one=self.Phi[:, :, 2],
+            #                     Phi_plus_dim=self.Phi[:, :, 3],
+            #                     Phi_minus_one=self.Phi[:, :, 4])
 
         return self
 
@@ -699,15 +731,12 @@ class Agent:
         O_ = self.task.O_
         j = int(np.where(np.all(O_ == o_t, axis=1))[0])
 
-        # Get action index in Phi
-        a_i_in_phi = self.stoch_matrices.a_indices_in_Phi[a_t]
-
         # Choose action dependent Omega
         Omega_a = self.stoch_matrices.Omega[a_t_type]
 
         # Extract components  # TODO: kopieren kostet working memory
         Omega_a_j = Omega_a[:, j]
-        Phi_k = self.stoch_matrices.Phi[:, :, a_i_in_phi]
+        Phi_k = self.stoch_matrices.Phi[a_t][:, :]
 
         # # TODO: still necessary?
         # if np.sum(beta_prior * Omega_j) == 0:
@@ -719,7 +748,8 @@ class Agent:
 
         # Eval p_s_giv_o
         beta_post = Omega_a_j.multiply(  # element-wise multiplication
-            np.matmul(Phi_k.T, beta_prior)).toarray()  # Matrix multiplication
+            Phi_k.T.dot(beta_prior)  # Matrix multiplication
+            ).toarray()
         beta_post = beta_post / sum(beta_post)  # normalze
 
         return beta_post
