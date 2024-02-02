@@ -5,6 +5,7 @@ import os
 import time
 import pickle
 import numpy as np
+import scipy.sparse as sp
 from utilities.task import Task, TaskNGridParameters
 from utilities.config import Paths
 from utilities.config import DataHandler, humanreadable_time, DirectoryManager
@@ -72,18 +73,16 @@ class StochasticMatrices:
             0,
             dtype=np.int8
             )
-        self.Omega_step = np.full(
-            (self.task_model.n, self.task_model.m
-             ),  # Note: only 2 levels for action dimensions to save memory
-            0,
-            dtype=np.int8
-            )
-        self.Omega_drill = np.full(
-            (self.task_model.n, self.task_model.m
-             ),  # Note: only 2 levels for action dimensions to save memory
-            0,
-            dtype=np.int8
-            )
+        self.Omega = {
+            "drill": sp.csc_matrix(
+                (self.task_model.n, self.task_model.m),  # shape
+                dtype=np.int8
+                ),
+            "step": sp.csc_matrix(
+                (self.task_model.n, self.task_model.m),  # shape
+                dtype=np.int8
+                )
+        }
         self.a_indices_in_Phi = {
             0: 0,
             - self.task_params.dim: 1,
@@ -110,15 +109,10 @@ class StochasticMatrices:
                        "grey": 1,
                        "blue": 2}
 
-        # Encode set A to either drill or step
-        A = [0, 1]  # 0: drill, 1: step
+        for a in ["step", "drill"]:
 
-        for a in A:
-
-            if a == 0:  # if drill
-                Omega_this_action = self.Omega_drill
-            else:
-                Omega_this_action = self.Omega_step
+            rows = []
+            cols = []
 
             for i_s, s in enumerate(self.task_model.S):
                 for i_o, o in enumerate(self.task_model.O_):
@@ -136,7 +130,7 @@ class StochasticMatrices:
                     # siehe Handwritten NOTE 24.11.
 
                     # -------After DRILL actions: -----------------------------
-                    if a == 0:
+                    if a == "drill":
 
                         # CONDITION:                    CORRESP MODEL VARIABLE:
                         # ---------------------------------------------------------
@@ -154,7 +148,8 @@ class StochasticMatrices:
                                 and (o[node_index_in_o_t]
                                      == node_colors["grey"])
                                      ):
-                            Omega_this_action[i_s, i_o] = 1
+                            rows.append(i_s)
+                            cols.append(i_o)
 
                         # CONDITION:                    CORRESP MODEL VARIABLE:
                         # ---------------------------------------------------------
@@ -171,12 +166,12 @@ class StochasticMatrices:
                                 and o_1 == 0
                                 and o[node_index_in_o_t] == node_colors["blue"]
                                 ):
-                            Omega_this_action[i_s, i_o] = 1
-
+                            rows.append(i_s)
+                            cols.append(i_o)
                         # All other observaton probabs remain 0 as initiated.
 
                     # -------After STEP actions: -----------------------------
-                    else:  # if a != 0
+                    else:  # if a == "step"
                         # CONDITION:                    CORRESP MODEL VARIABLE:
                         # ---------------------------------------------------------
                         # if new position...                              s[1]
@@ -193,7 +188,8 @@ class StochasticMatrices:
                                 and (o[node_index_in_o_t] in [
                                     node_colors["black"], node_colors["grey"]])
                                     ):
-                            Omega_this_action[i_s, i_o] = 1
+                            rows.append(i_s)
+                            cols.append(i_o)
 
                         # CONDITION:                    CORRESP MODEL VARIABLE:
                         # ---------------------------------------------------------
@@ -211,7 +207,8 @@ class StochasticMatrices:
                                 and o[node_index_in_o_t] in [
                                     node_colors["black"], node_colors["blue"]]
                                     ):
-                            Omega_this_action[i_s, i_o] = 1
+                            rows.append(i_s)
+                            cols.append(i_o)
 
                         # CONDITION:                    CORRESP MODEL VARIABLE:
                         # ---------------------------------------------------------
@@ -229,7 +226,17 @@ class StochasticMatrices:
                                 and o[node_index_in_o_t] in [
                                     node_colors["black"], node_colors["blue"]]
                                     ):
-                            Omega_this_action[i_s, i_o] = 1
+                            rows.append(i_s)
+                            cols.append(i_o)
+
+            # TODO: find out, why if shape not specified, sparse Omega matrix
+                            # turns out as a 45 x 63 matrix ??
+            self.Omega[a] = sp.csc_matrix(
+                ([1]*len(rows),  # data
+                    (rows, cols)),  # indices
+                shape=(self.task_model.n, self.task_model.m),  # shape
+                dtype=np.int8
+                )
 
     def compute_Phi(self):
         "Method to compute Phi"
@@ -335,18 +342,18 @@ class StochasticMatrices:
             )
 
         if (
-                os.path.exists(f"{Omega_drill_path}.pkl")
-                and os.path.exists(f"{Omega_step_path}.pkl")
+                os.path.exists(f"{Omega_drill_path}.npz")
+                and os.path.exists(f"{Omega_step_path}.npz")
                 ):
             # Load matrices from hd for this task grid configuration
             print("Loading Omega matrices from disk for given task config ("
                   f"{self.task_params.n_nodes} nodes and "
                   f"{self.task_params.n_hides} hiding spots) ...")
             start = time.time()
-            with open(f"{Omega_drill_path}.pkl", "rb") as file:
-                self.Omega_drill = pickle.load(file)
-            with open(f"{Omega_step_path}.pkl", "rb") as file:
-                self.Omega_step = pickle.load(file)
+            with open(f"{Omega_drill_path}.npz", "rb") as file:
+                self.Omega["drill"] = sp.load_npz(file)
+            with open(f"{Omega_step_path}.npz", "rb") as file:
+                self.Omega["step"] = sp.load_npz(file)
             end = time.time()
             print(f" ... finished loading. \n ... time:  "
                   f"{humanreadable_time(end-start)}\n")
@@ -363,22 +370,24 @@ class StochasticMatrices:
             data_handler.save_arrays(
                 n_nodes=self.task_params.n_nodes,
                 n_hides=self.task_params.n_hides,
-                Omega_drill=self.Omega_drill
+                Omega_drill=self.Omega["drill"],
+                sparse=True
                 )
             data_handler.save_arrays(
                 n_nodes=self.task_params.n_nodes,
                 n_hides=self.task_params.n_hides,
-                Omega_step=self.Omega_step
+                Omega_step=self.Omega["step"],
+                sparse=True
                 )
             end = time.time()
             print(f" ... finisehd saving Omega to files, \n ... time:  "
                   f"{humanreadable_time(end-start)}")
 
-            self.plot_color_map(n_nodes=self.task_params.n_nodes,
-                                n_hides=self.task_params.n_hides,
-                                Omega_drill=self.Omega_drill,
-                                Omega_step=self.Omega_step
-                                )
+            # self.plot_color_map(n_nodes=self.task_params.n_nodes,
+            #                     n_hides=self.task_params.n_hides,
+            #                     Omega_drill=self.Omega_drill,
+            #                     Omega_step=self.Omega_step
+            #                     )
 
         # ------ Phi-----------------------------------------------------------
         matrix_dict = {name: "" for name in [
@@ -557,6 +566,7 @@ class Agent:
         task_object (Task): Task object
         lambda_ (float): This agent's weighting parameter, if applicable
     """
+    stoch_matrices: StochasticMatrices
 
     def __init__(self, agent_attr: AgentAttributes,
                  task_object: Task, lambda_):
@@ -677,10 +687,9 @@ class Agent:
 
         # Determine action type (step or drill)
         if a_t != 0:  # if step
-            a_t_type = 1
+            a_t_type = "step"
         else:  # if drill
-            a_t_type = 0
-        a_t_type = int(a_t_type)
+            a_t_type = "drill"
 
         # TODO: Quickfix: Use drill, if first trial
         if self.task.t == 0:
@@ -694,13 +703,10 @@ class Agent:
         a_i_in_phi = self.stoch_matrices.a_indices_in_Phi[a_t]
 
         # Choose action dependent Omega
-        if a_t_type == 0:  # if drill
-            Omega = self.stoch_matrices.Omega_drill
-        else:  # if step
-            Omega = self.stoch_matrices.Omega_step
+        Omega_a = self.stoch_matrices.Omega[a_t_type]
 
         # Extract components  # TODO: kopieren kostet working memory
-        Omega_j = Omega[:, j][:, np.newaxis]
+        Omega_a_j = Omega_a[:, j]
         Phi_k = self.stoch_matrices.Phi[:, :, a_i_in_phi]
 
         # # TODO: still necessary?
@@ -711,11 +717,10 @@ class Agent:
         #     print('sum of prior * lklh = 0, leaving out normalization')
         #     # debug = 'here'
 
-        # else:
-            # TODO: add state transition!
-
-        beta_post = Omega_j * np.matmul(Phi_k.T, beta_prior)
-        beta_post = beta_post / sum(beta_post)
+        # Eval p_s_giv_o
+        beta_post = Omega_a_j.multiply(  # element-wise multiplication
+            np.matmul(Phi_k.T, beta_prior)).toarray()  # Matrix multiplication
+        beta_post = beta_post / sum(beta_post)  # normalze
 
         return beta_post
 
@@ -936,9 +941,9 @@ class Agent:
             if action != 0:
                 action = 1
                 # Select action-dependent Omga
-                Omega = self.stoch_matrices.Omega_step
+                Omega = self.stoch_matrices.Omega["step"]
             else:
-                Omega = self.stoch_matrices.Omega_drill
+                Omega = self.stoch_matrices.Omega["drill"]
 
             # Identify possible observations on new_s1
             self.identify_o_giv_s2_marg_s3(new_s1, action)

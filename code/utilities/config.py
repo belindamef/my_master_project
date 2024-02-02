@@ -6,6 +6,7 @@ import argparse
 import glob
 from dataclasses import dataclass
 import pandas as pd
+import scipy.sparse as sp
 import pickle
 import csv
 
@@ -458,7 +459,8 @@ class DataHandler:
             self.paths.stoch_mats,
             f"{matrix_name}_{n_nodes}-nodes_{n_hides}-hides")
 
-    def save_arrays(self, n_nodes: int, n_hides: int, **arrays):
+    def save_arrays(self, n_nodes: int, n_hides: int,
+                    sparse=False, save_csv=False, **arrays):
 
         if not os.path.exists(self.paths.stoch_mats):
             os.makedirs(self.paths.stoch_mats)
@@ -470,13 +472,19 @@ class DataHandler:
                                            n_nodes=n_nodes,
                                            n_hides=n_hides)
 
-            # Write the vectors to the TSV file
-            with open(f"{out_fn}.csv", 'w', newline='', encoding="utf8") as f:
-                writer = csv.writer(f, delimiter=',')
-                writer.writerows(array)
-
-            with open(f"{out_fn}.pkl", "wb") as f:
-                pickle.dump(array, f)
+            if save_csv:
+                # Write the vectors to the TSV file
+                with open(
+                        f"{out_fn}.csv", 'w', newline='', encoding="utf8"
+                        ) as f:
+                    writer = csv.writer(f, delimiter=',')
+                    writer.writerows(array)
+            if sparse:
+                with open(f"{out_fn}.npz", "wb") as f:
+                    sp.save_npz(f, array)
+            else:
+                with open(f"{out_fn}.pkl", "wb") as f:
+                    pickle.dump(array, f)
 
     def save_data_to_tsv(self, data: pd.DataFrame, filename: str):
         """Safe dataframe to a .tsv file
