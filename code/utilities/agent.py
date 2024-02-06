@@ -261,12 +261,11 @@ class StochasticMatrices:
         # s_1 is the first component of s = s_{t+1}
         # ---------------------------------------
 
-        # Initiate row and columns index lists to construct sparse matrices
-        rows = []
-        cols = []
-
-
         for i_a, a in enumerate(self.task_model.A):
+
+            # Initiate row and columns index lists to construct sparse matrices
+            rows = []
+            cols = []
 
             # Iterate possible old states s_{t}
             for i_s_tilde, s_tilde in enumerate(self.task_model.S):
@@ -317,6 +316,8 @@ class StochasticMatrices:
                         #     self.Phi[a][i_s_tilde, i_s] = 1
                         # else:  # if s1 != s1_tilde:
                         #     self.Phi[a][i_s_tilde, i_s] = 0
+    
+            data = [1]*len(rows)
             self.Phi[a] = sp.csc_matrix(
                 ([1]*len(rows),  # data
                  (rows, cols)),  # indices
@@ -736,7 +737,7 @@ class Agent:
 
         # Extract components  # TODO: kopieren kostet working memory
         Omega_a_j = Omega_a[:, j]
-        Phi_k = self.stoch_matrices.Phi[a_t][:, :]
+        Phi_k = self.stoch_matrices.Phi[a_t] # [:, :]
 
         # # TODO: still necessary?
         # if np.sum(beta_prior * Omega_j) == 0:
