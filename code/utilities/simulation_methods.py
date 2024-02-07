@@ -6,10 +6,11 @@ Author: Belinda Fleischmann
 
 # from dataclasses import dataclass
 import time
+import logging
 import copy as cp
 import pandas as pd
 import numpy as np
-from .task import Task, TaskStatesConfigurator, TaskNGridParameters
+from .task import Task, TaskNGridParameters, TaskSetsNCardinalities
 from .agent import AgentAttributes, Agent, StochasticMatrices
 from .model import BehavioralModel
 from .config import humanreadable_time
@@ -325,12 +326,14 @@ class Simulator():
     task: Task
     beh_model: BehavioralModel
 
-    def __init__(self, state_values: TaskStatesConfigurator,
+    def __init__(self, state_values: dict,
                  agent_stoch_matrices: StochasticMatrices,
+                 task_sets_n_cardinalities: TaskSetsNCardinalities,
                  task_params: TaskNGridParameters = TaskNGridParameters()):
 
         self.state_values = state_values
         self.task_params = task_params
+        self.task_set_n_cardins = task_sets_n_cardinalities
         self.agent_stoch_matrices = agent_stoch_matrices
 
     def create_interacting_objects(self, agent_name: str, this_block: int,
@@ -346,7 +349,9 @@ class Simulator():
         """
 
         self.task = Task(state_values=self.state_values,
-                         task_params=self.task_params)
+                         task_params=self.task_params,
+                         task_sets_n_cardinalities=self.task_set_n_cardins)
+        # TODO: self.task.attach_sets(sets=TODO)
         self.task.start_new_block(this_block)
 
         agent_attributes = AgentAttributes(agent_name)
@@ -374,8 +379,9 @@ class Simulator():
         start = time.time()
         self.agent.update_belief_state(given_action=self.beh_model.action_t)
         end = time.time()
-        print(f"trial {this_trial} agent belief state update took "
-              f":  {humanreadable_time(end-start)}\n")
+        logging.info(
+            "Total time for belief state update %s",
+            humanreadable_time(end-start))
 
     def simulate_trial_interaction(self):
         """Method to simulate the agent-task interaction,
@@ -422,6 +428,8 @@ class Simulator():
         recorder = Recorder()  # Initialize data recorder
 
         for this_block in range(self.task_params.n_blocks):
+            logging.info("    ------ Block %s ------",
+                         this_block)
             recorder.create_rec_df_one_block()
             self.create_interacting_objects(sim_params.current_agent_gen,
                                             this_block,
@@ -429,12 +437,16 @@ class Simulator():
                                             sim_params.current_lambda_gen)
 
             for this_round in range(self.task_params.n_rounds):
+                logging.info("    ------ Round %s ------",
+                             this_round)
                 recorder.create_rec_arrays_thisround(
                     n_trials=self.task_params.n_trials)
                 self.task.start_new_round(this_block, this_round)
                 self.agent.start_new_round(this_round)
 
                 for this_trial in range(self.task_params.n_trials):
+                    logging.info("    ------ Trial %s ------",
+                                 this_trial)
                     self.simulate_trial_start(this_trial)
                     recorder.record_trial_start(trial=this_trial,
                                                 task=self.task,
@@ -445,6 +457,10 @@ class Simulator():
 
                     # End round, if treasure discovered
                     if self.task.r_t == 1:
+                        # Extra trial, for if treasure found
+                        logging.info("    Treasure found, addional "
+                                     "update in Trial %s + 1",
+                                     this_trial)
                         # Evaluate observation and belief update for t + 1
                         self.task.t += 1
                         self.task.eval_obs_func_g()

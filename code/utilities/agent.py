@@ -3,9 +3,10 @@ hunt task.
 """
 import os
 import time
+import logging
 import numpy as np
 import scipy.sparse as sp
-from utilities.task import Task, TaskNGridParameters
+from utilities.task import Task, TaskNGridParameters, TaskSetsNCardinalities
 from utilities.config import Paths
 from utilities.config import DataHandler, humanreadable_time, DirectoryManager
 from matplotlib import pyplot
@@ -57,20 +58,29 @@ class StochasticMatrices:
             class TaskDesignParameters, storing all task and grid parameters.
     """
 
-    def __init__(self, task_model: Task, task_params: TaskNGridParameters):
+    def __init__(self, task_states_n_cardins: TaskSetsNCardinalities,
+                 task_params: TaskNGridParameters):
 
-        self.task_model = task_model  # A general task model
+        # Unpack sets and cardinalities
+        self.n = task_states_n_cardins.n
+        self.m = task_states_n_cardins.m
+        self.p = task_states_n_cardins.p
+        self.S = task_states_n_cardins.S
+        self.O_ = task_states_n_cardins.O_
+        self.A = task_states_n_cardins.A
+        self.R = task_states_n_cardins.R
+
         self.task_params = task_params
         self.paths: Paths = Paths()
 
         self.beta_0: np.ndarray = np.full(
-            (self.task_model.n, 1),
+            (self.n, 1),
             np.nan
             )
         self.Phi = {}
-        for action in self.task_model.A:
+        for action in self.A:
             self.Phi[action] = sp.csc_matrix(
-                (self.task_model.n, self.task_model.n),  # shape
+                (self.n, self.n),  # shape
                 dtype=np.int8,
                 )
         # self.Phi = np.full(
@@ -80,11 +90,11 @@ class StochasticMatrices:
         #     )
         self.Omega = {
             "drill": sp.csc_matrix(
-                (self.task_model.n, self.task_model.m),  # shape
+                (self.n, self.m),  # shape
                 dtype=np.int8
                 ),
             "step": sp.csc_matrix(
-                (self.task_model.n, self.task_model.m),  # shape
+                (self.n, self.m),  # shape
                 dtype=np.int8
                 )
         }
@@ -108,9 +118,9 @@ class StochasticMatrices:
         trial 1 given the state current position s1_t"""
 
         # Set all states, that are in line with current position to 1
-        self.beta_0[np.where(self.task_model.S[:, 0] == s1_t)[0], 0] = 1
+        self.beta_0[np.where(self.S[:, 0] == s1_t)[0], 0] = 1
         # Set alle remaining states zero
-        self.beta_0[np.where(self.task_model.S[:, 0] != s1_t)[0], 0] = 0
+        self.beta_0[np.where(self.S[:, 0] != s1_t)[0], 0] = 0
         # Normalize belief state
         self.beta_0 = self.beta_0 / sum(self.beta_0)
 
@@ -127,8 +137,8 @@ class StochasticMatrices:
             rows = []
             cols = []
 
-            for i_s, s in enumerate(self.task_model.S):
-                for i_o, o in enumerate(self.task_model.O_):
+            for i_s, s in enumerate(self.S):
+                for i_o, o in enumerate(self.O_):
                     # Extract state components
                     current_pos = int(s[0])  # NOTE: set S[0] := {1, ..., n}
                     node_index_in_o_t = current_pos  # NOTE: bc o[0] is tr flag
@@ -247,7 +257,7 @@ class StochasticMatrices:
             self.Omega[a] = sp.csc_matrix(
                 ([1]*len(rows),  # data
                     (rows, cols)),  # indices
-                shape=(self.task_model.n, self.task_model.m),  # shape
+                shape=(self.n, self.m),  # shape
                 dtype=np.int8
                 )
 
@@ -261,17 +271,17 @@ class StochasticMatrices:
         # s_1 is the first component of s = s_{t+1}
         # ---------------------------------------
 
-        for i_a, a in enumerate(self.task_model.A):
+        for i_a, a in enumerate(self.A):
 
             # Initiate row and columns index lists to construct sparse matrices
             rows = []
             cols = []
 
             # Iterate possible old states s_{t}
-            for i_s_tilde, s_tilde in enumerate(self.task_model.S):
+            for i_s_tilde, s_tilde in enumerate(self.S):
 
                 # Iterate possible new states s_{t+1}
-                for i_s, s in enumerate(self.task_model.S):
+                for i_s, s in enumerate(self.S):
 
                     s1 = s[0]              # current position in t + 1
                     s1_tilde = s_tilde[0]  # current position in t
@@ -316,12 +326,11 @@ class StochasticMatrices:
                         #     self.Phi[a][i_s_tilde, i_s] = 1
                         # else:  # if s1 != s1_tilde:
                         #     self.Phi[a][i_s_tilde, i_s] = 0
-    
-            data = [1]*len(rows)
+
             self.Phi[a] = sp.csc_matrix(
                 ([1]*len(rows),  # data
                  (rows, cols)),  # indices
-                shape=(self.task_model.n, self.task_model.n),  # shape
+                shape=(self.n, self.n),  # shape
                 dtype=np.int8
                 )
 
@@ -375,27 +384,45 @@ class StochasticMatrices:
                 os.path.exists(f"{Omega_drill_path}.npz")
                 and os.path.exists(f"{Omega_step_path}.npz")
                 ):
+
             # Load matrices from hd for this task grid configuration
-            print("Loading Omega matrices from disk for given task config ("
-                  f"{self.task_params.n_nodes} nodes and "
-                  f"{self.task_params.n_hides} hiding spots) ...")
+            logging.info(
+                "Loading Omega drill matrix from %s.npz",
+                Omega_drill_path
+                )
+            logging.info(
+                "Loading Omega step matrix from %s.npz",
+                Omega_step_path
+                )
+
+            # print("Loading Omega matrices from disk for given task config ("
+            #       f"{self.task_params.n_nodes} nodes and "
+            #       f"{self.task_params.n_hides} hiding spots) ...")
             start = time.time()
             with open(f"{Omega_drill_path}.npz", "rb") as file:
                 self.Omega["drill"] = sp.load_npz(file)
             with open(f"{Omega_step_path}.npz", "rb") as file:
                 self.Omega["step"] = sp.load_npz(file)
             end = time.time()
-            print(f" ... finished loading. \n ... time:  "
-                  f"{humanreadable_time(end-start)}\n")
+            # print(f" ... finished loading. \n ... time:  "
+            #       f"{humanreadable_time(end-start)}\n")
+            logging.info(
+                "Time needed to load Omega matrices: %s \n",
+                humanreadable_time(end-start)
+                )
 
         else:
             # Compute for this task grid configuration and save to hd
-            print("Computing Omega for given task config ...")
+            logging.info("Computing Omega for given task config ...")
+            # print("Computing Omega for given task config ...")
             start = time.time()
             self.compute_Omega()
             end = time.time()
-            print(f" ... finished computing Omega, \n ... time:  "
-                  f"{humanreadable_time(end-start)}")
+            logging.info("Time needed to compute Omega: %s",
+                         humanreadable_time(end-start)
+                         )
+            # print(f" ... finished computing Omega, \n ... time:  "
+            #       f"{humanreadable_time(end-start)}")
             start = time.time()
             data_handler.save_arrays(
                 n_nodes=self.task_params.n_nodes,
@@ -410,8 +437,10 @@ class StochasticMatrices:
                 sparse=True
                 )
             end = time.time()
-            print(f" ... finisehd saving Omega to files, \n ... time:  "
-                  f"{humanreadable_time(end-start)}")
+            logging.info("Time needed to save Omega to disk: %s \n",
+                         humanreadable_time(end-start))
+            # print(f" ... finisehd saving Omega to files, \n ... time:  "
+            #       f"{humanreadable_time(end-start)}")
 
             # self.plot_color_map(n_nodes=self.task_params.n_nodes,
             #                     n_hides=self.task_params.n_hides,
@@ -439,31 +468,39 @@ class StochasticMatrices:
                 os.path.exists(f"{matrix_dict['Phi_drill']}.npz")
                 ):
             # Load matrices from hd for this task grid configuration
-            print("Loading Phi matrices from disk for given task config ("
-                  f"{self.task_params.n_nodes} nodes and "
-                  f"{self.task_params.n_hides} hiding spots) ...")
-            start = time.time()
+            # print("Loading Phi matrices from disk for given task config ("
+            #       f"{self.task_params.n_nodes} nodes and "
+            #       f"{self.task_params.n_hides} hiding spots) ...")
 
             i = 0
+            start = time.time()
             for matrix_name in matrix_dict.keys():  # TODO: fix naming
-
+                logging.info(
+                    "Loading Phi matrix from %s.npz",
+                    matrix_dict[matrix_name]
+                    )
                 with open(f"{matrix_dict[matrix_name]}.npz", "rb") as file:
                     self.Phi[
                         self.a_word_to_indices_in_Phi[matrix_name]
                         ] = sp.load_npz(file)
                 i += 1
-
             end = time.time()
-            print(f" ... finished loading. \n ... time:  "
-                  f"{humanreadable_time(end-start)}\n")
+            logging.info(
+                "Time needed to load Phi matrices: %s \n",
+                humanreadable_time(end-start)
+                )
+
+            # print(f" ... finished loading. \n ... time:  "
+            #       f"{humanreadable_time(end-start)}\n")
 
         else:
-            print("Computing Phi for given task config ...")
+            logging.info("Computing Phi matrices for given task config")
+            # print("Computing Phi for given task config ...")
             start = time.time()
             self.compute_Phi()
             end = time.time()
-            print(f" ... finished computing Phi, \n ... time:  "
-                  f"{humanreadable_time(end-start)}")
+            logging.info("Time needed to compute Phi matrices: %s: \n",
+                         humanreadable_time(end-start))
             start = time.time()
             data_handler.save_arrays(
                 n_nodes=self.task_params.n_nodes,
@@ -476,9 +513,12 @@ class StochasticMatrices:
                 sparse=True
                 )
             end = time.time()
-            print(f" ... finisehd saving Phi to files, \n ... time:  "
-                  f"{humanreadable_time(end-start)}")
+            logging.info(
+                "Time needed to save Phi matrices to disk: %s \n",
+                humanreadable_time(end-start))
 
+            # Uncomment to plot color maps
+            # TODO: transform back to dense array first
             # self.plot_color_map(n_nodes=self.task_params.n_nodes,
             #                     n_hides=self.task_params.n_hides,
             #                     Phi_drill=self.Phi[:, :, 0],
@@ -659,7 +699,7 @@ class Agent:
         # TODO: major todo
         # Initialize all as zero
         self.p_s_giv_o_prior_new_c = np.full(
-            (self.stoch_matrices.task_model.n, 1), 0.)
+            (self.stoch_matrices.n, 1), 0.)
 
         # marg_s4_perm_b = np.full(self.n_s4_perms, np.nan)
         # for s4_perm in range(self.n_s4_perms):
@@ -729,7 +769,7 @@ class Agent:
             a_t = 0
 
         # Determine observation dependent omega index j
-        O_ = self.task.O_
+        O_ = self.task.sets_n_cardins.O_
         j = int(np.where(np.all(O_ == o_t, axis=1))[0])
 
         # Choose action dependent Omega
@@ -772,7 +812,7 @@ class Agent:
             s1_index_in_s = 0
 
             s1_tilde_indices = np.where(
-                self.task.S[
+                self.task.sets_n_cardins.S[
                     :, s1_index_in_s
                     ] == s1_tilde
                 )[0]
@@ -785,7 +825,7 @@ class Agent:
             s2_index_in_s = 1
 
             s2_tilde_indices = np.where(
-                self.task.S[
+                self.task.sets_n_cardins.S[
                     :, s2_index_in_s
                     ] == s2_tilde
                 )[0]
@@ -800,7 +840,7 @@ class Agent:
 
             s3_tilde_indices = np.where(
                 np.any(
-                    self.task.S[
+                    self.task.sets_n_cardins.S[
                         :, s3_tilde_in_s
                         ] == s3_tilde, axis=1
                     )
@@ -870,14 +910,16 @@ class Agent:
             start = time.time()
             self.eval_marg_b_s(belief=self.p_s_giv_o_post)
             end = time.time()
-            print(
-                f"time needed for marg_b: {humanreadable_time(end-start)}")
+            logging.info(
+                "Time needed to compute marg posterior beta: %s ",
+                humanreadable_time(end-start)
+                )
 
     def identify_a_giv_s1(self):
         """Identify state s1 dependent action set"""
-        self.a_s1 = self.task.A
+        self.a_s1 = self.task.sets_n_cardins.A
 
-        for action in self.task.A:
+        for action in self.task.sets_n_cardins.A:
             new_s1 = action + self.task.s1_t
             # Remove forbidden steps (walk outside border)
             if (not (1 <= new_s1 <= self.task.params.n_nodes)
@@ -1252,14 +1294,18 @@ class Agent:
             start = time.time()
             self.eval_p_o_giv_o()
             end = time.time()
-            print(
-                f"time needed for p_o_giv_o: {humanreadable_time(end-start)}")
+            logging.info(
+                "Time needed to compute p_o_giv_o: %s ",
+                humanreadable_time(end-start)
+                )
 
             start = time.time()
             self.eval_kl()
             end = time.time()
-            print(
-                f"time needed for kl: {humanreadable_time(end-start)}")
+            logging.info(
+                "Time needed to compute kl: %s ",
+                humanreadable_time(end-start)
+                )
 
         # -------Evaluate valence and decision function----------
         # start = time.time()

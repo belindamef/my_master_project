@@ -4,6 +4,7 @@ import os
 import json
 import pickle
 import time
+import logging
 from dataclasses import dataclass, field
 import copy as cp
 import numpy as np
@@ -201,32 +202,11 @@ class TaskStatesConfigurator:
         return self.state_values
 
 
-class Task:
-    """A class used to represent the treasure hunt task
-
-    A task object can interact with an agent object within an
-    agent-based behavioral modelling framework.
+class TaskSetsNCardinalities:
+    """_summary_
     """
-
-    def __init__(self,
-                 state_values: dict,
-                 task_params: TaskNGridParameters):
-        """A class to represent the tresaure hunt task
-
-        Args:
-            states (dict): task state values e.g. hiding spots,
-                treasure location, starting nodes etc
-        """
-
-        # Configuration specific task and gridworld components
-        self.state_values: dict = state_values
+    def __init__(self, task_params: TaskNGridParameters):
         self.params = task_params
-        self.node_colors = np.full(self.params.n_nodes, 0)
-        self.shortest_dist_dic: dict = {}
-
-        # Task model components
-        self.T = range(0, self.params.n_trials + 1)  # Trials                 T
-        self.C = range(1, self.params.n_rounds + 1)  # Rounds                 C
         self.n = self.compute_S_cardinality_n()      # Cardinality of S       n
         self.m = self.compute_O_cardinality_m()      # Cardinality of O       m
         self.p = 5                                   # Cardinality of A       p
@@ -239,142 +219,11 @@ class Task:
             dtype=np.int8)
         self.A = np.array(                         # Set of actions           A
             [0, -self.params.dim, 1,
-             self.params.dim, -1])
-        self.R = np.array([0, 1])                  # Set of rewards           R
+             self.params.dim, -1], dtype=np.int8)
+        self.R = np.array([0, 1], dtype=np.int8)                  # Set of rewards           R
 
-        # Dynamik, i.e. trial-specific model components
-        self.t: int = 0  # Current trial
-        self.c: int = 0  # Curret round
-        self.s1_t = np.full(1, np.nan)             # Current posion       s^1_t
-        self.s2_t = np.full(1, np.nan)             # Current treasure loc s^2_t
-        self.s3_t = np.full(                       # Hiding spots         s^3_t
-            (1, self.params.n_hides), np.nan)
-        self.o_t = np.full(                        # Current observation    o_t
-            (1 + self.params.n_nodes), np.nan)
-        self.r_t: int = 0                          # Current reward         r_t
-
-        # Compute or load sets (S and O) and shortest distance dict from hd
+        # Compute or load sets
         self.compute_or_load_sets()
-        self.compute_or_load_shortest_distances()
-
-        # Sets for computations
-        self.O2 = np.nan  # TODO: quickfix
-
-    def compute_or_load_shortest_distances(self):
-        """Get the shortest distances between two nodes from json or evaluate
-        save to json if not existent"""
-
-        # Specify path for shortest_distances storage file
-        paths = Paths()
-        short_dist_fn = os.path.join(
-            paths.code, 'utilities',
-            f'shortest_dist_dim-{self.params.dim}.json')
-
-        # Read in json file as dic if existent for given dimensionality
-        if os.path.exists(short_dist_fn):
-            with open(short_dist_fn, encoding="utf8") as json_file:
-                self.shortest_dist_dic = json.load(json_file)
-
-        # Create new json file if not yet existent and
-        else:
-            self.eval_shortest_distances()
-            with open(short_dist_fn, 'w', encoding="utf8") as json_file:
-                json.dump(self.shortest_dist_dic, json_file, indent=4)
-
-    def eval_shortest_distances(self):
-        """Evaluate the shortest distance between all nodes in grid world with
-        dimension dim given all available actions in a_set.
-        The shortest path is expressed in numbers of steps needed to
-        reach the end node when standing on a given start node
-        """
-        # ------Initialize variables / objects--------------------------------
-        n_nodes = self.params.n_nodes  # number of nodes in the graph
-        dim = self.params.dim  # dimension of the grid world
-        moves = self.A[:4]  # possible moves / actions
-
-        # ------Create adjacency matrix---------------------------------------
-        adj_matrix = []  # Initialize adjacency matrix
-        # Iterate over all fields and create row with ones for adjacent fields
-        for i in range(n_nodes):
-            row = np.full(n_nodes, 0)  # Initialize row with all zeros
-            for move in moves:
-                if ((i + move) >= 0) and ((i + move) < n_nodes):
-                    if ((i % dim != 0) and move == -1) or \
-                            ((((i + 1) % dim) != 0) and (move == 1)) or \
-                            (move == self.params.dim
-                             or move == -self.params.dim):
-                        row[i + move] = 1
-            adj_matrix.append(list(row))
-
-        # ------Create adjacency list (dictionary)----------------------------
-        adj_list = {}  # Initialize adjacency dictionary
-        # Iterate over all fields and create dict. entry with adjacent fields
-        for i in range(n_nodes):
-            row_list = []
-            for move in moves:
-                if ((i + move) >= 0) and ((i + move) < n_nodes):
-                    if ((i % dim != 0) and move == -1) or \
-                            ((((i + 1) % dim) != 0) and (move == 1)) or \
-                            (move in [self.params.dim,
-                                      -self.params.dim]):
-                        row_list.append(i + move)
-                        row_list.sort()
-            adj_list.update({i: row_list})
-
-        # -------Iterate through starting nodes:-------
-        for start_node in range(n_nodes):
-
-            # ------Iterate through ending nodes:------
-            for end_node in range(n_nodes):
-
-                # Return zero if start_node equals end_node
-                if start_node == end_node:
-                    self.shortest_dist_dic[
-                        f'{start_node + 1}_to_{end_node + 1}'] = 0
-                    self.shortest_dist_dic[
-                        f'{end_node + 1}_to_{start_node + 1}'] = 0
-
-                else:
-                    # Keep track of all visited nodes of a graph
-                    explored = []
-                    # keep track of all the paths to be checked
-                    queue = [[start_node]]
-
-                    # Keep looping until queue is empty
-                    while queue:
-                        # Pop the first path from the queue
-                        path = queue.pop(0)
-                        # Get the last node from path
-                        node = path[-1]
-
-                        if node not in explored:
-                            neighbours = adj_list[node]
-
-                            # Go through all neighbouring nodes, construct new
-                            # path and push into queue
-                            for neighbour in neighbours:
-                                new_path = list(path)
-                                new_path.append(neighbour)
-                                queue.append(new_path)
-
-                                # Return path if neighbour is end node
-                                if neighbour == end_node:
-
-                                    shortest_path = new_path
-                                    shortest_distance = len(shortest_path)-1
-
-                                    # Add the shortest path to dictionary
-                                    self.shortest_dist_dic[
-                                        f'{start_node + 1}_to_{end_node + 1}'
-                                    ] = shortest_distance
-                                    self.shortest_dist_dic[
-                                        f'{end_node + 1}_to_{start_node + 1}'
-                                    ] = shortest_distance
-                                    queue = []
-                                    break
-
-                            # Mark node as explored
-                            explored.append(node)
 
     def compute_or_load_sets(self):
         """Function to check if files of state and observation sets exist
@@ -391,26 +240,38 @@ class Task:
 
         if os.path.exists(f"{set_S_path}.pkl"):
             # Load matrices from hd for this task grid configuration
-            print("Loading set S of states from disk for given task config ("
-                  f"{self.params.n_nodes} nodes and "
-                  f"{self.params.n_hides} hiding spots) ...")
+            logging.info(
+                "Loading set S from %s.pkl",
+                set_S_path
+                )
+            # print("Loading set S of states from disk for given task config ("
+            #       f"{self.params.n_nodes} nodes and "
+            #       f"{self.params.n_hides} hiding spots) ...")
             start = time.time()
             with open(f"{set_S_path}.pkl", "rb") as file:
                 self.S = pickle.load(file)
             end = time.time()
-            print(f" ... finished loading. \n ... time:  "
-                  f"{humanreadable_time(end-start)}\n")
+            logging.info(
+                "Time needed to load Set s: %s \n",
+                humanreadable_time(end-start)
+                )
+            # print(f" ... finished loading. \n ... time:  "
+            #       f"{humanreadable_time(end-start)}\n")
 
         else:
             # Compute for this task grid configuration and save to hd
-            print("Computing set S for given task config ("
-                  f"{self.params.n_nodes} nodes and "
-                  f"{self.params.n_hides} hiding spots) ...")
+            logging.info("Computing set S for given task config ...")
+            # print("Computing set S for given task config ("
+            #       f"{self.params.n_nodes} nodes and "
+            #       f"{self.params.n_hides} hiding spots) ...")
             start = time.time()
             self.compute_set_S()
             end = time.time()
-            print(f" ... finished computing S. \n ... time:  "
-                  f"{humanreadable_time(end-start)}\n")
+            logging.info("Time needed to compute set S: %s",
+                         humanreadable_time(end-start)
+                         )
+            # print(f" ... finished computing S. \n ... time:  "
+            #       f"{humanreadable_time(end-start)}\n")
             start = time.time()
             data_handler.save_arrays(
                 n_nodes=self.params.n_nodes,
@@ -418,9 +279,13 @@ class Task:
                 set_S=self.S
                 )
             end = time.time()
-            print(f" ... finisehd writing S to disk. \n ... time:  "
-                  f"{humanreadable_time(end-start)}\n"
-                  )
+            logging.info(
+                "Time needed to save set S to disk: %s \n",
+                humanreadable_time(end-start)
+                )
+            # print(f" ... finisehd writing S to disk. \n ... time:  "
+            #       f"{humanreadable_time(end-start)}\n"
+            #       )
 
         # ------ Set of observations-------------------------------------------
         set_O_path = data_handler.create_matrix_fn(
@@ -430,26 +295,38 @@ class Task:
 
         if os.path.exists(f"{set_O_path}.pkl"):
             # Load matrices from hd for this task grid configuration
-            print("Loading set O of observations from disk for given task config ("
-                  f"{self.params.n_nodes} nodes and "
-                  f"{self.params.n_hides} hiding spots) ...")
+            logging.info(
+                "Loading set O from %s.pkl",
+                set_O_path
+                )
+            # print("Loading set O of observations from disk for given task config ("
+            #       f"{self.params.n_nodes} nodes and "
+            #       f"{self.params.n_hides} hiding spots) ...")
             start = time.time()
             with open(f"{set_O_path}.pkl", "rb") as file:
                 self.O_ = pickle.load(file)
             end = time.time()
-            print(f" ... finished loading. \n ... time:  "
-                  f"{humanreadable_time(end-start)}\n")
+            logging.info(
+                "Time needed to load set O: %s \n",
+                humanreadable_time(end-start)
+                )
+            # print(f" ... finished loading. \n ... time:  "
+            #       f"{humanreadable_time(end-start)}\n")
 
         else:
             # Compute for this task grid configuration and save to hd
-            print("Computing set O for given task config ("
-                  f"{self.params.n_nodes} nodes and "
-                  f"{self.params.n_hides} hiding spots) ...")
+            logging.info("Computing set O for given task config ...")
+            # print("Computing set O for given task config ("
+            #       f"{self.params.n_nodes} nodes and "
+            #       f"{self.params.n_hides} hiding spots) ...")
             start = time.time()
             self.compute_set_O()
             end = time.time()
-            print(f" ... finished computing S. \n ... time:  "
-                  f"{humanreadable_time(end-start)}\n")
+            logging.info("Time needed to compute set O: %s",
+                         humanreadable_time(end-start)
+                         )
+            # print(f" ... finished computing S. \n ... time:  "
+            #       f"{humanreadable_time(end-start)}\n")
             start = time.time()
             data_handler.save_arrays(
                 n_nodes=self.params.n_nodes,
@@ -457,9 +334,11 @@ class Task:
                 set_O=self.O_
                 )
             end = time.time()
-            print(f" ... finisehd writing O to disk. \n ... time:  "
-                  f"{humanreadable_time(end-start)}\n"
-                  )
+            logging.info("Time needed to save set O to disk: %s \n",
+                         humanreadable_time(end-start))
+            # print(f" ... finisehd writing O to disk. \n ... time:  "
+            #       f"{humanreadable_time(end-start)}\n"
+            #       )
 
     def compute_S_cardinality_n(self):
         """Function to compute n = cardinality of set S, which is
@@ -563,6 +442,174 @@ class Task:
                 self.O_[i, 1:] = o2
 
                 i += 1
+
+
+class Task:
+    """A class used to represent the treasure hunt task
+
+    A task object can interact with an agent object within an
+    agent-based behavioral modelling framework.
+    """
+
+    def __init__(self,
+                 state_values: dict,
+                 task_params: TaskNGridParameters,
+                 task_sets_n_cardinalities: TaskSetsNCardinalities):
+        """A class to represent the tresaure hunt task
+
+        Args:
+            states (dict): task state values e.g. hiding spots,
+                treasure location, starting nodes etc
+        """
+
+        # Configuration specific task and gridworld components
+        self.state_values: dict = state_values
+        self.sets_n_cardins: TaskSetsNCardinalities = task_sets_n_cardinalities
+        self.params = task_params
+        self.node_colors = np.full(self.params.n_nodes, 0)
+        self.shortest_dist_dic: dict = {}
+
+        # Task model components
+        self.T = range(0, self.params.n_trials + 1)  # Trials                 T
+        self.C = range(1, self.params.n_rounds + 1)  # Rounds                 C
+
+        # Dynamik, i.e. trial-specific model components
+        self.t: int = 0  # Current trial
+        self.c: int = 0  # Curret round
+        self.s1_t = np.full(1, np.nan)             # Current posion       s^1_t
+        self.s2_t = np.full(1, np.nan)             # Current treasure loc s^2_t
+        self.s3_t = np.full(                       # Hiding spots         s^3_t
+            (1, self.params.n_hides), np.nan)
+        self.o_t = np.full(                        # Current observation    o_t
+            (1 + self.params.n_nodes), np.nan)
+        self.r_t: int = 0                          # Current reward         r_t
+
+        # Compute or load shortest distance dict from hd
+        self.compute_or_load_shortest_distances()
+
+    def attach_sets(self, sets: TaskSetsNCardinalities):
+        """Method to attach state sets object to task object
+
+        Args:
+            sets (TaskSets): object storing the set O of observations and 
+                                 set S of states
+        """
+
+    def compute_or_load_shortest_distances(self):
+        """Get the shortest distances between two nodes from json or evaluate
+        save to json if not existent"""
+
+        # Specify path for shortest_distances storage file
+        paths = Paths()
+        short_dist_fn = os.path.join(
+            paths.code, 'utilities',
+            f'shortest_dist_dim-{self.params.dim}.json')
+
+        # Read in json file as dic if existent for given dimensionality
+        if os.path.exists(short_dist_fn):
+            with open(short_dist_fn, encoding="utf8") as json_file:
+                self.shortest_dist_dic = json.load(json_file)
+
+        # Create new json file if not yet existent and
+        else:
+            self.eval_shortest_distances()
+            with open(short_dist_fn, 'w', encoding="utf8") as json_file:
+                json.dump(self.shortest_dist_dic, json_file, indent=4)
+
+    def eval_shortest_distances(self):
+        """Evaluate the shortest distance between all nodes in grid world with
+        dimension dim given all available actions in a_set.
+        The shortest path is expressed in numbers of steps needed to
+        reach the end node when standing on a given start node
+        """
+        # ------Initialize variables / objects--------------------------------
+        n_nodes = self.params.n_nodes  # number of nodes in the graph
+        dim = self.params.dim  # dimension of the grid world
+        moves = self.sets_n_cardins.A[:4]  # possible moves / actions
+
+        # ------Create adjacency matrix---------------------------------------
+        adj_matrix = []  # Initialize adjacency matrix
+        # Iterate over all fields and create row with ones for adjacent fields
+        for i in range(n_nodes):
+            row = np.full(n_nodes, 0)  # Initialize row with all zeros
+            for move in moves:
+                if ((i + move) >= 0) and ((i + move) < n_nodes):
+                    if ((i % dim != 0) and move == -1) or \
+                            ((((i + 1) % dim) != 0) and (move == 1)) or \
+                            (move == self.params.dim
+                             or move == -self.params.dim):
+                        row[i + move] = 1
+            adj_matrix.append(list(row))
+
+        # ------Create adjacency list (dictionary)----------------------------
+        adj_list = {}  # Initialize adjacency dictionary
+        # Iterate over all fields and create dict. entry with adjacent fields
+        for i in range(n_nodes):
+            row_list = []
+            for move in moves:
+                if ((i + move) >= 0) and ((i + move) < n_nodes):
+                    if ((i % dim != 0) and move == -1) or \
+                            ((((i + 1) % dim) != 0) and (move == 1)) or \
+                            (move in [self.params.dim,
+                                      -self.params.dim]):
+                        row_list.append(i + move)
+                        row_list.sort()
+            adj_list.update({i: row_list})
+
+        # -------Iterate through starting nodes:-------
+        for start_node in range(n_nodes):
+
+            # ------Iterate through ending nodes:------
+            for end_node in range(n_nodes):
+
+                # Return zero if start_node equals end_node
+                if start_node == end_node:
+                    self.shortest_dist_dic[
+                        f'{start_node + 1}_to_{end_node + 1}'] = 0
+                    self.shortest_dist_dic[
+                        f'{end_node + 1}_to_{start_node + 1}'] = 0
+
+                else:
+                    # Keep track of all visited nodes of a graph
+                    explored = []
+                    # keep track of all the paths to be checked
+                    queue = [[start_node]]
+
+                    # Keep looping until queue is empty
+                    while queue:
+                        # Pop the first path from the queue
+                        path = queue.pop(0)
+                        # Get the last node from path
+                        node = path[-1]
+
+                        if node not in explored:
+                            neighbours = adj_list[node]
+
+                            # Go through all neighbouring nodes, construct new
+                            # path and push into queue
+                            for neighbour in neighbours:
+                                new_path = list(path)
+                                new_path.append(neighbour)
+                                queue.append(new_path)
+
+                                # Return path if neighbour is end node
+                                if neighbour == end_node:
+
+                                    shortest_path = new_path
+                                    shortest_distance = len(shortest_path)-1
+
+                                    # Add the shortest path to dictionary
+                                    self.shortest_dist_dic[
+                                        f'{start_node + 1}_to_{end_node + 1}'
+                                    ] = shortest_distance
+                                    self.shortest_dist_dic[
+                                        f'{end_node + 1}_to_{start_node + 1}'
+                                    ] = shortest_distance
+                                    queue = []
+                                    break
+
+                            # Mark node as explored
+                            explored.append(node)
 
     def start_new_block(self, block_number):
         """Start new block with block-specific state values
