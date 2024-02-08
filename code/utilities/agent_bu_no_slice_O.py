@@ -5,7 +5,6 @@ import os
 import time
 import logging
 import numpy as np
-from pympler import asizeof
 import scipy.sparse as sp
 from utilities.task import Task, TaskNGridParameters, TaskSetsNCardinalities
 from utilities.config import Paths
@@ -132,16 +131,6 @@ class StochasticMatrices:
                        "grey": 1,
                        "blue": 2}
 
-        def return_first_half() -> np.ndarray:
-            # Slice the array into two halves
-            half_length = len(self.O_) // 2
-            return self.O_[:half_length, :]  # Return first half
-
-        def return_second_half() -> np.ndarray:
-            # Slice the array into two halves
-            half_length = len(self.O_) // 2
-            return self.O_[half_length:, :]  # Return second half
-    
         for a in ["step", "drill"]:
 
             # Initiate row and columns index lists to construct sparse matrices
@@ -149,23 +138,22 @@ class StochasticMatrices:
             cols = []
 
             for i_s, s in enumerate(self.S):
+                for i_o, o in enumerate(self.O_):
+                    # Extract state components
+                    current_pos = int(s[0])  # NOTE: set S[0] := {1, ..., n}
+                    node_index_in_o_t = current_pos  # NOTE: bc o[0] is tr flag
+                    tr_location = int(s[1])
+                    hiding_spots = s[2:]
 
-                # TODO: alle observations, wo node colors mit hiding spot
-                #  locations keinen sinn machen
-                # siehe Handwritten NOTE 24.11.
+                    # Extract observation components
+                    o_1 = o[0]  # treasure flag
 
-                # Select Omega subset and respective index addition based on treasure flag
-                index_addition = 0  # TODO: expl. comment
-                if s[0] != s[1]:  # if not treasure position, only o[0] = 0 possible
-                    O_ = return_first_half()
-                else:  # elif not treasure position (s[0] != s[1]), only o[0] = 1 possible
-                    O_ = return_second_half()
-                    index_addition = len(self.O_) // 2  # TODO: expl. comment
+                    # TODO: alle observations, wo node colors mit hiding spot
+                    #  locations keinen sinn machen
+                    # siehe Handwritten NOTE 24.11.
 
-                # -------After DRILL actions: -----------------------------
-                if a == "drill":
-
-                    for i_o, o in enumerate(O_):
+                    # -------After DRILL actions: -----------------------------
+                    if a == "drill":
 
                         # CONDITION:                    CORRESP MODEL VARIABLE:
                         # ---------------------------------------------------------
@@ -177,13 +165,14 @@ class StochasticMatrices:
                         # ...and new node color == grey,                  o[2:]
                         #  = 1
                         if (
-                                s[0] != s[1]  # not necessary because O sliced
-                                and s[0] not in s[2:]
-                                and o[0] == 0  # treasure flag # not necessary because O sliced
-                                and (o[s[0]]== node_colors["grey"])
+                                current_pos != tr_location
+                                and current_pos not in hiding_spots
+                                and o_1 == 0  # treasure flag
+                                and (o[node_index_in_o_t]
+                                     == node_colors["grey"])
                                      ):
                             rows.append(i_s)
-                            cols.append(i_o + index_addition)
+                            cols.append(i_o)
 
                         # CONDITION:                    CORRESP MODEL VARIABLE:
                         # ---------------------------------------------------------
@@ -195,18 +184,17 @@ class StochasticMatrices:
                         # ...and new node color == blue,                  o[2:]
                         #  = 1
                         if (
-                                s[0] != s[1]  # not necessary because O sliced
-                                and s[0] in s[2:]
-                                and o[0] == 0  # not necessary because O sliced
-                                and o[s[0]] == node_colors["blue"]
+                                current_pos != tr_location
+                                and current_pos in hiding_spots
+                                and o_1 == 0
+                                and o[node_index_in_o_t] == node_colors["blue"]
                                 ):
                             rows.append(i_s)
-                            cols.append(i_o + index_addition)
+                            cols.append(i_o)
                         # All other observaton probabs remain 0 as initiated.
 
-                # -------After STEP actions: -----------------------------
-                else:  # if a == "step"
-                    for i_o, o in enumerate(O_):
+                    # -------After STEP actions: -----------------------------
+                    else:  # if a == "step"
                         # CONDITION:                    CORRESP MODEL VARIABLE:
                         # ---------------------------------------------------------
                         # if new position...                              s[1]
@@ -217,14 +205,14 @@ class StochasticMatrices:
                         # ...and new node color in ["black", "grey"],     o[2:]
                         #  = 1
                         if (
-                                s[0] != s[1]
-                                and s[0] not in s[2:]
-                                and o[0] == 0  # not necessary because O sliced
-                                and (o[s[0]] in [
+                                current_pos != tr_location
+                                and current_pos not in hiding_spots
+                                and o_1 == 0
+                                and (o[node_index_in_o_t] in [
                                     node_colors["black"], node_colors["grey"]])
                                     ):
                             rows.append(i_s)
-                            cols.append(i_o + index_addition)
+                            cols.append(i_o)
 
                         # CONDITION:                    CORRESP MODEL VARIABLE:
                         # ---------------------------------------------------------
@@ -236,14 +224,14 @@ class StochasticMatrices:
                         # ...and new node color in ["black", "blue"],     o[2:]
                         #  = 1
                         if (
-                                s[0] != s[1]  # not necessary because O sliced
-                                and s[0] in s[2:]
-                                and o[0] == 0  # not necessary because O sliced
-                                and o[s[0]] in [
+                                current_pos != tr_location
+                                and current_pos in hiding_spots
+                                and o_1 == 0
+                                and o[node_index_in_o_t] in [
                                     node_colors["black"], node_colors["blue"]]
                                     ):
                             rows.append(i_s)
-                            cols.append(i_o + index_addition)
+                            cols.append(i_o)
 
                         # CONDITION:                    CORRESP MODEL VARIABLE:
                         # ---------------------------------------------------------
@@ -255,14 +243,14 @@ class StochasticMatrices:
                         # ...and new node color in ["black", "blue"],     o[2:]
                         #  = 1
                         if (
-                                s[0] == s[1]  # not necessary because O sliced
-                                and s[0] in s[2:]
-                                and o[0] == 1  # not necessary because O sliced
-                                and o[s[0]] in [
+                                current_pos == tr_location
+                                and current_pos in hiding_spots
+                                and o_1 == 1
+                                and o[node_index_in_o_t] in [
                                     node_colors["black"], node_colors["blue"]]
                                     ):
                             rows.append(i_s)
-                            cols.append(i_o + index_addition)
+                            cols.append(i_o)
 
             # TODO: find out, why if shape not specified, sparse Omega matrix
                             # turns out as a 45 x 63 matrix ??
@@ -379,6 +367,87 @@ class StochasticMatrices:
 
         data_handler = DataHandler(paths=self.paths)
 
+        # ------ Omega---------------------------------------------------------
+        Omega_drill_path = data_handler.create_matrix_fn(
+            matrix_name="Omega_drill",
+            n_nodes=self.task_params.n_nodes,
+            n_hides=self.task_params.n_hides
+            )
+
+        Omega_step_path = data_handler.create_matrix_fn(
+            matrix_name="Omega_step",
+            n_nodes=self.task_params.n_nodes,
+            n_hides=self.task_params.n_hides
+            )
+
+        if (
+                os.path.exists(f"{Omega_drill_path}.npz")
+                and os.path.exists(f"{Omega_step_path}.npz")
+                ):
+
+            # Load matrices from hd for this task grid configuration
+            logging.info(
+                "Loading Omega drill matrix from %s.npz",
+                Omega_drill_path
+                )
+            logging.info(
+                "Loading Omega step matrix from %s.npz",
+                Omega_step_path
+                )
+
+            # print("Loading Omega matrices from disk for given task config ("
+            #       f"{self.task_params.n_nodes} nodes and "
+            #       f"{self.task_params.n_hides} hiding spots) ...")
+            start = time.time()
+            with open(f"{Omega_drill_path}.npz", "rb") as file:
+                self.Omega["drill"] = sp.load_npz(file)
+            with open(f"{Omega_step_path}.npz", "rb") as file:
+                self.Omega["step"] = sp.load_npz(file)
+            end = time.time()
+            # print(f" ... finished loading. \n ... time:  "
+            #       f"{humanreadable_time(end-start)}\n")
+            logging.info(
+                "Time needed to load Omega matrices: %s \n",
+                humanreadable_time(end-start)
+                )
+
+        else:
+            # Compute for this task grid configuration and save to hd
+            logging.info("Computing Omega for given task config ...")
+            # print("Computing Omega for given task config ...")
+            start = time.time()
+            self.compute_Omega()
+            end = time.time()
+            logging.info("Time needed to compute Omega: %s",
+                         humanreadable_time(end-start)
+                         )
+            # print(f" ... finished computing Omega, \n ... time:  "
+            #       f"{humanreadable_time(end-start)}")
+            start = time.time()
+            data_handler.save_arrays(
+                n_nodes=self.task_params.n_nodes,
+                n_hides=self.task_params.n_hides,
+                Omega_drill=self.Omega["drill"],
+                sparse=True
+                )
+            data_handler.save_arrays(
+                n_nodes=self.task_params.n_nodes,
+                n_hides=self.task_params.n_hides,
+                Omega_step=self.Omega["step"],
+                sparse=True
+                )
+            end = time.time()
+            logging.info("Time needed to save Omega to disk: %s \n",
+                         humanreadable_time(end-start))
+            # print(f" ... finisehd saving Omega to files, \n ... time:  "
+            #       f"{humanreadable_time(end-start)}")
+
+            # self.plot_color_map(n_nodes=self.task_params.n_nodes,
+            #                     n_hides=self.task_params.n_hides,
+            #                     Omega_drill=self.Omega_drill,
+            #                     Omega_step=self.Omega_step
+            #                     )
+
         # ------ Phi-----------------------------------------------------------
         matrix_dict = {name: "" for name in [
             "Phi_drill",
@@ -457,101 +526,6 @@ class StochasticMatrices:
             #                     Phi_plus_one=self.Phi[:, :, 2],
             #                     Phi_plus_dim=self.Phi[:, :, 3],
             #                     Phi_minus_one=self.Phi[:, :, 4])
-
-        logging.info("                 Value/Shape           Size")
-        logging.info("            Phi: (5, %s, %s)",
-                     self.Phi[0].shape[0],
-                     self.Phi[0].shape[1])
-        logging.info("                                       %s \n",
-                     asizeof.asizeof(self.Phi))
-
-        # ------ Omega---------------------------------------------------------
-        Omega_drill_path = data_handler.create_matrix_fn(
-            matrix_name="Omega_drill",
-            n_nodes=self.task_params.n_nodes,
-            n_hides=self.task_params.n_hides
-            )
-
-        Omega_step_path = data_handler.create_matrix_fn(
-            matrix_name="Omega_step",
-            n_nodes=self.task_params.n_nodes,
-            n_hides=self.task_params.n_hides
-            )
-
-        if (
-                os.path.exists(f"{Omega_drill_path}.npz")
-                and os.path.exists(f"{Omega_step_path}.npz")
-                ):
-
-            # Load matrices from hd for this task grid configuration
-            logging.info(
-                "Loading Omega drill matrix from %s.npz",
-                Omega_drill_path
-                )
-            logging.info(
-                "Loading Omega step matrix from %s.npz",
-                Omega_step_path
-                )
-
-            # print("Loading Omega matrices from disk for given task config ("
-            #       f"{self.task_params.n_nodes} nodes and "
-            #       f"{self.task_params.n_hides} hiding spots) ...")
-            start = time.time()
-            with open(f"{Omega_drill_path}.npz", "rb") as file:
-                self.Omega["drill"] = sp.load_npz(file)
-            with open(f"{Omega_step_path}.npz", "rb") as file:
-                self.Omega["step"] = sp.load_npz(file)
-            end = time.time()
-            # print(f" ... finished loading. \n ... time:  "
-            #       f"{humanreadable_time(end-start)}\n")
-            logging.info(
-                "Time needed to load Omega matrices: %s \n",
-                humanreadable_time(end-start)
-                )
-
-        else:
-            # Compute for this task grid configuration and save to hd
-            logging.info("Computing Omega for given task config ...")
-            # print("Computing Omega for given task config ...")
-            start = time.time()
-            self.compute_Omega()
-            end = time.time()
-            logging.info("Time needed to compute Omega: %s",
-                         humanreadable_time(end-start)
-                         )
-            # print(f" ... finished computing Omega, \n ... time:  "
-            #       f"{humanreadable_time(end-start)}")
-            start = time.time()
-            data_handler.save_arrays(
-                n_nodes=self.task_params.n_nodes,
-                n_hides=self.task_params.n_hides,
-                Omega_drill=self.Omega["drill"],
-                sparse=True
-                )
-            data_handler.save_arrays(
-                n_nodes=self.task_params.n_nodes,
-                n_hides=self.task_params.n_hides,
-                Omega_step=self.Omega["step"],
-                sparse=True
-                )
-            end = time.time()
-            logging.info("Time needed to save Omega to disk: %s \n",
-                         humanreadable_time(end-start))
-            # print(f" ... finisehd saving Omega to files, \n ... time:  "
-            #       f"{humanreadable_time(end-start)}")
-
-            self.plot_color_map(n_nodes=self.task_params.n_nodes,
-                                n_hides=self.task_params.n_hides,
-                                Omega_drill=self.Omega["drill"].toarray(),
-                                Omega_step=self.Omega["step"].toarray()
-                                )
-
-        logging.info("                 Value/Shape           Size")
-        logging.info("          Omega: (2, %s, %s ) ",
-                        self.Omega['drill'].shape[0],
-                        self.Omega['drill'].shape[1])
-        logging.info("                                       %s \n",
-                     asizeof.asizeof(self.Omega))
 
         return self
 

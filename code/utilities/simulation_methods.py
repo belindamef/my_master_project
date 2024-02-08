@@ -476,7 +476,7 @@ class Simulator():
         recorder.wrap_up_data(sim_params.current_tau_gen,
                               sim_params.current_lambda_gen,
                               sim_params.current_agent_gen)
-        
+
         return recorder.sim_data
 
     def sim_to_eval_llh(self, candidate_tau: float, candidate_lambda: float,
