@@ -1,0 +1,130 @@
+2024-02-08 09:42:11 - SIMULATION LABEL: 'test_dim-3_h-2_02_07' 
+
+2024-02-08 09:42:11 - Comment: Phi and Omega sparse 
+
+2024-02-08 09:42:11 - ------------------------------------------
+2024-02-08 09:42:11 - Task Parameters:
+2024-02-08 09:42:11 - ------------------------------------------
+2024-02-08 09:42:11 - n_blocks: 1
+2024-02-08 09:42:11 - n_rounds: 1
+2024-02-08 09:42:11 - n_trials: 12
+2024-02-08 09:42:11 - dim: 3
+2024-02-08 09:42:11 - n_hides: 2
+2024-02-08 09:42:11 - n_nodes: 9
+2024-02-08 09:42:11 - ------------------------------------------
+
+2024-02-08 09:42:11 - ------------------------------------------
+2024-02-08 09:42:11 - Simulation Parameters:
+2024-02-08 09:42:11 - ------------------------------------------
+2024-02-08 09:42:11 - agent_space_gen: ['A1']
+2024-02-08 09:42:11 - tau_space_gen: [0.01]
+2024-02-08 09:42:11 - lambda_gen_space: [nan]
+2024-02-08 09:42:11 - n_reps: 1
+2024-02-08 09:42:11 - repetition_numbers: range(0, 1)
+2024-02-08 09:42:11 - n_participants: 1
+2024-02-08 09:42:11 - participant_numbers: range(0, 1)
+2024-02-08 09:42:11 - ------------------------------------------
+
+2024-02-08 09:42:11 - ------------------------------------------
+2024-02-08 09:42:11 - Loading/Computing Task State and observation sets
+2024-02-08 09:42:11 - ------------------------------------------
+2024-02-08 09:42:11 -                  Value/Shape           Size
+2024-02-08 09:42:11 -  Cardinality  n: 648
+2024-02-08 09:42:11 -                                        32
+2024-02-08 09:42:11 -  Cardinality  m: 14810
+2024-02-08 09:42:11 -                                        32 
+
+2024-02-08 09:42:11 - Computing set S for given task config ...
+2024-02-08 09:42:11 - Time needed to compute set S: < 0.01 sec.
+2024-02-08 09:42:11 - Time needed to save set S to disk: < 0.01 sec. 
+
+2024-02-08 09:42:11 -                  Value/Shape           Size
+2024-02-08 09:42:11 -           set S: (648, 4)
+2024-02-08 09:42:11 -                                        20880 
+
+2024-02-08 09:42:11 - Computing set O for given task config ...
+2024-02-08 09:42:11 - Time needed to compute set O: 0.02 sec.
+2024-02-08 09:42:11 - Time needed to save set O to disk: < 0.01 sec. 
+
+2024-02-08 09:42:11 -                  Value/Shape           Size
+2024-02-08 09:42:11 -           set O: (14810, 10)
+2024-02-08 09:42:11 -                                        148248 
+
+2024-02-08 09:42:11 - ------------------------------------------
+2024-02-08 09:42:11 - Loading/Computing Stochastic Matrices
+2024-02-08 09:42:11 - ------------------------------------------
+2024-02-08 09:42:11 - Computing Phi matrices for given task config
+2024-02-08 09:42:23 - Time needed to compute Phi matrices: 11.79 sec.: 
+
+2024-02-08 09:42:23 - Time needed to save Phi matrices to disk: < 0.01 sec. 
+
+2024-02-08 09:42:23 -                  Value/Shape           Size
+2024-02-08 09:42:23 -             Phi: (5, 648, 648)
+2024-02-08 09:42:23 -                                        33952 
+
+2024-02-08 09:42:23 - Computing Omega for given task config ...
+2024-02-08 09:45:11 - Time needed to compute Omega: 3:48 min.
+2024-02-08 09:45:11 - Time needed to save Omega to disk: 0.1 sec. 
+
+2024-02-08 09:45:11 -                  Value/Shape           Size
+2024-02-08 09:45:11 -           Omega: (2, 648, 14810 ) 
+2024-02-08 09:45:11 -                                        26849352 
+
+2024-02-08 09:45:11 -  ----- SUMMARY SHAPES AND SIZES ----------------------
+2024-02-08 09:45:11 -                  Value/Shape           Size
+2024-02-08 09:45:11 -  Cardinality  n: 648
+2024-02-08 09:45:11 -                                        32
+2024-02-08 09:45:11 -  Cardinality  m: 14810
+2024-02-08 09:45:11 -                                        32
+2024-02-08 09:45:11 -           set S: (648, 4)
+2024-02-08 09:45:11 -                                        20880
+2024-02-08 09:45:11 -           set O: (14810, 10)
+2024-02-08 09:45:11 -                                        148248
+2024-02-08 09:45:11 -            beta: (648, 1)
+2024-02-08 09:45:11 -                                        5328
+2024-02-08 09:45:11 -             Phi: (5, 648, 648)
+2024-02-08 09:45:11 -                                        33952
+2024-02-08 09:45:11 -           Omega: (2, 648, 14810)
+2024-02-08 09:45:11 -                                        26849352 
+
+2024-02-08 09:45:11 - ------------------------------------------
+2024-02-08 09:45:11 - Start behavioral data simulation
+2024-02-08 09:45:11 - ------------------------------------------
+2024-02-08 09:45:11 -     ------ Block 0 ------
+2024-02-08 09:45:11 -     ------ Round 0 ------
+2024-02-08 09:45:11 -     ------ Trial 0 ------
+2024-02-08 09:45:11 - Time needed to compute marg posterior beta: < 0.01 sec. 
+2024-02-08 09:45:11 - Total time for belief state update < 0.01 sec.
+2024-02-08 09:45:11 -     ------ Trial 1 ------
+2024-02-08 09:45:11 - Time needed to compute marg posterior beta: < 0.01 sec. 
+2024-02-08 09:45:11 - Total time for belief state update < 0.01 sec.
+2024-02-08 09:45:11 -     ------ Trial 2 ------
+2024-02-08 09:45:11 - Time needed to compute marg posterior beta: < 0.01 sec. 
+2024-02-08 09:45:11 - Total time for belief state update < 0.01 sec.
+2024-02-08 09:45:12 -     ------ Trial 3 ------
+2024-02-08 09:45:12 - Time needed to compute marg posterior beta: < 0.01 sec. 
+2024-02-08 09:45:12 - Total time for belief state update < 0.01 sec.
+2024-02-08 09:45:12 -     ------ Trial 4 ------
+2024-02-08 09:45:12 - Time needed to compute marg posterior beta: < 0.01 sec. 
+2024-02-08 09:45:12 - Total time for belief state update < 0.01 sec.
+2024-02-08 09:45:12 -     ------ Trial 5 ------
+2024-02-08 09:45:12 - Time needed to compute marg posterior beta: < 0.01 sec. 
+2024-02-08 09:45:12 - Total time for belief state update < 0.01 sec.
+2024-02-08 09:45:12 -     ------ Trial 6 ------
+2024-02-08 09:45:12 - Time needed to compute marg posterior beta: < 0.01 sec. 
+2024-02-08 09:45:12 - Total time for belief state update < 0.01 sec.
+2024-02-08 09:45:12 -     ------ Trial 7 ------
+2024-02-08 09:45:12 - Time needed to compute marg posterior beta: < 0.01 sec. 
+2024-02-08 09:45:12 - Total time for belief state update < 0.01 sec.
+2024-02-08 09:45:12 -     ------ Trial 8 ------
+2024-02-08 09:45:12 - Time needed to compute marg posterior beta: < 0.01 sec. 
+2024-02-08 09:45:12 - Total time for belief state update < 0.01 sec.
+2024-02-08 09:45:12 -     ------ Trial 9 ------
+2024-02-08 09:45:12 - Time needed to compute marg posterior beta: < 0.01 sec. 
+2024-02-08 09:45:12 - Total time for belief state update < 0.01 sec.
+2024-02-08 09:45:12 -     Treasure found, addional update in Trial 9 + 1
+2024-02-08 09:45:12 - Time needed to compute marg posterior beta: < 0.01 sec. 
+2024-02-08 09:45:12 - -------End of simulation------------- 
+
+2024-02-08 09:45:39 - Total time for simulation: 207.73 sec.
+Total time for simulation: 207.73 sec.

@@ -1,0 +1,14 @@
+agent	tau_gen	lambda_gen	block	round_	trial	s1_t	s2_t	s3_t	o_t	a_giv_s1	o_giv_s2	p_o_giv_o	kl_giv_a_o	v_t	d_t	a_t	log_p_a_giv_h	r_t	marg_s1_b_t	marg_s2_b_t	marg_s3_b_t	max_s3_belief	argsmax_s3_belief	min_dist_argsmax_s3_belief	closest_argsmax_s3_belief	node_colors
+A1	0.01	nan	1	1	1	4	1	[1 2]	[0. 0. 0. 0. 0.]	[ 0 -2 -1]	[]	nan	nan	[-1.          0.33333333  0.33333333]	-2	-2	nan	0	[0. 0. 0. 1.]	[0.33333333 0.33333333 0.33333333 0.        ]	[0.55555556 0.55555556 0.55555556 0.33333333]	nan	nan	nan	nan	[0 0 0 0]
+A1	0.01	nan	1	1	2	2	1	[1 2]	[0. 0. 0. 0. 0.]	[ 0  2 -1]	[]	nan	nan	[-1.   0.   0.5]	-1	-1	nan	1	[0. 1. 0. 0.]	[0.5 0.  0.5 0. ]	[0.66666667 0.33333333 0.66666667 0.33333333]	nan	nan	nan	nan	[0 0 0 0]
+A1	0.01	nan	1	1	3	1	1	[1 2]	[1. 0. 0. 0. 0.]	nan	nan	nan	nan	nan	nan	nan	nan	nan	[1. 0. 0. 0.]	[1. 0. 0. 0.]	[1.         0.33333333 0.33333333 0.33333333]	nan	nan	nan	nan	[0 0 0 0]
+A1	0.01	nan	1	1	4	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan
+A1	0.01	nan	1	1	5	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan
+A1	0.01	nan	1	1	6	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan
+A1	0.01	nan	1	1	7	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan
+A1	0.01	nan	1	1	8	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan
+A1	0.01	nan	1	1	9	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan
+A1	0.01	nan	1	1	10	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan
+A1	0.01	nan	1	1	11	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan
+A1	0.01	nan	1	1	12	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan
+A1	0.01	nan	1	1	13	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan

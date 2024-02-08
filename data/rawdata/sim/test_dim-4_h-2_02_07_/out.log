@@ -1,0 +1,64 @@
+2024-02-07 15:05:45 - SIMULATION LABEL: 'test_dim-4_h-2_02_07' 
+
+2024-02-07 15:05:45 - Comment: None 
+
+2024-02-07 15:05:45 - ------------------------------------------
+2024-02-07 15:05:45 - Task Parameters:
+2024-02-07 15:05:45 - ------------------------------------------
+2024-02-07 15:05:45 - n_blocks: 1
+2024-02-07 15:05:45 - n_rounds: 1
+2024-02-07 15:05:45 - n_trials: 12
+2024-02-07 15:05:45 - dim: 4
+2024-02-07 15:05:45 - n_hides: 2
+2024-02-07 15:05:45 - n_nodes: 16
+2024-02-07 15:05:45 - ------------------------------------------
+
+2024-02-07 15:05:45 - ------------------------------------------
+2024-02-07 15:05:45 - Simulation Parameters:
+2024-02-07 15:05:45 - ------------------------------------------
+2024-02-07 15:05:45 - agent_space_gen: ['A1']
+2024-02-07 15:05:45 - tau_space_gen: [0.01]
+2024-02-07 15:05:45 - lambda_gen_space: [nan]
+2024-02-07 15:05:45 - n_reps: 1
+2024-02-07 15:05:45 - repetition_numbers: range(0, 1)
+2024-02-07 15:05:45 - n_participants: 1
+2024-02-07 15:05:45 - participant_numbers: range(0, 1)
+2024-02-07 15:05:45 - ------------------------------------------
+
+2024-02-07 15:05:45 - ------------------------------------------
+2024-02-07 15:05:45 - Loading/Computing Task State and observation sets
+2024-02-07 15:05:45 - ------------------------------------------
+2024-02-07 15:05:53 -                  Value/Shape           Size
+2024-02-07 15:05:53 -  Cardinality  n: 3840
+2024-02-07 15:05:53 -                                        32
+2024-02-07 15:05:53 -  Cardinality  m: 5111742
+2024-02-07 15:05:53 -                                        32 
+
+2024-02-07 15:05:53 - Loading set S from /home/belinda_f/treasure-hunt/code/stoch_matrices/set_S_16-nodes_2-hides.pkl
+2024-02-07 15:05:53 - Time needed to load Set s: < 0.01 sec. 
+
+2024-02-07 15:05:53 -                  Value/Shape           Size
+2024-02-07 15:05:53 -           set S: (3840, 4)
+2024-02-07 15:05:53 -                                        123048 
+
+2024-02-07 15:05:53 - Loading set O from /home/belinda_f/treasure-hunt/code/stoch_matrices/set_O_16-nodes_2-hides.pkl
+2024-02-07 15:05:53 - Time needed to load set O: 0.02 sec. 
+
+2024-02-07 15:05:53 -                  Value/Shape           Size
+2024-02-07 15:05:53 -           set O: (5111742, 17)
+2024-02-07 15:05:53 -                                        86899776 
+
+2024-02-07 15:05:53 - ------------------------------------------
+2024-02-07 15:05:53 - Loading/Computing Stochastic Matrices
+2024-02-07 15:05:53 - ------------------------------------------
+2024-02-07 15:05:53 - Computing Phi matrices for given task config
+2024-02-07 15:11:53 - Time needed to compute Phi matrices: 6:60 min.: 
+
+2024-02-07 15:11:53 - Time needed to save Phi matrices to disk: 0.01 sec. 
+
+2024-02-07 15:11:53 -                  Value/Shape           Size
+2024-02-07 15:11:53 -             Phi: (5, 3840, 3840)
+2024-02-07 15:11:53 -                                        177592 
+
+2024-02-07 15:11:53 - Computing Omega for given task config ...
+Computing Omega for given task config ...
