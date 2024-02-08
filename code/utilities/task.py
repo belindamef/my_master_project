@@ -5,6 +5,7 @@ import json
 import pickle
 import time
 import logging
+from pympler import asizeof
 from dataclasses import dataclass, field
 import copy as cp
 import numpy as np
@@ -229,8 +230,17 @@ class TaskSetsNCardinalities:
         """Function to check if files of state and observation sets exist
         on disk and start compution of both individually, otherwise."""
 
+        logging.info("                 Value/Shape           Size")
+        logging.info(" Cardinality  n: %s",
+                     self.n)
+        logging.info("                                       %s",
+                     asizeof.asizeof(self.n))
+        logging.info(" Cardinality  m: %s",
+                     self.m,)
+        logging.info("                                       %s \n",
+                     asizeof.asizeof(self.m))
+    
         data_handler = DataHandler(paths=Paths())
-
         # ------ Set of states-------------------------------------------------
         set_S_path = data_handler.create_matrix_fn(
             matrix_name="set_S",
@@ -286,6 +296,11 @@ class TaskSetsNCardinalities:
             # print(f" ... finisehd writing S to disk. \n ... time:  "
             #       f"{humanreadable_time(end-start)}\n"
             #       )
+        logging.info("                 Value/Shape           Size")
+        logging.info("          set S: %s",
+                     self.S.shape)
+        logging.info("                                       %s \n",
+                     asizeof.asizeof(self.S))
 
         # ------ Set of observations-------------------------------------------
         set_O_path = data_handler.create_matrix_fn(
@@ -339,6 +354,11 @@ class TaskSetsNCardinalities:
             # print(f" ... finisehd writing O to disk. \n ... time:  "
             #       f"{humanreadable_time(end-start)}\n"
             #       )
+        logging.info("                 Value/Shape           Size")
+        logging.info("          set O: %s",
+                     self.O_.shape)
+        logging.info("                                       %s \n",
+                     asizeof.asizeof(self.O_))
 
     def compute_S_cardinality_n(self):
         """Function to compute n = cardinality of set S, which is
