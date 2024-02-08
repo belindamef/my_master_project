@@ -1,7 +1,7 @@
 *data/*
 *defense*
 *results/*
-*figures/*
+# *figures/*
 *report/*
 *manuscript/*
 *code/test_manu*
@@ -13,7 +13,7 @@
 code/utilities/lklh_dim-5_h6.npy
 code/utilities/lklh_dim-5_h6_bu.npy
 **.pptx
-code/stoch_matrices
+# code/stoch_matrices
 
 # IDEs and OSX
 *.vscode

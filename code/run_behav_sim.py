@@ -47,6 +47,7 @@ def main(exp_label: str,
         task_params=task_params,
     ).compute_or_load_components()
 
+    logging.info(" ----- SUMMARY SHAPES AND SIZES ----------------------")
     logging.info("                 Value/Shape           Size")
     logging.info(" Cardinality  n: %s",
                  task_sets_n_cardinalities.n)
@@ -136,10 +137,10 @@ def main(exp_label: str,
 if __name__ == "__main__":
 
     # Define experiment / simulation label
-    DIM = 4
+    DIM = 2
     HIDES = 2
-    EXP_LABEL = f"test_dim-{DIM}_h-{HIDES}_02_07"
-    comment = "None"
+    EXP_LABEL = f"test_dim-{DIM}_h-{HIDES}_02_08"
+    comment = "Optimizing Omega Computation"
 
     # Prepare output directory
     dir_manager = DirectoryManager()
