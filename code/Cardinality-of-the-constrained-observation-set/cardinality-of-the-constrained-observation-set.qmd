@@ -1,0 +1,110 @@
+---
+format: pdf
+---
+
+### Cardinality of the constrained observation set
+
+Let $d$ denote the dimension of the square grid-word, let $n_c := d^2$ denote 
+the number of cells and let $n_h$ denote the number of hiding spots. Let $\mathcal{C} := \{0,1,2\}$ 
+denote the set of possible cell colors, where $0$ encodes a black cell color 
+(cell has not been investigated by drilling), $1$ encodes a gray cell color 
+(cell has been investigated by drilling and identified as not a hiding spot) 
+and $2$ encodes a blue cell color (cell has been investigated by drilling and 
+identified as a hiding spot). As a single cell can only take on a single color 
+at any trial during the game, the unconstrained observation set is given by
+\begin{equation}
+\mathcal{O} := \mathcal{C}^{n_c}
+\end{equation}
+with cardinality
+\begin{equation}
+\vert\mathcal{O}\vert := \vert\mathcal{C}\vert^{n_c}.
+\end{equation}
+Let $o \in \mathcal{O}$ denote an observation and let $n_g^o$ and $n_b^o$ denote 
+the number of $1$s (gray cells) and $2$s (blue cells) of this observation. Then 
+by the rules of the game, the constrained observation set is defined as
+\begin{equation}
+O := \{o \in \mathcal{O}|0\le n^o_b \le n^o_h, 0 \le n_g^o \le n_c - n_h\} \subset \mathcal{O}.
+\end{equation}
+In words, the elements of the constrained observation set are those elements of 
+the unconstrained observation set for which the number of blue cells is maximally 
+the number of hiding spots (there cannot be more hiding spots identified 
+than there are actual hiding spots) and for which the number of gray cells is
+maximally the number of non-hiding spot cells of the grid world (all cells  may 
+have been investigated by drilling, if so, the hiding spots are colored blue 
+and all remaining cells are colored gray). 
+
+Let 
+\begin{equation}
+\mathcal{O}_b := \{o \in \mathcal{O}|n_b^o > n_h\}
+\mbox{ and }
+\mathcal{O}_g := \{o \in \mathcal{O}|n_g^o > n_c - n_h\}
+\end{equation}
+denote the observation sets that violate the constraints on the maximal number 
+of blue cells and the maximal number of gray cells, respectively. Then, the 
+constrained observation set can be written as
+\begin{equation}
+O = \mathcal{O} \backslash \left(\mathcal{O}_b \cup \mathcal{O}_g\right)
+\end{equation}
+and by the [inclusion-exclusion principle](https://en.wikipedia.org/wiki/Inclusion%E2%80%93exclusion_principle), 
+the cardinality of the constrained observation set is given by
+\begin{equation}
+|O| = |\mathcal{O}| - |\mathcal{O}_b| - |\mathcal{O}_g| + |\mathcal{O}_b \cap \mathcal{O}_g|
+\end{equation}
+We are thus required to analyze the cardinalities of $\mathcal{O}_b$, $\mathcal{O}_g$ and $\mathcal{O}_b \cap \mathcal{O}_g$.
+
+\newpage
+*Cardinality of $\mathcal{O}_b$*
+
+$\mathcal{O}_b$ is the set of all observations in the unconstrained observation 
+set, which contain more blue cell entries than there are hiding spots. These 
+are all those observations in $o \in \mathcal{O}$ with $k_b = n_h + 1, n_h + 2,...,n_c - 1, n_c$
+blue entries among the $n_c$ available cells. For each of those number of blue cells 
+$k_b$, there exist the possibilities of $k_g = 0,1,...,n_c - k_b - 1, n_c - k_b$ 
+gray cell entries among  the $n_c - k_b$ non-allocated cells. We thus have
+\begin{equation}
+|O_b| = 
+\sum_{k_b = n_h + 1}^{n_c} 
+\begin{pmatrix} n_c \\ k_b \end{pmatrix}
+\left(\sum_{k_g = 0}^{n_c - k_b}\begin{pmatrix} n_c - k_b \\ k_g \end{pmatrix}\right)
+\end{equation}
+
+*Cardinality of $\mathcal{O}_g$*
+
+$\mathcal{O}_g$ is the set of all observations in the unconstrained observation 
+set, which contain more gray cells than there are non-hiding spot grid world cells. 
+These are all those observations in $o \in \mathcal{O}$  with 
+$k_g = n_c-n_h+1,n_c-n_h+2,... n_c - 1, n_c$ gray entries among the $n_c$ 
+available cells. For each of those number of gray cells $k_g$, there exist the 
+possibilities of $k_b = 0,1,..., n_c - k_g - 1, n_c - k_g$  blue cell entries 
+among the $n_c - k_g$ available cells. We thus have
+\begin{equation}
+|O_g| = 
+\sum_{k_g = n_c - n_h+1}^{n_c} 
+\begin{pmatrix} n_c \\ k_g \end{pmatrix}
+\left(\sum_{k_b = 0}^{n_c - k_g}\begin{pmatrix} n_c - k_g \\ k_b \end{pmatrix}\right)
+\end{equation}
+
+*Cardinality of $\mathcal{O}_g \cap \mathcal{O}_b$*
+
+$\mathcal{O}_g \cap \mathcal{O}_b$ is the set of all observations in the unconstrained 
+observation set, which contain more blue entries than there are hiding spots and 
+more gray entries than there a non-hiding spot grid cells. Such observations 
+thus fulfil
+\begin{align}
+\begin{split}
+n_b^o > n_h \land n_g^o > n_c - n_h,
+\end{split}
+\end{align}
+and, by means of addition of the inequalities 
+\begin{align}
+\begin{split}
+n_b^o + n_g^o > n_h + n_c - n_h
+\Leftrightarrow
+n_b^o + n_g^o > n_c 
+\end{split}
+\end{align}
+and are thus not admissible. The set $\mathcal{O}_g \cap \mathcal{O}_b$ is 
+thus the empty set with cardinality 
+\begin{equation}
+\vert \mathcal{O}_g \cap \mathcal{O}_b \vert = |\emptyset| = 0.
+\end{equation}
