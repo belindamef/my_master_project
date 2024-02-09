@@ -137,10 +137,10 @@ def main(exp_label: str,
 if __name__ == "__main__":
 
     # Define experiment / simulation label
-    DIM = 2
-    HIDES = 2
-    EXP_LABEL = f"test_dim-{DIM}_h-{HIDES}_02_08"
-    comment = "Optimizing Omega Computation"
+    DIM = 5
+    HIDES = 6
+    EXP_LABEL = f"test_dim-{DIM}_h-{HIDES}_02_09"
+    comment = "simulation runs to calculate shapes"
 
     # Prepare output directory
     dir_manager = DirectoryManager()

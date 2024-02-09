@@ -13,6 +13,7 @@ import pandas as pd
 from math import factorial
 import more_itertools
 from .config import Paths, DataHandler, humanreadable_time
+from .cardinality_set_O import cOb, cOg
 
 
 @dataclass
@@ -211,6 +212,7 @@ class TaskSetsNCardinalities:
         self.n = self.compute_S_cardinality_n()      # Cardinality of S       n
         self.m = self.compute_O_cardinality_m()      # Cardinality of O       m
         self.p = 5                                   # Cardinality of A       p
+        self.log_shapes()
         self.S = np.full(                            # Set of states          S
             (self.n, 2 + self.params.n_hides),
             99)
@@ -226,6 +228,26 @@ class TaskSetsNCardinalities:
         # Compute or load sets
         self.compute_or_load_sets()
 
+    def log_shapes(self):
+        """Function to log calculated shapes of sets and stochastic matrices,
+        before initializing sets, which bursts working memory"""
+        logging.info("Calculated shapes:")
+        logging.info("                 Value/Shape")
+        logging.info(" Cardinality  n: %s",
+                     self.n)
+        logging.info(" Cardinality  m: %s",
+                     self.m,)
+        logging.info("          set S: (%s, %s)",
+                     self.n, 2 + self.params.n_hides)
+        logging.info("          set O: (%s, %s)",
+                     self.m, 1 + self.params.n_nodes)
+        logging.info("           beta: (%s, 1)",
+                     self.n)
+        logging.info("            Phi: (5, %s, %s)",
+                     self.n, self.n)
+        logging.info("          Omega: (2, %s, %s)",
+                     self.n, self.m)
+
     def compute_or_load_sets(self):
         """Function to check if files of state and observation sets exist
         on disk and start compution of both individually, otherwise."""
@@ -239,7 +261,7 @@ class TaskSetsNCardinalities:
                      self.m,)
         logging.info("                                       %s \n",
                      asizeof.asizeof(self.m))
-    
+
         data_handler = DataHandler(paths=Paths())
         # ------ Set of states-------------------------------------------------
         set_S_path = data_handler.create_matrix_fn(
@@ -443,14 +465,34 @@ class TaskSetsNCardinalities:
     def compute_O_cardinality_m(self):
         """"Function to compute m = cardinality of set O, which 2 x the number
         of node color combinations."""
-        self.compute_O2()  # TODO: doppelt!
-        n_node_color_combinations = len(self.O2)  # TODO: formula dafür?!?
-        m = 2 * n_node_color_combinations  # TP
-        return m
+        # self.compute_O2()  # TODO: doppelt!
+        # n_node_color_combinations = len(self.O2)  # TODO: formula dafür?!?
+        # m = 2 * n_node_color_combinations  # TP
+
+        # von Dirks Skript:
+        # --------------------------------
+        colors = [0, 1, 2]
+        n_o2c = (                      # cardinality of the unconstrained O2 set
+            len(colors) ** self.params.n_nodes
+            )
+
+        # analytical solution
+        n_o2b = cOb(                   # cardinality of violation set O2_b
+            n_c=self.params.n_nodes,
+            n_h=self.params.n_hides
+            )
+        n_o2g = cOg(                   # cardinality of violation set O2_g
+            n_c=self.params.n_nodes,
+            n_h=self.params.n_hides
+            )
+        n_o2 = n_o2c - n_o2b - n_o2g  # cardinality of the constrained O2 set 
+        n_o = 2 * n_o2
+
+        return n_o
 
     def compute_set_O(self):
         """Method to compute complete set of Observations"""
-        # O2 = self.compute_O2()  # Node color combinations # TODO: doppelt!
+        self.compute_O2()  # Node color combinations
         O1 = [0, 1]
         i = 0
 
