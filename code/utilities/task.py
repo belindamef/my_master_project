@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 import copy as cp
 import numpy as np
 import pandas as pd
+import scipy.sparse as sp
 from math import factorial
 import more_itertools
 from .config import Paths, DataHandler, humanreadable_time
@@ -216,10 +217,25 @@ class TaskSetsNCardinalities:
         self.S = np.full(                            # Set of states          S
             (self.n, 2 + self.params.n_hides),
             99)
-        self.O_ = np.full(                         # Set of observations      O
-            (self.m, 1 + self.params.n_nodes),
-            99,
-            dtype=np.int8)
+
+        self.O_ = {
+            0: sp.csr_matrix(
+                (int(self.m / 2), self.params.n_nodes),
+                dtype=np.int8
+            ),
+            1: sp.csr_matrix(
+                (int(self.m / 2), self.params.n_nodes),
+                dtype=np.int8
+            )
+        }
+        self.O_ = sp.csr_matrix(                    # Set of observations      O
+            (self.m, self.params.n_nodes + 1),  # shape
+            dtype=np.int8
+            )
+        # self.O_ = np.full(                         # Set of observations      O
+        #     (self.m, 1 + self.params.n_nodes),
+        #     99,
+        #     dtype=np.int8)
         self.A = np.array(                         # Set of actions           A
             [0, -self.params.dim, 1,
              self.params.dim, -1], dtype=np.int8)
@@ -330,18 +346,18 @@ class TaskSetsNCardinalities:
             n_nodes=self.params.n_nodes,
             n_hides=self.params.n_hides)
 
-        if os.path.exists(f"{set_O_path}.pkl"):
+        if os.path.exists(f"{set_O_path}.npz"):
             # Load matrices from hd for this task grid configuration
             logging.info(
-                "Loading set O from %s.pkl",
+                "Loading set O from %s.npz",
                 set_O_path
                 )
             # print("Loading set O of observations from disk for given task config ("
             #       f"{self.params.n_nodes} nodes and "
             #       f"{self.params.n_hides} hiding spots) ...")
             start = time.time()
-            with open(f"{set_O_path}.pkl", "rb") as file:
-                self.O_ = pickle.load(file)
+            with open(f"{set_O_path}.npz", "rb") as file:
+                self.O_ = sp.load_npz(file)
             end = time.time()
             logging.info(
                 "Time needed to load set O: %s \n",
@@ -368,7 +384,8 @@ class TaskSetsNCardinalities:
             data_handler.save_arrays(
                 n_nodes=self.params.n_nodes,
                 n_hides=self.params.n_hides,
-                set_O=self.O_
+                set_O=self.O_,
+                sparse=True
                 )
             end = time.time()
             logging.info("Time needed to save set O to disk: %s \n",
@@ -493,17 +510,40 @@ class TaskSetsNCardinalities:
     def compute_set_O(self):
         """Method to compute complete set of Observations"""
         self.compute_O2()  # Node color combinations
-        O1 = [0, 1]
+        O1 = [0, 1]  # Treasure flag
         i = 0
+
+        rows = []
+        cols = []
+        data = []
+
+        # Append row and col indices first o[0] = 1
+        rows.extend(range(len(self.O2), len(self.O2) * 2))
+        cols.extend([0] * len(self.O2))
+        data.extend([1] * len(self.O2))
 
         for o1 in O1:  # Iterate treasure flags
 
             for o2 in self.O2:  # Iterate node color combinations
 
-                self.O_[i, 0] = o1
-                self.O_[i, 1:] = o2
+                for col_index, o2_enty in enumerate(o2):
 
-                i += 1
+                    if o2_enty != 0:
+                        rows.append(i)
+                        cols.append(col_index + 1)
+                        data.append(o2_enty)
+
+                    # self.O_[i, 0] = o1
+                    # self.O_[i, 1:] = o2
+
+                i += 1  # Move to next row of O2
+
+        self.O_ = sp.csr_matrix(
+            (data,  # data
+             (rows, cols,)),  # index
+            shape=(self.m, self.params.n_nodes + 1),  # shape
+            dtype=np.int8
+             )
 
 
 class Task:

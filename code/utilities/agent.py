@@ -180,7 +180,7 @@ class StochasticMatrices:
                                 s[0] != s[1]  # not necessary because O sliced
                                 and s[0] not in s[2:]
                                 and o[0] == 0  # treasure flag # not necessary because O sliced
-                                and (o[s[0]]== node_colors["grey"])
+                                and (o[s[0]] == node_colors["grey"])
                                      ):
                             rows.append(i_s)
                             cols.append(i_o + index_addition)

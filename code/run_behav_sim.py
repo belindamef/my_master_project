@@ -139,8 +139,8 @@ if __name__ == "__main__":
     # Define experiment / simulation label
     DIM = 5
     HIDES = 6
-    EXP_LABEL = f"test_dim-{DIM}_h-{HIDES}_02_09"
-    comment = "simulation runs to calculate shapes"
+    EXP_LABEL = f"test_dim-{DIM}_h-{HIDES}_02_12"
+    comment = "Make set O sparse"
 
     # Prepare output directory
     dir_manager = DirectoryManager()
