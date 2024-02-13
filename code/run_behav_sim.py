@@ -36,7 +36,7 @@ def main(exp_label: str,
     # Create model task object to store and transfer state spaces
     task_sets_n_cardinalities = TaskSetsNCardinalities(
         task_params=task_params,
-        )
+        ).compute_or_load_sets()
 
     logging.info("------------------------------------------")
     logging.info("Loading/Computing Stochastic Matrices")
