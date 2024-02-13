@@ -217,32 +217,33 @@ class TaskSetsNCardinalities:
         self.S = np.full(                            # Set of states          S
             (self.n, 2 + self.params.n_hides),
             99)
-
-        self.O_ = {
-            0: sp.csr_matrix(
-                (int(self.m / 2), self.params.n_nodes),
-                dtype=np.int8
-            ),
-            1: sp.csr_matrix(
-                (int(self.m / 2), self.params.n_nodes),
-                dtype=np.int8
-            )
-        }
-        self.O_ = sp.csr_matrix(                    # Set of observations      O
-            (self.m, self.params.n_nodes + 1),  # shape
-            dtype=np.int8
-            )
-        # self.O_ = np.full(                         # Set of observations      O
-        #     (self.m, 1 + self.params.n_nodes),
-        #     99,
+        # self.S = sp.csr_matrix(
+        #     (self.n, self.params.n_hides + 2),  # shape
         #     dtype=np.int8)
+        # self.O_ = {
+        #     0: sp.csr_matrix(
+        #         (int(self.m / 2), self.params.n_nodes),
+        #         dtype=np.int8
+        #     ),
+        #     1: sp.csr_matrix(
+        #         (int(self.m / 2), self.params.n_nodes),
+        #         dtype=np.int8
+        #     )
+        # }
+        # self.O_ = sp.csr_matrix(                    # Set of observations      O
+        #     (self.m, self.params.n_nodes + 1),  # shape
+        #     dtype=np.int8
+        #     )
+        # # self.O_ = np.full(                         # Set of observations      O
+        # #     (self.m, 1 + self.params.n_nodes),
+        # #     99,
+        # #     dtype=np.int8)
+
         self.A = np.array(                         # Set of actions           A
             [0, -self.params.dim, 1,
              self.params.dim, -1], dtype=np.int8)
         self.R = np.array([0, 1], dtype=np.int8)                  # Set of rewards           R
 
-        # Compute or load sets
-        self.compute_or_load_sets()
 
     def log_shapes(self):
         """Function to log calculated shapes of sets and stochastic matrices,
@@ -339,6 +340,66 @@ class TaskSetsNCardinalities:
                      self.S.shape)
         logging.info("                                       %s \n",
                      asizeof.asizeof(self.S))
+
+        # ------ Set of observations O2-------------------------------------------
+        set_O2_path = data_handler.create_matrix_fn(
+            matrix_name="set_O2",
+            n_nodes=self.params.n_nodes,
+            n_hides=self.params.n_hides)
+
+        if os.path.exists(f"{set_O2_path}.npz"):
+            # Load matrices from hd for this task grid configuration
+            logging.info(
+                "Loading set O from %s.npz",
+                set_O2_path
+                )
+            # print("Loading set O of observations from disk for given task config ("
+            #       f"{self.params.n_nodes} nodes and "
+            #       f"{self.params.n_hides} hiding spots) ...")
+            start = time.time()
+            with open(f"{set_O2_path}.npz", "rb") as file:
+                self.O_ = sp.load_npz(file)
+            end = time.time()
+            logging.info(
+                "Time needed to load set O2: %s \n",
+                humanreadable_time(end-start)
+                )
+            # print(f" ... finished loading. \n ... time:  "
+            #       f"{humanreadable_time(end-start)}\n")
+
+        else:
+            # Compute for this task grid configuration and save to hd
+            logging.info("Computing set O2 for given task config ...")
+            # print("Computing set O2 for given task config ("
+            #       f"{self.params.n_nodes} nodes and "
+            #       f"{self.params.n_hides} hiding spots) ...")
+            start = time.time()
+            self.compute_O2()
+            end = time.time()
+            logging.info("Time needed to compute set O: %s",
+                         humanreadable_time(end-start)
+                         )
+            # print(f" ... finished computing S. \n ... time:  "
+            #       f"{humanreadable_time(end-start)}\n")
+            start = time.time()
+            data_handler.save_arrays(
+                n_nodes=self.params.n_nodes,
+                n_hides=self.params.n_hides,
+                set_O=self.O_
+                )
+            end = time.time()
+            logging.info("Time needed to save set O2 to disk: %s \n",
+                         humanreadable_time(end-start))
+            # print(f" ... finisehd writing O to disk. \n ... time:  "
+            #       f"{humanreadable_time(end-start)}\n"
+            #       )
+        logging.info("                 Value/Shape           Size")
+        logging.info("          set O2: %s",
+                     self.O2_.shape)
+        logging.info("                                       %s \n",
+                     asizeof.asizeof(self.O_))
+
+
 
         # ------ Set of observations-------------------------------------------
         set_O_path = data_handler.create_matrix_fn(

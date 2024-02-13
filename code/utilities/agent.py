@@ -141,7 +141,8 @@ class StochasticMatrices:
             # Slice the array into two halves
             half_length = len(self.O_) // 2
             return self.O_[half_length:, :]  # Return second half
-    
+
+
         for a in ["step", "drill"]:
 
             # Initiate row and columns index lists to construct sparse matrices
