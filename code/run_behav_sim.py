@@ -54,17 +54,15 @@ def main(exp_label: str,
     logging.info("                                       %s",
                  asizeof.asizeof(task_sets_n_cardinalities.n))
     logging.info(" Cardinality  m: %s",
-                 task_sets_n_cardinalities.m,)
+                 task_sets_n_cardinalities.n_O,)
     logging.info("                                       %s",
-                 asizeof.asizeof(task_sets_n_cardinalities.m))
+                 asizeof.asizeof(task_sets_n_cardinalities.n_O))
     logging.info("          set S: %s",
                  task_sets_n_cardinalities.S.shape)
     logging.info("                                       %s",
                  asizeof.asizeof(task_sets_n_cardinalities.S))
-    logging.info("          set O: %s",
-                 task_sets_n_cardinalities.O_.shape)
-    logging.info("                                       %s",
-                 asizeof.asizeof(task_sets_n_cardinalities.O_))
+    logging.info("          set O: NA")
+    logging.info("                                       NA")
     logging.info("           beta: %s",
                  stoch_matrices.beta_0.shape)
     logging.info("                                       %s",
@@ -137,10 +135,10 @@ def main(exp_label: str,
 if __name__ == "__main__":
 
     # Define experiment / simulation label
-    DIM = 5
-    HIDES = 6
-    EXP_LABEL = f"test_dim-{DIM}_h-{HIDES}_02_12"
-    comment = "Make set O sparse"
+    DIM = 3
+    HIDES = 2
+    EXP_LABEL = f"test_dim-{DIM}_h-{HIDES}_02_14"
+    comment = "Use O indices instead of O"
 
     # Prepare output directory
     dir_manager = DirectoryManager()

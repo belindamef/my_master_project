@@ -62,26 +62,19 @@ class StochasticMatrices:
     def __init__(self, task_states_n_cardins: TaskSetsNCardinalities,
                  task_params: TaskNGridParameters):
 
-        # Unpack sets and cardinalities
-        self.n = task_states_n_cardins.n
-        self.m = task_states_n_cardins.m
-        self.p = task_states_n_cardins.p
-        self.S = task_states_n_cardins.S
-        self.O_ = task_states_n_cardins.O_
-        self.A = task_states_n_cardins.A
-        self.R = task_states_n_cardins.R
+        self.task_states_n_cardins = task_states_n_cardins
 
         self.task_params = task_params
         self.paths: Paths = Paths()
 
         self.beta_0: np.ndarray = np.full(
-            (self.n, 1),
+            (self.task_states_n_cardins.n, 1),
             np.nan
             )
         self.Phi = {}
-        for action in self.A:
+        for action in self.task_states_n_cardins.A:
             self.Phi[action] = sp.csc_matrix(
-                (self.n, self.n),  # shape
+                (self.task_states_n_cardins.n, self.task_states_n_cardins.n),  # shape
                 dtype=np.int8,
                 )
         # self.Phi = np.full(
@@ -91,11 +84,11 @@ class StochasticMatrices:
         #     )
         self.Omega = {
             "drill": sp.csc_matrix(
-                (self.n, self.m),  # shape
+                (self.task_states_n_cardins.n, self.task_states_n_cardins.n_O),  # shape
                 dtype=np.int8
                 ),
             "step": sp.csc_matrix(
-                (self.n, self.m),  # shape
+                (self.task_states_n_cardins.n, self.task_states_n_cardins.n_O),  # shape
                 dtype=np.int8
                 )
         }
@@ -119,13 +112,154 @@ class StochasticMatrices:
         trial 1 given the state current position s1_t"""
 
         # Set all states, that are in line with current position to 1
-        self.beta_0[np.where(self.S[:, 0] == s1_t)[0], 0] = 1
+        self.beta_0[np.where(self.task_states_n_cardins.S[:, 0] == s1_t)[0], 0] = 1
         # Set alle remaining states zero
-        self.beta_0[np.where(self.S[:, 0] != s1_t)[0], 0] = 0
+        self.beta_0[np.where(self.task_states_n_cardins.S[:, 0] != s1_t)[0], 0] = 0
         # Normalize belief state
         self.beta_0 = self.beta_0 / sum(self.beta_0)
 
-    def compute_Omega(self):
+    def compute_Omega_using_O_indices(self):
+        """Method to compute Omega"""
+
+        node_colors = {"black": 0,
+                       "grey": 1,
+                       "blue": 2}
+
+        for a in ["step", "drill"]:
+
+            # Initiate row and columns index lists to construct sparse matrices
+            rows = []
+            cols = []
+
+            O_color_indices = self.task_states_n_cardins.o_node_specfic_indices
+
+            for i_s, s in enumerate(self.task_states_n_cardins.S):
+
+                # TODO: alle observations noch drin,
+                #  wo node colors mit hiding spot
+                #  locations keinen sinn machen
+                # siehe Handwritten NOTE 24.11.
+
+                cur_pos_i = s[0] - 1
+
+                for j in range(self.task_states_n_cardins.n_O):
+
+                    # -------After DRILL actions: -----------------------------
+                    if a == "drill":
+
+                        # CONDITION:                    CORRESP MODEL VARIABLE:
+                        # ---------------------------------------------------------
+                        # if new position...                              s[1]
+                        # ...IS NOT treasure location                     s[2]
+                        # ...IS NOT hiding spot,                          s[3:]
+                        # all observation, for which...
+                        # ...tr_flag == 0,                                o[1]
+                        # ...and new node color == grey,                  o[2:]
+                        #  = 1
+                        if (
+                                s[0] != s[1]  # not necessary because O sliced
+                                and s[0] not in s[2:]
+                                and j < self.task_states_n_cardins.n_O2  # o[0] == 0
+                                and j in O_color_indices[1][  # color gray indices
+                                            cur_pos_i              # of current pos
+                                            ]
+                                      # same as (o[s[0]] == node_colors["grey"])
+                                     ):
+                            rows.append(i_s)
+                            cols.append(j)
+
+                        # CONDITION:                    CORRESP MODEL VARIABLE:
+                        # ---------------------------------------------------------
+                        # if new position...                              s[1]
+                        # ...IS NOT treasure location                     s[2]
+                        # ...IS hiding spot,                              s[3:]
+                        # all observation, for which...
+                        # ...tr_flag == 0,                                o[1]
+                        # ...and new node color == blue,                  o[2:]
+                        #  = 1
+                        if (
+                                s[0] != s[1]  # not necessary because O sliced
+                                and s[0] in s[2:]
+                                and j < self.task_states_n_cardins.n_O2  # o[0] == 0
+                                and j in O_color_indices[2][cur_pos_i]  # o[s[0]] == node_colors["blue"]
+                                ):
+                            rows.append(i_s)
+                            cols.append(j)
+                        # All other observaton probabs remain 0 as initiated.
+
+                    # -------After STEP actions: -----------------------------
+                    else:  # if a == "step"
+
+                        # CONDITION:                    CORRESP MODEL VARIABLE:
+                        # ---------------------------------------------------------
+                        # if new position...                              s[1]
+                        # ...IS NOT treasure location                     s[2]
+                        # ...IS NOT hiding spot,                          s[3:]
+                        # all observation, for which...
+                        # ...tr_flag == 0,                                o[1]
+                        # ...and new node color in ["black", "grey"],     o[2:]
+                        #  = 1
+                        if (
+                                s[0] != s[1]
+                                and s[0] not in s[2:]
+                                and j < self.task_states_n_cardins.n_O2  # o[0] == 0
+                                and j in O_color_indices[0][cur_pos_i]  #(o[s[0]] in [node_colors["black"], node_colors["grey"]])
+                                    ):
+                            rows.append(i_s)
+                            cols.append(j)
+
+                        # CONDITION:                    CORRESP MODEL VARIABLE:
+                        # ---------------------------------------------------------
+                        # if new position...                              s[1]
+                        # ...IS NOT treasure location                     s[2]
+                        # ...IS hiding spot,                              s[3:]
+                        # all observation, for which...
+                        # ...tr_flag == 0,                                o[1]
+                        # ...and new node color in ["black", "blue"],     o[2:]
+                        #  = 1
+                        if (
+                                s[0] != s[1]  # not necessary because O sliced
+                                and s[0] in s[2:]
+                                and j < self.task_states_n_cardins.n_O2  # o[0] == 0
+                                and j in O_color_indices[2][cur_pos_i]  # o[s[0]] == node_colors["blue"]
+                                    ):
+                            rows.append(i_s)
+                            cols.append(j)
+
+                        # CONDITION:                    CORRESP MODEL VARIABLE:
+                        # ---------------------------------------------------------
+                        # if new position...                              s[1]
+                        # ...IS treasure location                         s[2]
+                        # ...IS hiding spot,                              s[3:]
+                        # all observation, for which...
+                        # ...tr_flag == 1,                                o[1]
+                        # ...and new node color in ["black", "blue"],     o[2:]
+                        #  = 1
+                        if (    # TODO: irgendwas mit dem Omega-Wert hier stimmt nicht
+                                s[0] == s[1]  # not necessary because O sliced
+                                and s[0] in s[2:]
+                                and j >= self.task_states_n_cardins.n_O2  # o[0] == 1
+                                and (j in O_color_indices[0][cur_pos_i]  # black
+                                     or j in O_color_indices[2][cur_pos_i]  # blue
+                                     )
+                                    # o[s[0]] in [
+                                    # node_colors["black"], node_colors["blue"]]
+                                    ):
+                            rows.append(i_s)
+                            cols.append(j)
+
+            # TODO: find out, why if shape not specified, sparse Omega matrix
+                            # turns out as a 45 x 63 matrix ??
+            self.Omega[a] = sp.csc_matrix(
+                ([1]*len(rows),  # data
+                    (rows, cols)),  # indices
+                shape=(self.task_states_n_cardins.n, self.task_states_n_cardins.n_O),  # shape
+                dtype=np.int8
+                )
+            
+        debug = "here"
+
+    def compute_Omega_using_set_O(self):
         """Method to compute Omega"""
 
         node_colors = {"black": 0,
@@ -134,13 +268,13 @@ class StochasticMatrices:
 
         def return_first_half() -> np.ndarray:
             # Slice the array into two halves
-            half_length = len(self.O_) // 2
-            return self.O_[:half_length, :]  # Return first half
+            half_length = len(self.task_states_n_cardins.O) // 2
+            return self.task_states_n_cardins.O[:half_length, :]  # Return first half
 
         def return_second_half() -> np.ndarray:
             # Slice the array into two halves
-            half_length = len(self.O_) // 2
-            return self.O_[half_length:, :]  # Return second half
+            half_length = len(self.task_states_n_cardins.O) // 2
+            return self.task_states_n_cardins.O[half_length:, :]  # Return second half
 
 
         for a in ["step", "drill"]:
@@ -149,7 +283,7 @@ class StochasticMatrices:
             rows = []
             cols = []
 
-            for i_s, s in enumerate(self.S):
+            for i_s, s in enumerate(self.task_states_n_cardins.S):
 
                 # TODO: alle observations, wo node colors mit hiding spot
                 #  locations keinen sinn machen
@@ -161,7 +295,7 @@ class StochasticMatrices:
                     O_ = return_first_half()
                 else:  # elif not treasure position (s[0] != s[1]), only o[0] = 1 possible
                     O_ = return_second_half()
-                    index_addition = len(self.O_) // 2  # TODO: expl. comment
+                    index_addition = len(self.task_states_n_cardins.O) // 2  # TODO: expl. comment
 
                 # -------After DRILL actions: -----------------------------
                 if a == "drill":
@@ -270,7 +404,7 @@ class StochasticMatrices:
             self.Omega[a] = sp.csc_matrix(
                 ([1]*len(rows),  # data
                     (rows, cols)),  # indices
-                shape=(self.n, self.m),  # shape
+                shape=(self.task_states_n_cardins.n, self.task_states_n_cardins.n_O),  # shape
                 dtype=np.int8
                 )
 
@@ -284,17 +418,17 @@ class StochasticMatrices:
         # s_1 is the first component of s = s_{t+1}
         # ---------------------------------------
 
-        for i_a, a in enumerate(self.A):
+        for i_a, a in enumerate(self.task_states_n_cardins.A):
 
             # Initiate row and columns index lists to construct sparse matrices
             rows = []
             cols = []
 
             # Iterate possible old states s_{t}
-            for i_s_tilde, s_tilde in enumerate(self.S):
+            for i_s_tilde, s_tilde in enumerate(self.task_states_n_cardins.S):
 
                 # Iterate possible new states s_{t+1}
-                for i_s, s in enumerate(self.S):
+                for i_s, s in enumerate(self.task_states_n_cardins.S):
 
                     s1 = s[0]              # current position in t + 1
                     s1_tilde = s_tilde[0]  # current position in t
@@ -343,7 +477,7 @@ class StochasticMatrices:
             self.Phi[a] = sp.csc_matrix(
                 ([1]*len(rows),  # data
                  (rows, cols)),  # indices
-                shape=(self.n, self.n),  # shape
+                shape=(self.task_states_n_cardins.n, self.task_states_n_cardins.n),  # shape
                 dtype=np.int8
                 )
 
@@ -515,7 +649,8 @@ class StochasticMatrices:
             logging.info("Computing Omega for given task config ...")
             # print("Computing Omega for given task config ...")
             start = time.time()
-            self.compute_Omega()
+            # self.compute_Omega_using_set_O()
+            self.compute_Omega_using_O_indices()
             end = time.time()
             logging.info("Time needed to compute Omega: %s",
                          humanreadable_time(end-start)
@@ -726,7 +861,7 @@ class Agent:
         # TODO: major todo
         # Initialize all as zero
         self.p_s_giv_o_prior_new_c = np.full(
-            (self.stoch_matrices.n, 1), 0.)
+            (self.stoch_matrices.task_states_n_cardins.n, 1), 0.)
 
         # marg_s4_perm_b = np.full(self.n_s4_perms, np.nan)
         # for s4_perm in range(self.n_s4_perms):
@@ -785,6 +920,15 @@ class Agent:
                 the posterior belief state.
         """
 
+        def find_j(o_t):
+            o_indices = self.task.sets_n_cardins.o_node_specfic_indices
+            list_of_sets = [
+                set(
+                    o_indices[color][node]
+                    ) for node, color in enumerate(o_t[1:])]
+            j = set.intersection(*list_of_sets)
+            return list(j)[int(o_t[0])]
+
         # Determine action type (step or drill)
         if a_t != 0:  # if step
             a_t_type = "step"
@@ -796,15 +940,17 @@ class Agent:
             a_t = 0
 
         # Determine observation dependent omega index j
-        O_ = self.task.sets_n_cardins.O_
-        j = int(np.where(np.all(O_ == o_t, axis=1))[0])
+        # O_ = self.task.sets_n_cardins.O_  # TODO: index umschreiben!
+        # j = int(np.where(np.all(O_ == o_t, axis=1))[0])
+
+        j = find_j(o_t)
 
         # Choose action dependent Omega
         Omega_a = self.stoch_matrices.Omega[a_t_type]
 
         # Extract components  # TODO: kopieren kostet working memory
         Omega_a_j = Omega_a[:, j]
-        Phi_k = self.stoch_matrices.Phi[a_t] # [:, :]
+        Phi_k = self.stoch_matrices.Phi[a_t]  # [:, :]
 
         # # TODO: still necessary?
         # if np.sum(beta_prior * Omega_j) == 0:
