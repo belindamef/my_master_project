@@ -11,6 +11,8 @@ import pickle
 import more_itertools
 import numpy as np
 import scipy.sparse as sp
+from pympler import asizeof
+from bitarray import bitarray
 from utilities.config import DataHandler, Paths, humanreadable_time
 from utilities.task import TaskSetsNCardinalities, TaskNGridParameters
 
@@ -132,6 +134,38 @@ def _partial(A, r):
         head[i:], tail[:] = tail[: r - i], tail[r - i :]
 
 
+def test_loops(task_params: TaskNGridParameters, inner_only=False):
+
+    task_sets_n_cardins = TaskSetsNCardinalities(
+        task_params=task_params
+    )
+
+    def test_double_loop():
+        start_loop = time.time()
+        for color in [0, 1, 2]:
+            start = time.time()
+            for i in range(task_sets_n_cardins.n_O2):
+
+                pass
+
+            end = time.time()
+            print("Finished color: ", color, " in ", humanreadable_time(end-start))
+
+        end_loop = time.time()
+        print("finished loop in ", humanreadable_time(end_loop-start_loop))
+
+    def test_innerloop_only():
+        start_loop = time.time()
+        for i in range(task_sets_n_cardins.n_O2):
+            pass
+        end_loop = time.time()
+        print("finished loop in ", humanreadable_time(end_loop-start_loop))
+
+    if inner_only:
+        test_innerloop_only()
+    else:
+        test_double_loop()
+
 def compute_O2_indices(n_nodes, n_hides, n_O2):
     """Method to compute index lists for entries in the set of observation
     """
@@ -192,7 +226,8 @@ def test_indices(test_node, n_nodes, n_hides, indices, color):
     print(f"Permutations, in which node {test_node + 1} is {color}: \n",
           O2[indices[test_node],])
 
-def Omega_a_j_generator(task_states_n_cardins: TaskSetsNCardinalities, 
+
+def Omega_a_j_generator(task_states_n_cardins: TaskSetsNCardinalities,
                         a, o):
 
     Omega_a_j = sp.csr_matrix(
@@ -200,8 +235,8 @@ def Omega_a_j_generator(task_states_n_cardins: TaskSetsNCardinalities,
         dtype=np.int8)
 
     node_colors = {"black": 0,
-                    "grey": 1,
-                    "blue": 2}
+                   "grey": 1,
+                   "blue": 2}
 
     # Initiate row and columns index lists to construct sparse matrices
     rows = []
@@ -322,7 +357,7 @@ def Omega_a_j_generator(task_states_n_cardins: TaskSetsNCardinalities,
         shape=(task_states_n_cardins.n, 1),  # shape
         dtype=np.int8
         )
-    
+
     return Omega_a_j  # TODO über yield speichern ?
 
 
@@ -414,6 +449,52 @@ def test_Omega_on_the_fly(task_params: TaskNGridParameters):
             humanreadable_time(end-start))
 
 
+def test_bitarrays():
+
+    def print_size(num_elements):
+        # Determine the number of bits required to represent each element
+        # Assuming each element is a boolean value (0 or 1)
+        bits_per_element = 1
+
+        # Calculate the total number of bits
+        total_bits = num_elements * bits_per_element
+
+        # Convert bits to bytes, kilobytes, megabytes, etc.
+        bytes_size = total_bits // 8
+        kilobytes_size = bytes_size / 1024
+        megabytes_size = kilobytes_size / 1024
+        gigabytes_size = megabytes_size / 1024
+
+        print(f"\nTheoretical size of the bitarray of size {num_elements}")
+        print(f"Bits: {total_bits}")
+        print(f"Bytes: {bytes_size}")
+        print(f"Kilobytes: {kilobytes_size}")
+        print(f"Megabytes: {megabytes_size}")
+        print(f"Gigabytes: {gigabytes_size}")
+
+    def compare_sparse_and_bitarray():
+        a = bitarray([0, 0, 0, 0, 0])
+        b = np.array([0, 0, 0, 0, 0], dtype=np.int8)
+
+        sparse_array = sp.csr_matrix((48, 126), dtype=np.int8)
+        bit_array = bitarray(48 * 126)
+        print(asizeof.asizeof(sparse_array))
+        print(asizeof.asizeof(bit_array))
+
+    n_O = 375411529402    # size of set O for 5x5 grid with 6 hiding spots
+    n_O2 = 187705764701   # size of set O2 for 5x5 grid with 6 hiding spots
+
+    # mba = bitarray(n_O)  # MemoryError
+    print_size(n_O)
+    print_size(n_O2)
+
+    O2_length_bit_array = bitarray(n_O2)
+    print(f"\nActual size of bitarray of size {n_O2}:",
+          "\nGigabytes: ",
+          asizeof.asizeof(O2_length_bit_array)/(1024 * 1024 * 1024),
+          )
+
+
 if __name__ == "__main__":
 
     # Define experiment / simulation label
@@ -431,4 +512,8 @@ if __name__ == "__main__":
 
     #test_O_indices_computations(task_params=task_parameters)
 
-    test_Omega_on_the_fly(task_params=task_parameters)
+    test_Omega_on_the_fly(task_params=task_parameters)  # --> 10 sec
+
+    test_loops(task_params=task_parameters, inner_only=True)
+
+    test_bitarrays()

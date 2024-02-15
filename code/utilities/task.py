@@ -416,7 +416,6 @@ class TaskSetsNCardinalities:
         logging.info("                                       %s \n",
                      asizeof.asizeof(self.o_node_specfic_indices))
 
-
         def compute_observation_sets(self):
             """_summary_
             """
@@ -645,10 +644,10 @@ class TaskSetsNCardinalities:
                     if entry == color:
                         # Append index for o[0] = 0
                         self.o_node_specfic_indices[color][node].append(j)
-                        # Append index for o[0] = 1
-                        self.o_node_specfic_indices[color][node].append(
-                            j + self.n_O2  # Add index for "second half of O"
-                        )
+                        # # Append index for o[0] = 1
+                        # self.o_node_specfic_indices[color][node].append(
+                        #     j + self.n_O2  # Add index for "second half of O"
+                        # )
 
     def compute_O_cardinality_n_O2(self):
         """"Function to compute m = cardinality of set O, which 2 x the number
