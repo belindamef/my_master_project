@@ -5,13 +5,13 @@ import json
 import pickle
 import time
 import logging
-from pympler import asizeof
 from dataclasses import dataclass, field
 import copy as cp
+from math import factorial
+from pympler import asizeof
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
-from math import factorial
 import more_itertools
 from .config import Paths, DataHandler, humanreadable_time
 from .cardinality_set_O import cOb, cOg
@@ -210,39 +210,52 @@ class TaskSetsNCardinalities:
     """
     def __init__(self, task_params: TaskNGridParameters):
         self.params = task_params
-        self.n = self.compute_S_cardinality_n()      # Cardinality of S       n
-        self.m = self.compute_O_cardinality_m()      # Cardinality of O       m
-        self.p = 5                                   # Cardinality of A       p
+        self.n = self.compute_S_cardinality_n()        # Cardinality of S
+        self.n_O2 = self.compute_O_cardinality_n_O2()  # Cardinality of O^2
+        self.n_O = self.n_O2 * 2                       # Cardinality of O
+        self.p = 5                                     # Cardinality of A     p
         self.log_shapes()
-        self.S = np.full(                            # Set of states          S
+        self.S = np.full(                              # Set of states        S
             (self.n, 2 + self.params.n_hides),
             99)
-
-        self.O_ = {
-            0: sp.csr_matrix(
-                (int(self.m / 2), self.params.n_nodes),
-                dtype=np.int8
-            ),
-            1: sp.csr_matrix(
-                (int(self.m / 2), self.params.n_nodes),
-                dtype=np.int8
-            )
-        }
-        self.O_ = sp.csr_matrix(                    # Set of observations      O
-            (self.m, self.params.n_nodes + 1),  # shape
-            dtype=np.int8
-            )
-        # self.O_ = np.full(                         # Set of observations      O
-        #     (self.m, 1 + self.params.n_nodes),
-        #     99,
+        self.O_ = np.nan
+        # self.S = sp.csr_matrix(
+        #     (self.n, self.params.n_hides + 2),  # shape
         #     dtype=np.int8)
+        # self.O_ = {
+        #     0: sp.csr_matrix(
+        #         (int(self.m / 2), self.params.n_nodes),
+        #         dtype=np.int8
+        #     ),
+        #     1: sp.csr_matrix(
+        #         (int(self.m / 2), self.params.n_nodes),
+        #         dtype=np.int8
+        #     )
+        # }
+        # self.O_ = sp.csr_matrix(                # Set of observations      O
+        #     (self.m, self.params.n_nodes + 1),  # shape
+        #     dtype=np.int8
+        #     )
+        # # self.O_ = np.full(                    # Set of observations      O
+        # #     (self.m, 1 + self.params.n_nodes),
+        # #     99,
+        # #     dtype=np.int8)
+        # Initialize empty dict of dicts of lists to store indices
+        self.colors = [0, 1, 2]
+        self.o_node_specfic_indices = {
+            0: {},
+            1: {},
+            2: {}
+        }
+        for color in self.colors:
+            for node in range(self.params.n_nodes):
+                self.o_node_specfic_indices[color][node] = []
+
         self.A = np.array(                         # Set of actions           A
             [0, -self.params.dim, 1,
              self.params.dim, -1], dtype=np.int8)
-        self.R = np.array([0, 1], dtype=np.int8)                  # Set of rewards           R
+        self.R = np.array([0, 1], dtype=np.int8)   # Set of rewards           R
 
-        # Compute or load sets
-        self.compute_or_load_sets()
 
     def log_shapes(self):
         """Function to log calculated shapes of sets and stochastic matrices,
@@ -252,17 +265,17 @@ class TaskSetsNCardinalities:
         logging.info(" Cardinality  n: %s",
                      self.n)
         logging.info(" Cardinality  m: %s",
-                     self.m,)
+                     self.n_O,)
         logging.info("          set S: (%s, %s)",
                      self.n, 2 + self.params.n_hides)
         logging.info("          set O: (%s, %s)",
-                     self.m, 1 + self.params.n_nodes)
+                     self.n_O, 1 + self.params.n_nodes)
         logging.info("           beta: (%s, 1)",
                      self.n)
         logging.info("            Phi: (5, %s, %s)",
                      self.n, self.n)
         logging.info("          Omega: (2, %s, %s)",
-                     self.n, self.m)
+                     self.n, self.n_O)
 
     def compute_or_load_sets(self):
         """Function to check if files of state and observation sets exist
@@ -274,11 +287,12 @@ class TaskSetsNCardinalities:
         logging.info("                                       %s",
                      asizeof.asizeof(self.n))
         logging.info(" Cardinality  m: %s",
-                     self.m,)
+                     self.n_O,)
         logging.info("                                       %s \n",
-                     asizeof.asizeof(self.m))
+                     asizeof.asizeof(self.n_O))
 
         data_handler = DataHandler(paths=Paths())
+
         # ------ Set of states-------------------------------------------------
         set_S_path = data_handler.create_matrix_fn(
             matrix_name="set_S",
@@ -340,27 +354,29 @@ class TaskSetsNCardinalities:
         logging.info("                                       %s \n",
                      asizeof.asizeof(self.S))
 
-        # ------ Set of observations-------------------------------------------
-        set_O_path = data_handler.create_matrix_fn(
-            matrix_name="set_O",
-            n_nodes=self.params.n_nodes,
-            n_hides=self.params.n_hides)
 
-        if os.path.exists(f"{set_O_path}.npz"):
+        # ------ O indices -------------------------------------------------
+        O_indices_path = data_handler.create_matrix_fn(
+            matrix_name="O_indices",
+            n_nodes=self.params.n_nodes,
+            n_hides=self.params.n_hides
+            )
+
+        if os.path.exists(f"{O_indices_path}.pkl"):
             # Load matrices from hd for this task grid configuration
             logging.info(
-                "Loading set O from %s.npz",
-                set_O_path
+                "Loading O_dices from %s.pkl",
+                O_indices_path
                 )
-            # print("Loading set O of observations from disk for given task config ("
+            # print("Loading set S of states from disk for given task config ("
             #       f"{self.params.n_nodes} nodes and "
             #       f"{self.params.n_hides} hiding spots) ...")
             start = time.time()
-            with open(f"{set_O_path}.npz", "rb") as file:
-                self.O_ = sp.load_npz(file)
+            with open(f"{O_indices_path}.pkl", "rb") as file:
+                self.o_node_specfic_indices = pickle.load(file)
             end = time.time()
             logging.info(
-                "Time needed to load set O: %s \n",
+                "Time needed to load O indices: %s \n",
                 humanreadable_time(end-start)
                 )
             # print(f" ... finished loading. \n ... time:  "
@@ -368,14 +384,14 @@ class TaskSetsNCardinalities:
 
         else:
             # Compute for this task grid configuration and save to hd
-            logging.info("Computing set O for given task config ...")
-            # print("Computing set O for given task config ("
+            logging.info("Computing O indices for given task config ...")
+            # print("Computing set S for given task config ("
             #       f"{self.params.n_nodes} nodes and "
             #       f"{self.params.n_hides} hiding spots) ...")
             start = time.time()
-            self.compute_set_O()
+            self.compute_O_indices()
             end = time.time()
-            logging.info("Time needed to compute set O: %s",
+            logging.info("Time needed to compute O indices: %s",
                          humanreadable_time(end-start)
                          )
             # print(f" ... finished computing S. \n ... time:  "
@@ -384,20 +400,144 @@ class TaskSetsNCardinalities:
             data_handler.save_arrays(
                 n_nodes=self.params.n_nodes,
                 n_hides=self.params.n_hides,
-                set_O=self.O_,
-                sparse=True
+                O_indices=self.o_node_specfic_indices
                 )
             end = time.time()
-            logging.info("Time needed to save set O to disk: %s \n",
-                         humanreadable_time(end-start))
-            # print(f" ... finisehd writing O to disk. \n ... time:  "
+            logging.info(
+                "Time needed to save O indices to disk: %s \n",
+                humanreadable_time(end-start)
+                )
+            # print(f" ... finisehd writing S to disk. \n ... time:  "
             #       f"{humanreadable_time(end-start)}\n"
             #       )
         logging.info("                 Value/Shape           Size")
-        logging.info("          set O: %s",
-                     self.O_.shape)
+        logging.info("          O indices: %s",
+                     "NAN")
         logging.info("                                       %s \n",
-                     asizeof.asizeof(self.O_))
+                     asizeof.asizeof(self.o_node_specfic_indices))
+
+
+        def compute_observation_sets(self):
+            """_summary_
+            """
+            # ------ Set of observations O2-----------------------
+            set_O2_path = data_handler.create_matrix_fn(
+                matrix_name="set_O2",
+                n_nodes=self.params.n_nodes,
+                n_hides=self.params.n_hides)
+
+            if os.path.exists(f"{set_O2_path}.npz"):
+                # Load matrices from hd for this task grid configuration
+                logging.info(
+                    "Loading set O from %s.npz",
+                    set_O2_path
+                    )
+                # print("Loading set O from disk for given task config ("
+                #       f"{self.params.n_nodes} nodes and "
+                #       f"{self.params.n_hides} hiding spots) ...")
+                start = time.time()
+                with open(f"{set_O2_path}.npz", "rb") as file:
+                    self.O_ = sp.load_npz(file)
+                end = time.time()
+                logging.info(
+                    "Time needed to load set O2: %s \n",
+                    humanreadable_time(end-start)
+                    )
+                # print(f" ... finished loading. \n ... time:  "
+                #       f"{humanreadable_time(end-start)}\n")
+
+            else:
+                # Compute for this task grid configuration and save to hd
+                logging.info("Computing set O2 for given task config ...")
+                # print("Computing set O2 for given task config ("
+                #       f"{self.params.n_nodes} nodes and "
+                #       f"{self.params.n_hides} hiding spots) ...")
+                start = time.time()
+                self.compute_O2()
+                end = time.time()
+                logging.info("Time needed to compute set O: %s",
+                             humanreadable_time(end-start)
+                             )
+                # print(f" ... finished computing S. \n ... time:  "
+                #       f"{humanreadable_time(end-start)}\n")
+                start = time.time()
+                data_handler.save_arrays(
+                    n_nodes=self.params.n_nodes,
+                    n_hides=self.params.n_hides,
+                    set_O=self.O_
+                    )
+                end = time.time()
+                logging.info("Time needed to save set O2 to disk: %s \n",
+                             humanreadable_time(end-start))
+                # print(f" ... finisehd writing O to disk. \n ... time:  "
+                #       f"{humanreadable_time(end-start)}\n"
+                #       )
+            logging.info("                 Value/Shape           Size")
+            # logging.info("          set O2: %s",
+            #             self.O2_.shape)
+            logging.info("                                       %s \n",
+                         asizeof.asizeof(self.O_))
+
+            # ------ Set of observations--------------------------------------
+            set_O_path = data_handler.create_matrix_fn(
+                matrix_name="set_O",
+                n_nodes=self.params.n_nodes,
+                n_hides=self.params.n_hides)
+
+            if os.path.exists(f"{set_O_path}.npz"):
+                # Load matrices from hd for this task grid configuration
+                logging.info(
+                    "Loading set O from %s.npz",
+                    set_O_path
+                    )
+                # print("Loading set O from disk for given task config ("
+                #       f"{self.params.n_nodes} nodes and "
+                #       f"{self.params.n_hides} hiding spots) ...")
+                start = time.time()
+                with open(f"{set_O_path}.npz", "rb") as file:
+                    self.O_ = sp.load_npz(file)
+                end = time.time()
+                logging.info(
+                    "Time needed to load set O: %s \n",
+                    humanreadable_time(end-start)
+                    )
+                # print(f" ... finished loading. \n ... time:  "
+                #       f"{humanreadable_time(end-start)}\n")
+
+            else:
+                # Compute for this task grid configuration and save to hd
+                logging.info("Computing set O for given task config ...")
+                # print("Computing set O for given task config ("
+                #       f"{self.params.n_nodes} nodes and "
+                #       f"{self.params.n_hides} hiding spots) ...")
+                start = time.time()
+                self.compute_set_O()
+                end = time.time()
+                logging.info("Time needed to compute set O: %s",
+                             humanreadable_time(end-start)
+                             )
+                # print(f" ... finished computing S. \n ... time:  "
+                #       f"{humanreadable_time(end-start)}\n")
+                start = time.time()
+                data_handler.save_arrays(
+                    n_nodes=self.params.n_nodes,
+                    n_hides=self.params.n_hides,
+                    set_O=self.O_,
+                    sparse=True
+                    )
+                end = time.time()
+                logging.info("Time needed to save set O to disk: %s \n",
+                             humanreadable_time(end-start))
+                # print(f" ... finisehd writing O to disk. \n ... time:  "
+                #       f"{humanreadable_time(end-start)}\n"
+                #       )
+            # logging.info("                 Value/Shape           Size")
+            # logging.info("          set O: %s",
+            #             self.O_.shape)
+            # logging.info("                                       %s \n",
+            #             asizeof.asizeof(self.O_))
+
+        return self
 
     def compute_S_cardinality_n(self):
         """Function to compute n = cardinality of set S, which is
@@ -458,7 +598,7 @@ class TaskSetsNCardinalities:
 
                         i += 1
 
-    def compute_O2(self) -> list:
+    def compute_O2(self):
         """Method to compute the set O2, that is the second component of the
         observation vector, which represents the the node colors of the grid.
         """
@@ -466,7 +606,7 @@ class TaskSetsNCardinalities:
         n_hides = self.params.n_hides
 
         # Create list of values for the urn model
-        urn_values = [0] * n_nodes  # TODO: hier weiter, Permutationen berechnen
+        urn_values = [0] * n_nodes
         urn_values.extend([1] * (n_nodes - n_hides))
         urn_values.extend([2] * n_hides)
 
@@ -477,9 +617,40 @@ class TaskSetsNCardinalities:
                 )
             )
 
-        #return O2
+        # return O2
 
-    def compute_O_cardinality_m(self):
+    def compute_O_indices(self):
+        """Method to compute index lists for entries in the set of observation
+        """
+
+        n_nodes = self.params.n_nodes
+        n_hides = self.params.n_hides
+        colors = [0, 1, 2]
+        # Create list of values for the urn model
+        urn_values = [0] * n_nodes
+        urn_values.extend([1] * (n_nodes - n_hides))
+        urn_values.extend([2] * n_hides)
+
+        my_permutations_generator = more_itertools.distinct_permutations(
+            iterable=urn_values, r=n_nodes
+        )
+
+        # Get Indices
+        for j in range(self.n_O2):
+
+            this_permutation = next(my_permutations_generator)
+
+            for node, entry in enumerate(this_permutation):
+                for color in colors:
+                    if entry == color:
+                        # Append index for o[0] = 0
+                        self.o_node_specfic_indices[color][node].append(j)
+                        # Append index for o[0] = 1
+                        self.o_node_specfic_indices[color][node].append(
+                            j + self.n_O2  # Add index for "second half of O"
+                        )
+
+    def compute_O_cardinality_n_O2(self):
         """"Function to compute m = cardinality of set O, which 2 x the number
         of node color combinations."""
         # self.compute_O2()  # TODO: doppelt!
@@ -489,7 +660,7 @@ class TaskSetsNCardinalities:
         # von Dirks Skript:
         # --------------------------------
         colors = [0, 1, 2]
-        n_o2c = (                      # cardinality of the unconstrained O2 set
+        n_o2c = (                  # cardinality of the unconstrained O2 set
             len(colors) ** self.params.n_nodes
             )
 
@@ -503,9 +674,7 @@ class TaskSetsNCardinalities:
             n_h=self.params.n_hides
             )
         n_o2 = n_o2c - n_o2b - n_o2g  # cardinality of the constrained O2 set 
-        n_o = 2 * n_o2
-
-        return n_o
+        return n_o2
 
     def compute_set_O(self):
         """Method to compute complete set of Observations"""
@@ -541,7 +710,7 @@ class TaskSetsNCardinalities:
         self.O_ = sp.csr_matrix(
             (data,  # data
              (rows, cols,)),  # index
-            shape=(self.m, self.params.n_nodes + 1),  # shape
+            shape=(self.n_O, self.params.n_nodes + 1),  # shape
             dtype=np.int8
              )
 
