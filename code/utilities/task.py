@@ -354,7 +354,6 @@ class TaskSetsNCardinalities:
         logging.info("                                       %s \n",
                      asizeof.asizeof(self.S))
 
-
         # ------ O indices -------------------------------------------------
         O_indices_path = data_handler.create_matrix_fn(
             matrix_name="O_indices",
@@ -389,11 +388,11 @@ class TaskSetsNCardinalities:
             #       f"{self.params.n_nodes} nodes and "
             #       f"{self.params.n_hides} hiding spots) ...")
             start = time.time()
-            self.compute_O_indices()
+            # self.compute_O_indices()
             end = time.time()
             logging.info("Time needed to compute O indices: %s",
-                         humanreadable_time(end-start)
-                         )
+                        humanreadable_time(end-start)
+                        )
             # print(f" ... finished computing S. \n ... time:  "
             #       f"{humanreadable_time(end-start)}\n")
             start = time.time()
@@ -414,10 +413,10 @@ class TaskSetsNCardinalities:
         logging.info("          O indices: %s",
                      "NAN")
         logging.info("                                       %s \n",
-                     asizeof.asizeof(self.o_node_specfic_indices))
+                      asizeof.asizeof(self.o_node_specfic_indices))
 
         def compute_observation_sets(self):
-            """_summary_
+            """TODO: redundant
             """
             # ------ Set of observations O2-----------------------
             set_O2_path = data_handler.create_matrix_fn(
@@ -536,6 +535,7 @@ class TaskSetsNCardinalities:
             # logging.info("                                       %s \n",
             #             asizeof.asizeof(self.O_))
 
+        
         return self
 
     def compute_S_cardinality_n(self):
@@ -644,10 +644,10 @@ class TaskSetsNCardinalities:
                     if entry == color:
                         # Append index for o[0] = 0
                         self.o_node_specfic_indices[color][node].append(j)
-                        # # Append index for o[0] = 1
-                        # self.o_node_specfic_indices[color][node].append(
-                        #     j + self.n_O2  # Add index for "second half of O"
-                        # )
+                        # Append index for o[0] = 1
+                        self.o_node_specfic_indices[color][node].append(
+                            j + self.n_O2  # Add index for "second half of O"
+                        )
 
     def compute_O_cardinality_n_O2(self):
         """"Function to compute m = cardinality of set O, which 2 x the number

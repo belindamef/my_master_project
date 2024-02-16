@@ -43,7 +43,7 @@ def main(exp_label: str,
     logging.info("------------------------------------------")
     # Load or create Stochastic Matrices for Hidden Markov Model
     stoch_matrices = StochasticMatrices(
-        task_states_n_cardins=task_sets_n_cardinalities,
+        task_sets_n_cardins=task_sets_n_cardinalities,
         task_params=task_params,
     ).compute_or_load_components()
 
@@ -135,10 +135,10 @@ def main(exp_label: str,
 if __name__ == "__main__":
 
     # Define experiment / simulation label
-    DIM = 3
-    HIDES = 2
-    EXP_LABEL = f"test_dim-{DIM}_h-{HIDES}_02_14"
-    comment = "Use O indices instead of O"
+    DIM = 5
+    HIDES = 6
+    EXP_LABEL = f"test_dim-{DIM}_h-{HIDES}_02_16"
+    comment = "Plot Phi again"
 
     # Prepare output directory
     dir_manager = DirectoryManager()

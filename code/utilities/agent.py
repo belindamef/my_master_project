@@ -84,11 +84,13 @@ class StochasticMatrices:
         #     )
         self.Omega = {
             "drill": sp.csc_matrix(
-                (self.task_sets_n_cardins.n, self.task_sets_n_cardins.n_O),  # shape
+                #(self.task_sets_n_cardins.n, self.task_sets_n_cardins.n_O),  # shape
+                (1, 1),  # TODO: quickfix, cause init with 2.7 TiB too large 
                 dtype=np.int8
                 ),
             "step": sp.csc_matrix(
-                (self.task_sets_n_cardins.n, self.task_sets_n_cardins.n_O),  # shape
+                #(self.task_sets_n_cardins.n, self.task_sets_n_cardins.n_O),  # shape
+                (1, 1),
                 dtype=np.int8
                 )
         }
@@ -408,6 +410,77 @@ class StochasticMatrices:
                 dtype=np.int8
                 )
 
+    def compute_Phi_lil_mat(self):
+        "Method to compute Phi"
+
+        # ---------------------------------------
+        # NOTE:
+        # s = (s_1, s_2, s_3, s_4)
+        # p^{a_t = a}(s_{t+1} = s|s_t = s_tilde)
+        # s_1 is the first component of s = s_{t+1}
+        # ---------------------------------------
+
+        for i_a, a in enumerate(self.task_sets_n_cardins.A):
+
+            this_Phi_a = sp.lil_matrix(
+                (self.task_sets_n_cardins.n, self.task_sets_n_cardins.n),  # shape
+                dtype=np.int8
+                )
+
+            # Iterate possible old states s_{t}
+            for i_s_tilde, s_tilde in enumerate(self.task_sets_n_cardins.S):
+
+                # Iterate possible new states s_{t+1}
+                for i_s, s in enumerate(self.task_sets_n_cardins.S):
+
+                    s1 = s[0]              # current position in t + 1
+                    s1_tilde = s_tilde[0]  # current position in t
+                    s1_tilde_plus_a = s1_tilde + a
+
+                    # ------ For all allowed actions --------------------------
+                    if (
+                        # new position is a valid node number
+                        # => no move over top or bottom boarder
+                        (1 <= s1_tilde_plus_a <= self.task_params.n_nodes)
+                        # Not standing on left boarder line and choosing west
+                        # => no move left, when standing on left boarder
+                        and not ((((s1_tilde - 1)
+                                   % self.task_params.dim) == 0)
+                                 and a == -1)
+                        # Not standing on right boarder line and choosing east
+                        # => no move right, when standing on right boarder
+                        and not (((s1_tilde
+                                   % self.task_params.dim) == 0)
+                                 and a == 1)
+                            ):
+
+                        # Set phi entries 1, for a-spec. correct state trans.
+                        if (s1 == s1_tilde_plus_a  # s[1]_{t+1} == s[1]_{t} + a
+                                and np.all(  # s[2:]_{t+1} == s[2:]_{t}
+                                    s[1:] == s_tilde[1:])):
+
+                            this_Phi_a[i_s_tilde, i_s] = 1
+
+                        # else:  # if s1 != s1_tilde_plus_a
+                        #     self.Phi[a][i_s_tilde, i_s] = 0
+
+                    # ------ For all un-allowed actions -----------------------
+                    else:
+                        # Agent believes to stay on its current position
+                        # and that all other state components remain the same
+                        if np.all(s == s_tilde):
+                            this_Phi_a[i_s_tilde, i_s] = 1
+
+                        #     self.Phi[a][i_s_tilde, i_s] = 1
+                        # else:  # if s1 != s1_tilde:
+                        #     self.Phi[a][i_s_tilde, i_s] = 0
+
+            self.Phi[a] = this_Phi_a.tocsr()
+
+            debug = "here"
+
+
+
     def compute_Phi(self):
         "Method to compute Phi"
 
@@ -503,7 +576,7 @@ class StochasticMatrices:
             # siehe Handwritten NOTE 24.11.
 
             # -------After DRILL actions: -----------------------------
-            if a == 0:
+            if a == "drill":
 
                 # CONDITION:                    CORRESP MODEL VARIABLE:
                 # ---------------------------------------------------------
@@ -693,7 +766,8 @@ class StochasticMatrices:
             logging.info("Computing Phi matrices for given task config")
             # print("Computing Phi for given task config ...")
             start = time.time()
-            self.compute_Phi()
+            self.compute_Phi_lil_mat()
+            #self.compute_Phi()
             end = time.time()
             logging.info("Time needed to compute Phi matrices: %s: \n",
                          humanreadable_time(end-start))
@@ -714,14 +788,13 @@ class StochasticMatrices:
                 humanreadable_time(end-start))
 
             # Uncomment to plot color maps
-            # TODO: transform back to dense array first
-            # self.plot_color_map(n_nodes=self.task_params.n_nodes,
-            #                     n_hides=self.task_params.n_hides,
-            #                     Phi_drill=self.Phi[:, :, 0],
-            #                     Phi_minus_dim=self.Phi[:, :, 1],
-            #                     Phi_plus_one=self.Phi[:, :, 2],
-            #                     Phi_plus_dim=self.Phi[:, :, 3],
-            #                     Phi_minus_one=self.Phi[:, :, 4])
+            self.plot_color_map(n_nodes=self.task_params.n_nodes,
+                                n_hides=self.task_params.n_hides,
+                                Phi_drill=self.Phi[0].toarray(),
+                                Phi_minus_dim=self.Phi[-self.task_params.dim].toarray(),
+                                Phi_plus_one=self.Phi[+1].toarray(),
+                                Phi_plus_dim=self.Phi[self.task_params.dim].toarray(),
+                                Phi_minus_one=self.Phi[-1].toarray())
 
         logging.info("                 Value/Shape           Size")
         logging.info("            Phi: (5, %s, %s)",
@@ -730,95 +803,97 @@ class StochasticMatrices:
         logging.info("                                       %s \n",
                      asizeof.asizeof(self.Phi))
 
+        def compute_or_load_Omega(self):
         # ------ Omega---------------------------------------------------------
-        Omega_drill_path = data_handler.create_matrix_fn(
-            matrix_name="Omega_drill",
-            n_nodes=self.task_params.n_nodes,
-            n_hides=self.task_params.n_hides
-            )
-
-        Omega_step_path = data_handler.create_matrix_fn(
-            matrix_name="Omega_step",
-            n_nodes=self.task_params.n_nodes,
-            n_hides=self.task_params.n_hides
-            )
-
-        if (
-                os.path.exists(f"{Omega_drill_path}.npz")
-                and os.path.exists(f"{Omega_step_path}.npz")
-                ):
-
-            # Load matrices from hd for this task grid configuration
-            logging.info(
-                "Loading Omega drill matrix from %s.npz",
-                Omega_drill_path
-                )
-            logging.info(
-                "Loading Omega step matrix from %s.npz",
-                Omega_step_path
-                )
-
-            # print("Loading Omega matrices from disk for given task config ("
-            #       f"{self.task_params.n_nodes} nodes and "
-            #       f"{self.task_params.n_hides} hiding spots) ...")
-            start = time.time()
-            with open(f"{Omega_drill_path}.npz", "rb") as file:
-                self.Omega["drill"] = sp.load_npz(file)
-            with open(f"{Omega_step_path}.npz", "rb") as file:
-                self.Omega["step"] = sp.load_npz(file)
-            end = time.time()
-            # print(f" ... finished loading. \n ... time:  "
-            #       f"{humanreadable_time(end-start)}\n")
-            logging.info(
-                "Time needed to load Omega matrices: %s \n",
-                humanreadable_time(end-start)
-                )
-
-        else:
-            # Compute for this task grid configuration and save to hd
-            logging.info("Computing Omega for given task config ...")
-            # print("Computing Omega for given task config ...")
-            start = time.time()
-            # self.compute_Omega_using_set_O()
-            self.compute_Omega_using_O_indices()
-            end = time.time()
-            logging.info("Time needed to compute Omega: %s",
-                         humanreadable_time(end-start)
-                         )
-            # print(f" ... finished computing Omega, \n ... time:  "
-            #       f"{humanreadable_time(end-start)}")
-            start = time.time()
-            data_handler.save_arrays(
+            Omega_drill_path = data_handler.create_matrix_fn(
+                matrix_name="Omega_drill",
                 n_nodes=self.task_params.n_nodes,
-                n_hides=self.task_params.n_hides,
-                Omega_drill=self.Omega["drill"],
-                sparse=True
+                n_hides=self.task_params.n_hides
                 )
-            data_handler.save_arrays(
+
+            Omega_step_path = data_handler.create_matrix_fn(
+                matrix_name="Omega_step",
                 n_nodes=self.task_params.n_nodes,
-                n_hides=self.task_params.n_hides,
-                Omega_step=self.Omega["step"],
-                sparse=True
+                n_hides=self.task_params.n_hides
                 )
-            end = time.time()
-            logging.info("Time needed to save Omega to disk: %s \n",
-                         humanreadable_time(end-start))
-            # print(f" ... finisehd saving Omega to files, \n ... time:  "
-            #       f"{humanreadable_time(end-start)}")
 
-            self.plot_color_map(n_nodes=self.task_params.n_nodes,
-                                n_hides=self.task_params.n_hides,
-                                Omega_drill=self.Omega["drill"].toarray(),
-                                Omega_step=self.Omega["step"].toarray()
-                                )
+            if (
+                    os.path.exists(f"{Omega_drill_path}.npz")
+                    and os.path.exists(f"{Omega_step_path}.npz")
+                    ):
 
-        logging.info("                 Value/Shape           Size")
-        logging.info("          Omega: (2, %s, %s ) ",
-                        self.Omega['drill'].shape[0],
-                        self.Omega['drill'].shape[1])
-        logging.info("                                       %s \n",
-                     asizeof.asizeof(self.Omega))
+                # Load matrices from hd for this task grid configuration
+                logging.info(
+                    "Loading Omega drill matrix from %s.npz",
+                    Omega_drill_path
+                    )
+                logging.info(
+                    "Loading Omega step matrix from %s.npz",
+                    Omega_step_path
+                    )
 
+                # print("Loading Omega matrices from disk for given task config ("
+                #       f"{self.task_params.n_nodes} nodes and "
+                #       f"{self.task_params.n_hides} hiding spots) ...")
+                start = time.time()
+                with open(f"{Omega_drill_path}.npz", "rb") as file:
+                    self.Omega["drill"] = sp.load_npz(file)
+                with open(f"{Omega_step_path}.npz", "rb") as file:
+                    self.Omega["step"] = sp.load_npz(file)
+                end = time.time()
+                # print(f" ... finished loading. \n ... time:  "
+                #       f"{humanreadable_time(end-start)}\n")
+                logging.info(
+                    "Time needed to load Omega matrices: %s \n",
+                    humanreadable_time(end-start)
+                    )
+
+            else:
+                # Compute for this task grid configuration and save to hd
+                logging.info("Computing Omega for given task config ...")
+                # print("Computing Omega for given task config ...")
+                start = time.time()
+                # self.compute_Omega_using_set_O()
+                self.compute_Omega_using_O_indices()
+                end = time.time()
+                logging.info("Time needed to compute Omega: %s",
+                            humanreadable_time(end-start)
+                            )
+                # print(f" ... finished computing Omega, \n ... time:  "
+                #       f"{humanreadable_time(end-start)}")
+                start = time.time()
+                data_handler.save_arrays(
+                    n_nodes=self.task_params.n_nodes,
+                    n_hides=self.task_params.n_hides,
+                    Omega_drill=self.Omega["drill"],
+                    sparse=True
+                    )
+                data_handler.save_arrays(
+                    n_nodes=self.task_params.n_nodes,
+                    n_hides=self.task_params.n_hides,
+                    Omega_step=self.Omega["step"],
+                    sparse=True
+                    )
+                end = time.time()
+                logging.info("Time needed to save Omega to disk: %s \n",
+                            humanreadable_time(end-start))
+                # print(f" ... finisehd saving Omega to files, \n ... time:  "
+                #       f"{humanreadable_time(end-start)}")
+
+                self.plot_color_map(n_nodes=self.task_params.n_nodes,
+                                    n_hides=self.task_params.n_hides,
+                                    Omega_drill=self.Omega["drill"].toarray(),
+                                    Omega_step=self.Omega["step"].toarray()
+                                    )
+
+            logging.info("                 Value/Shape           Size")
+            logging.info("          Omega: (2, %s, %s ) ",
+                            self.Omega['drill'].shape[0],
+                            self.Omega['drill'].shape[1])
+            logging.info("                                       %s \n",
+                        asizeof.asizeof(self.Omega))
+
+        compute_or_load_Omega(self)
         return self
 
 
@@ -1058,6 +1133,7 @@ class Agent:
                     ) for node, color in enumerate(o_t[1:])]
             j = set.intersection(*list_of_sets)
             return list(j)[int(o_t[0])]
+            # return [list(j)[0], list(j)[0] + self.task.sets_n_cardins.n_O2]
 
         # Determine action type (step or drill)
         if a_t != 0:  # if step
@@ -1069,17 +1145,26 @@ class Agent:
         if self.task.t == 0:
             a_t = 0
 
-        # Determine observation dependent omega index j
-        # O_ = self.task.sets_n_cardins.O_  # TODO: index umschreiben!
-        # j = int(np.where(np.all(O_ == o_t, axis=1))[0])
+        def extract_Omega_from_arrays(self):
+            # Determine observation dependent omega index j
+            # O_ = self.task.sets_n_cardins.O_  # TODO: index umschreiben!
+            # j = int(np.where(np.all(O_ == o_t, axis=1))[0])
 
-        j = find_j(o_t)
+            j = find_j(o_t)
 
-        # Choose action dependent Omega
-        Omega_a = self.stoch_matrices.Omega[a_t_type]
+            # Choose action dependent Omega
+            Omega_a = self.stoch_matrices.Omega[a_t_type]
 
-        # Extract components  # TODO: kopieren kostet working memory
-        Omega_a_j = Omega_a[:, j]
+            # Extract components  # TODO: kopieren kostet working memory
+            Omega_a_j = Omega_a[:, j]
+            return Omega_a_j
+
+        # Omega_a_j = self.stoch_matrices.Omega_a_j_generator(
+        #     a=a_t_type,
+        #     o=o_t)
+
+        Omega_a_j = extract_Omega_from_arrays(self)
+
         Phi_k = self.stoch_matrices.Phi[a_t]  # [:, :]
 
         # Eval p_s_giv_o

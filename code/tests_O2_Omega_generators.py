@@ -495,6 +495,24 @@ def test_bitarrays():
           )
 
 
+def test_lil_matrix():
+
+    # Initialize a lil_matrix with the appropriate shape
+    lil = sp.lil_matrix((3, 2))
+
+    # Add data to the lil_matrix
+    # Ensure that each row has corresponding data stored in the `data` list
+    lil[0, :] = [0, 1]  # Add data to the first row
+    lil[1, :] = [0, 1]  # Add data to the second row
+    lil[2, :] = [1, 0]  # Add data to the third row
+
+    print(lil)
+    print(lil.toarray())  # Convert to a dense array for visualization
+
+    csr = lil.tocsr()
+    print(csr)
+    print(csr.toarray())
+
 if __name__ == "__main__":
 
     # Define experiment / simulation label
@@ -512,8 +530,10 @@ if __name__ == "__main__":
 
     #test_O_indices_computations(task_params=task_parameters)
 
-    test_Omega_on_the_fly(task_params=task_parameters)  # --> 10 sec
+    #test_Omega_on_the_fly(task_params=task_parameters)  # --> 10 sec
 
-    test_loops(task_params=task_parameters, inner_only=True)
+    #test_loops(task_params=task_parameters, inner_only=True)
 
-    test_bitarrays()
+    #test_bitarrays()
+
+    test_lil_matrix()
