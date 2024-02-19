@@ -7,6 +7,7 @@ import logging
 import numpy as np
 from pympler import asizeof
 import scipy.sparse as sp
+from math import factorial
 from utilities.task import Task, TaskNGridParameters, TaskSetsNCardinalities
 from utilities.config import Paths
 from utilities.config import DataHandler, humanreadable_time, DirectoryManager
@@ -410,7 +411,7 @@ class StochasticMatrices:
                 dtype=np.int8
                 )
 
-    def compute_Phi_lil_mat(self):
+    def compute_Phi_lil_matrix(self):
         "Method to compute Phi"
 
         # ---------------------------------------
@@ -479,6 +480,107 @@ class StochasticMatrices:
 
             debug = "here"
 
+    def compute_Phi_np_array(self):
+        "Method to compute Phi"
+
+        def calculate_no_of_nozeros():
+
+            # For each s^1_t there is one possible s^1_t+1
+            n_possible_new_s1_giv_s1_tilde = 1
+    
+            n_I = self.task_params.n_nodes
+            n_H = self.task_params.n_hides
+
+            # number of possible s^3 combinations  # TODO: get from task object
+            n_S3 = (factorial(n_I)
+                    / (factorial(n_I - n_H) * factorial(n_H))
+                    )
+
+            # For each possible new s^1, phi is identity matrix with the
+            # size of the number of all possible comibnations of s^2 and s^3
+            dim_identity = n_H * n_S3
+
+            return n_possible_new_s1_giv_s1_tilde * n_I * dim_identity
+
+        # ---------------------------------------
+        # NOTE:
+        # s = (s_1, s_2, s_3, s_4)
+        # p^{a_t = a}(s_{t+1} = s|s_t = s_tilde)
+        # s_1 is the first component of s = s_{t+1}
+        # ---------------------------------------
+
+        n_non_zeros = int(calculate_no_of_nozeros())
+
+        rows = np.full((n_non_zeros), np.nan)
+        cols = np.full((n_non_zeros), np.nan)
+
+        for i_a, a in enumerate(self.task_sets_n_cardins.A):
+
+            this_Phi_a = sp.lil_matrix(
+                (self.task_sets_n_cardins.n, self.task_sets_n_cardins.n),  # shape
+                dtype=np.int8
+                )
+
+            i = 0
+            # Iterate possible old states s_{t}
+            for i_s_tilde, s_tilde in enumerate(self.task_sets_n_cardins.S):
+
+                # Iterate possible new states s_{t+1}
+                for i_s, s in enumerate(self.task_sets_n_cardins.S):
+
+                    s1 = s[0]              # current position in t + 1
+                    s1_tilde = s_tilde[0]  # current position in t
+                    s1_tilde_plus_a = s1_tilde + a
+
+                    # ------ For all allowed actions --------------------------
+                    if (
+                        # new position is a valid node number
+                        # => no move over top or bottom boarder
+                        (1 <= s1_tilde_plus_a <= self.task_params.n_nodes)
+                        # Not standing on left boarder line and choosing west
+                        # => no move left, when standing on left boarder
+                        and not ((((s1_tilde - 1)
+                                   % self.task_params.dim) == 0)
+                                 and a == -1)
+                        # Not standing on right boarder line and choosing east
+                        # => no move right, when standing on right boarder
+                        and not (((s1_tilde
+                                   % self.task_params.dim) == 0)
+                                 and a == 1)
+                            ):
+
+                        # Set phi entries 1, for a-spec. correct state trans.
+                        if (s1 == s1_tilde_plus_a  # s[1]_{t+1} == s[1]_{t} + a
+                                and np.all(  # s[2:]_{t+1} == s[2:]_{t}
+                                    s[1:] == s_tilde[1:])):
+
+                            rows[i] = i_s_tilde
+                            cols[i] = i_s
+
+                        # else:  # if s1 != s1_tilde_plus_a
+                        #     self.Phi[a][i_s_tilde, i_s] = 0
+
+                    # ------ For all un-allowed actions -----------------------
+                    else:
+                        # Agent believes to stay on its current position
+                        # and that all other state components remain the same
+                        if np.all(s == s_tilde):
+                            rows[i] = i_s_tilde
+                            cols[i] = i_s
+
+                        #     self.Phi[a][i_s_tilde, i_s] = 1
+                        # else:  # if s1 != s1_tilde:
+                        #     self.Phi[a][i_s_tilde, i_s] = 0
+                i += 1
+
+            self.Phi[a] = sp.csc_matrix(
+                ([1]*len(rows),  # data
+                 (rows, cols)),  # indices
+                shape=(self.task_sets_n_cardins.n, self.task_sets_n_cardins.n),  # shape
+                dtype=np.int8
+                )
+
+            debug = "here"
 
 
     def compute_Phi(self):
@@ -766,7 +868,7 @@ class StochasticMatrices:
             logging.info("Computing Phi matrices for given task config")
             # print("Computing Phi for given task config ...")
             start = time.time()
-            self.compute_Phi_lil_mat()
+            self.compute_Phi_np_array()
             #self.compute_Phi()
             end = time.time()
             logging.info("Time needed to compute Phi matrices: %s: \n",
@@ -1126,6 +1228,14 @@ class Agent:
         """
 
         def find_j(o_t):
+            """Old function for when o_t included node color observations
+
+            Args:
+                o_t (n_nodes + 1) x 1: current observation
+
+            Returns:
+                _type_: index of observation
+            """
             o_indices = self.task.sets_n_cardins.o_node_specfic_indices
             list_of_sets = [
                 set(
@@ -1150,7 +1260,8 @@ class Agent:
             # O_ = self.task.sets_n_cardins.O_  # TODO: index umschreiben!
             # j = int(np.where(np.all(O_ == o_t, axis=1))[0])
 
-            j = find_j(o_t)
+            # j = find_j(o_t)
+            j = o_t[1]  # TODO: check if it works that index is just the same as o
 
             # Choose action dependent Omega
             Omega_a = self.stoch_matrices.Omega[a_t_type]
