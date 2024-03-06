@@ -63,7 +63,7 @@ class StochasticMatrices:
 
         # Unpack sets and cardinalities
         self.n = task_states_n_cardins.n
-        self.m = task_states_n_cardins.m
+        self.m = task_states_n_cardins.n_O
         self.p = task_states_n_cardins.p
         self.S = task_states_n_cardins.S
         self.O_ = task_states_n_cardins.O_

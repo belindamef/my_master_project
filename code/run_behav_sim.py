@@ -137,8 +137,8 @@ if __name__ == "__main__":
     # Define experiment / simulation label
     DIM = 5
     HIDES = 6
-    EXP_LABEL = f"test_dim-{DIM}_h-{HIDES}_02_16"
-    comment = "Plot Phi again"
+    EXP_LABEL = f"test_dim-{DIM}_h-{HIDES}_02_19"
+    comment = "Compute phi with numpy array instead list.append()"
 
     # Prepare output directory
     dir_manager = DirectoryManager()

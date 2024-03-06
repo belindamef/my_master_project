@@ -241,7 +241,7 @@ class VeryPlotter:
                             )
 
                     elif component == "o_t":
-                        data[component][:, trial_col] = beh_data["o_t"][trial_col][1:]
+                        data[component][:, trial_col] = beh_data["node_colors"][trial_col][1:]
                         if beh_data["o_t"][trial_col][0] == 1:
                             data[component][:, trial_col][
                                 (beh_data["s2_t"][trial_col] - 1)] = 3
@@ -515,7 +515,6 @@ class VeryPlotter:
                 add_colorbar()
 
             return images
-
 
         dim = task_params.dim
         n_nodes = task_params.n_nodes

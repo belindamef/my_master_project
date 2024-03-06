@@ -211,14 +211,21 @@ class TaskSetsNCardinalities:
     def __init__(self, task_params: TaskNGridParameters):
         self.params = task_params
         self.n = self.compute_S_cardinality_n()        # Cardinality of S
-        self.n_O2 = self.compute_O_cardinality_n_O2()  # Cardinality of O^2
-        self.n_O = self.n_O2 * 2                       # Cardinality of O
+        # self.n_O2 = self.compute_O_cardinality_n_O2()  # Cardinality of O^2
+        # self.n_O = self.n_O2 * 2                       # Cardinality of O
         self.p = 5                                     # Cardinality of A     p
         self.log_shapes()
         self.S = np.full(                              # Set of states        S
             (self.n, 2 + self.params.n_hides),
             99)
-        self.O_ = np.nan
+        self.n_O = 5    # TODO: alternativ auch n_O = 6 und [1, 1] inkludieren möglich
+        self.O_ = np.array(
+            ([0, 0],
+             [0, 1],
+             [0, 2],
+             [1, 0],
+             [1, 2]),
+            dtype=np.int8)
         # self.S = sp.csr_matrix(
         #     (self.n, self.params.n_hides + 2),  # shape
         #     dtype=np.int8)
@@ -255,7 +262,6 @@ class TaskSetsNCardinalities:
             [0, -self.params.dim, 1,
              self.params.dim, -1], dtype=np.int8)
         self.R = np.array([0, 1], dtype=np.int8)   # Set of rewards           R
-
 
     def log_shapes(self):
         """Function to log calculated shapes of sets and stochastic matrices,
@@ -391,8 +397,8 @@ class TaskSetsNCardinalities:
             # self.compute_O_indices()
             end = time.time()
             logging.info("Time needed to compute O indices: %s",
-                        humanreadable_time(end-start)
-                        )
+                         humanreadable_time(end-start)
+                         )
             # print(f" ... finished computing S. \n ... time:  "
             #       f"{humanreadable_time(end-start)}\n")
             start = time.time()
@@ -547,21 +553,12 @@ class TaskSetsNCardinalities:
         n_I = self.params.n_nodes
         n_H = self.params.n_hides
 
-        # hide_combos = sorted(
-        #     more_itertools.distinct_combinations(
-        #         iterable=range(1, n_I + 1),
-        #         r=n_H
-        #         )
-        #     )
-        # n_h_combos_count = len(hide_combos)
-
         n_S3 = (factorial(n_I)
                 / (factorial(n_I - n_H) * factorial(n_H))
                 )
 
         # Compute the cardinality n of set S
         n = (n_S1 * n_H * n_S3)
-        # n = 48  # TODO: QUICKFIX
 
         return int(n)  # TODO: hier weiter: geht alles nicht auf. ...
 
@@ -615,8 +612,6 @@ class TaskSetsNCardinalities:
                 r=n_nodes             # Number of items to be sampled
                 )
             )
-
-        # return O2
 
     def compute_O_indices(self):
         """Method to compute index lists for entries in the set of observation
@@ -750,8 +745,9 @@ class Task:
         self.s2_t = np.full(1, np.nan)             # Current treasure loc s^2_t
         self.s3_t = np.full(                       # Hiding spots         s^3_t
             (1, self.params.n_hides), np.nan)
-        self.o_t = np.full(                        # Current observation    o_t
-            (1 + self.params.n_nodes), np.nan)
+        # self.o_t = np.full(                      # Current observation    o_t
+        #     (1 + self.params.n_nodes), np.nan)
+        self.o_t = np.full(2, np.nan)              # Current observation o_t
         self.r_t: int = 0                          # Current reward         r_t
 
         # Compute or load shortest distance dict from hd
@@ -909,7 +905,7 @@ class Task:
         else:
             self.o_t[0] = 1
 
-        self.o_t[1:] = self.node_colors
+        self.o_t[1] = self.node_colors[self.s1_t]
 
     def eval_state_transition_f(self, action_t):
         """Perform the state transition function f. """
